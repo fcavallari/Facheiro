@@ -28,7 +28,7 @@ function fail(msg) {
 }
 
 async function saveSettings(page, values) {
-	await page.goto(pageUrl);
+	await page.goto(pageUrl + '&tab=settings');
 	await page.check('input[name="elderward[runner]"][value="' + values.runner + '"]');
 	await page.selectOption('#elderward-schedule', values.schedule);
 	if (values.schedule !== 'off') {
@@ -39,7 +39,7 @@ async function saveSettings(page, values) {
 	}
 	await page.fill('#elderward-settings-log', values.log || '');
 	await page.click('.elderward-settings #submit');
-	await page.waitForURL(/page=elderward/);
+	await page.waitForURL(/page=elderward&tab=settings/);
 	const notices = await page.$$eval('.notice', (els) => els.map((el) => el.className.replace(/\s+/g, ' ') + ': ' + el.textContent.trim()));
 	return notices;
 }
@@ -108,6 +108,7 @@ async function waitForEnd(page, timeout) {
 
 	console.log('== background scan: start, leave the page, come back');
 	ajax.step = 0; ajax.status = 0;
+	await page.goto(pageUrl);
 	await page.click('#elderward-start');
 	await page.waitForSelector('#elderward-progress:not([hidden])');
 	await page.waitForFunction(() => document.getElementById('elderward-runner-note').textContent.trim() !== '');
@@ -138,6 +139,7 @@ async function waitForEnd(page, timeout) {
 	const schedHidden = await page.$eval('.elderward-schedule-when', (el) => el.hidden);
 	if (!schedHidden) { fail('time field shown with the schedule off'); }
 	ajax.step = 0;
+	await page.goto(pageUrl);
 	await page.click('#elderward-start');
 	await page.waitForSelector('#elderward-progress:not([hidden])');
 	await page.waitForFunction(() => document.getElementById('elderward-runner-note').textContent.trim() !== '');
