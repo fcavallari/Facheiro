@@ -26,14 +26,20 @@ class SelfCheckScanner extends IntegrityScanner
     const SLUG = 'elderward';
     const MANIFEST = 'checksums.json';
 
-    // Top-level names that a release never contains (.distignore); a git
-    // checkout has them, so a development copy skips them instead of
-    // reporting thousands of extra files.
+    // Top-level names that a release never contains (.distignore). A git
+    // checkout has them: their tracked files are listed under "dev" in
+    // checksums.json and verified when present; nothing is skipped.
     private static $dev_only = array(
         '.git', '.github', '.gitignore', '.distignore', '.wordpress-org', '.claude',
         'CLAUDE.md', 'TESTPLAN.md', 'composer.json', 'composer.lock', 'phpcs.xml.dist',
         'tests', 'vendor', 'node_modules', 'build', 'site', 'dist',
     );
+
+    // Folders whose content no checksum list can cover: git's own data and
+    // installed development dependencies. They are never silently skipped:
+    // PHP inside .git is reported as an extra file, and a dependency folder
+    // is reported as unverified.
+    private static $unlisted = array('.git', 'vendor', 'node_modules');
 
     public function name()
     {
@@ -102,68 +108,122 @@ class SelfCheckScanner extends IntegrityScanner
     private function check_copy($dir, array &$totals)
     {
         $version = self::read_plugin_version($dir);
-        $dev = is_dir($dir . '/.git');
+        $name = 'Elderward' . (null === $version ? '' : ' ' . $version);
         $present = array();
+        $unlisted = array();
         foreach (list_files_recursive($dir, $dir) as $relative_path) {
             $top = strtok($relative_path, '/');
-            if ($dev && in_array($top, self::$dev_only, true)) {
+            if (in_array($top, self::$unlisted, true) && $top !== $relative_path) {
+                $unlisted[$top][] = $relative_path;
                 continue;
             }
             $present[] = $relative_path;
         }
+        $this->report_unlisted($dir, $name, $unlisted, $totals);
+
+        // The shipped list: release files, plus the development files of a
+        // git checkout (only checked when they exist).
+        $data = json_decode((string) @file_get_contents($dir . '/' . self::MANIFEST), true);
+        $bundled = (is_array($data) && !empty($data['files']) && is_array($data['files'])) ? $data['files'] : null;
+        $dev = (is_array($data) && isset($data['dev']) && is_array($data['dev'])) ? $data['dev'] : array();
+        $present = array_values(array_diff($present, array(self::MANIFEST)));
 
         // 1. wordpress.org (or checksumdir=): the same lookup as any plugin.
         if (null !== $version) {
-            list($status, $data) = $this->fetch_reference_checksums(
+            list($status, $wporg) = $this->fetch_reference_checksums(
                 'https://downloads.wordpress.org/plugin-checksums/' . self::SLUG . '/' . rawurlencode($version) . '.json',
                 'plugin-' . self::SLUG . '-' . $version . '.json'
             );
-            if ('ok' === $status && !empty($data['files']) && is_array($data['files'])) {
+            if ('ok' === $status && !empty($wporg['files']) && is_array($wporg['files'])) {
                 $manifest = array();
-                foreach ($data['files'] as $relative_path => $sums) {
+                foreach ($wporg['files'] as $relative_path => $sums) {
                     $manifest[$relative_path] = isset($sums['md5']) ? $sums['md5'] : null;
                 }
-                $this->progress('Checking Elderward ' . $version . ' against wordpress.org (' . count($manifest) . " files)\n");
-                $this->verify_against_manifest($dir, $manifest, 'Elderward ' . $version, $present, $totals, 'md5', 'INFO');
+                // Development files of a git checkout are not in the release:
+                // accepted only when they match the shipped list.
+                $present = array_values(array_filter($present, function ($relative_path) use ($manifest, $dev, $dir) {
+                    if (isset($manifest[$relative_path]) || !isset($dev[$relative_path]) || !is_string($dev[$relative_path])) {
+                        return true;
+                    }
+                    $actual = @hash_file('sha256', $dir . '/' . $relative_path);
+                    return !(false !== $actual && hash_equals(strtolower($dev[$relative_path]), $actual));
+                }));
+                if (null !== $bundled && !isset($manifest[self::MANIFEST])) {
+                    $present[] = self::MANIFEST;
+                    $manifest[self::MANIFEST] = md5_file($dir . '/' . self::MANIFEST);
+                }
+                $this->progress('Checking ' . $name . ' against wordpress.org (' . count($manifest) . " files)\n");
+                $this->verify_against_manifest($dir, $manifest, $name, $present, $totals, 'md5', 'INFO');
                 return ('wordpress.org');
             }
         }
 
         // 2. The list shipped with the plugin.
-        $raw = @file_get_contents($dir . '/' . self::MANIFEST);
-        $data = (false === $raw) ? null : json_decode($raw, true);
-        if (!is_array($data) || empty($data['files']) || !is_array($data['files'])) {
-            $this->report('INFO', 'INTEGRITY_NO_REFERENCE', $dir, 'Elderward' . (null === $version ? '' : ' ' . $version)
-                . ': no checksum list to verify its own files against' . ($dev ? ' (development copy)' : ''));
+        if (null === $bundled) {
+            $this->report('INFO', 'INTEGRITY_NO_REFERENCE', $dir, $name . ': no checksum list to verify its own files against');
             $totals['NO_REFERENCE']++;
             return ('none');
         }
         $manifest = array();
-        foreach ($data['files'] as $relative_path => $sha256) {
+        foreach ($bundled as $relative_path => $sha256) {
             $manifest[(string) $relative_path] = is_string($sha256) ? $sha256 : null;
         }
-        $present = array_values(array_diff($present, array(self::MANIFEST)));
-        $label = 'Elderward' . (null === $version ? '' : ' ' . $version) . ' (its own checksum list; reinstall from wordpress.org to be sure)';
-        $this->progress('Checking Elderward' . (null === $version ? '' : ' ' . $version) . ' against its own checksum list (' . count($manifest) . " files)\n");
+        foreach ($dev as $relative_path => $sha256) {
+            // A missing development file is normal (a release has none).
+            if (is_file($dir . '/' . $relative_path)) {
+                $manifest[(string) $relative_path] = is_string($sha256) ? $sha256 : null;
+            }
+        }
+        $label = $name . ' (its own checksum list; reinstall from wordpress.org to be sure)';
+        $this->progress('Checking ' . $name . ' against its own checksum list (' . count($manifest) . " files)\n");
         $this->verify_against_manifest($dir, $manifest, $label, $present, $totals, 'sha256', 'INFO');
         return ('bundled');
     }
 
+    private function report_unlisted($dir, $name, array $unlisted, array &$totals)
+    {
+        foreach ($unlisted as $top => $files) {
+            if ('.git' === $top) {
+                // Git never stores PHP files as such: one there is planted.
+                foreach ($files as $relative_path) {
+                    if (is_php_file($relative_path)) {
+                        $this->report('HIGH', 'INTEGRITY_EXTRA', $dir . '/' . $relative_path, $name . ': PHP file inside the .git folder, which never holds one');
+                        $totals['EXTRA']++;
+                    }
+                }
+                continue;
+            }
+            $php = count(array_filter($files, __NAMESPACE__ . '\\is_php_file'));
+            $this->report('MEDIUM', 'INTEGRITY_NO_REFERENCE', $dir . '/' . $top, $name . ': ' . $top . '/ holds ' . count($files) . ' files (' . $php
+                . ' PHP) that no checksum list covers; a release has no such folder, so remove it from a live site');
+            $totals['NO_REFERENCE']++;
+        }
+    }
+
     // The manifest format written by build/make-checksums.php, from the
-    // given relative paths (the release's files).
+    // given relative paths (git's tracked files): "files" is the release,
+    // "dev" the development files a git checkout also has.
     public static function build_manifest($dir, $version, array $relative_paths)
     {
         $dir = rtrim($dir, '/');
         $files = array();
+        $dev = array();
         foreach ($relative_paths as $relative_path) {
             $top = strtok($relative_path, '/');
-            if (in_array($top, self::$dev_only, true) || self::MANIFEST === $relative_path || !is_file($dir . '/' . $relative_path)) {
+            if (self::MANIFEST === $relative_path || !is_file($dir . '/' . $relative_path)
+                || (in_array($top, self::$unlisted, true) && $top !== $relative_path)) {
                 continue;
             }
-            $files[$relative_path] = hash_file('sha256', $dir . '/' . $relative_path);
+            $hash = hash_file('sha256', $dir . '/' . $relative_path);
+            if (in_array($top, self::$dev_only, true)) {
+                $dev[$relative_path] = $hash;
+            } else {
+                $files[$relative_path] = $hash;
+            }
         }
         ksort($files, SORT_STRING);
-        return array('plugin' => self::SLUG, 'version' => (string) $version, 'algorithm' => 'sha256', 'files' => $files);
+        ksort($dev, SORT_STRING);
+        return array('plugin' => self::SLUG, 'version' => (string) $version, 'algorithm' => 'sha256', 'files' => $files, 'dev' => $dev);
     }
 
     public static function dev_only()

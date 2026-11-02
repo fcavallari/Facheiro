@@ -96,6 +96,39 @@ final class Elderward_Plugin
     }
 
     /**
+     * Read a file in the "<?php exit; ?>" + JSON format (recovery key, tamper
+     * seal): requesting it over the web shows nothing. Null when the file is
+     * missing or its JSON is not an object.
+     */
+    public static function read_guarded_json($file)
+    {
+        if (!is_file($file)) {
+            return null;
+        }
+        $raw = (string) @file_get_contents($file); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- local file; unreadable means null.
+        $data = json_decode(trim(preg_replace('/^\s*<\?php.*?\?>/s', '', $raw, 1)), true);
+        return is_array($data) ? $data : null;
+    }
+
+    /**
+     * Write a guarded JSON file atomically (temp file + rename), so a reader
+     * never sees half of it.
+     */
+    public static function write_guarded_json($file, array $data)
+    {
+        $content = '<?php exit; ?>' . "\n" . wp_json_encode($data) . "\n";
+        $tmp = $file . '.' . wp_generate_password(8, false, false) . '.tmp';
+        if (false === @file_put_contents($tmp, $content)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- must be a plain file readable without WordPress or the database; failure is returned.
+            return false;
+        }
+        if (!@rename($tmp, $file)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename, WordPress.PHP.NoSilencedErrors.Discouraged -- atomic replace; failure is returned.
+            wp_delete_file($tmp);
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * One findings table per install (base prefix on multisite).
      */
     public static function findings_table()

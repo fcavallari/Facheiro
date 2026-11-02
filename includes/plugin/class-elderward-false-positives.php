@@ -87,12 +87,9 @@ final class Elderward_False_Positives
     public static function rules()
     {
         if (null === self::$cache) {
-            self::$cache = array();
-            foreach (self::all_rules() as $fingerprint => $rule) {
-                if (Elderward_Seal::matches('false_positives', $fingerprint, $rule)) {
-                    self::$cache[$fingerprint] = $rule;
-                }
-            }
+            $status = Elderward_Seal::status();
+            $diff = isset($status['diff']['false_positives']) ? $status['diff']['false_positives'] : array('added' => array(), 'changed' => array());
+            self::$cache = array_diff_key(self::all_rules(), array_flip(array_merge($diff['added'], $diff['changed'])));
         }
         return self::$cache;
     }
@@ -109,6 +106,7 @@ final class Elderward_False_Positives
     public static function reset_cache()
     {
         self::$cache = null;
+        Elderward_Seal::reset_cache();
     }
 
     /**

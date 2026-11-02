@@ -27,7 +27,6 @@ final class Elderward_Seal
 {
     const FILE = 'elderward-seal.php';
     const LOCK = 'elderward-seal.lock';
-    const GUARD = '<?php exit; ?>';
     // Set once a seal file was written; if the file later disappears, that
     // is reported instead of silently starting over.
     const OPTION_CREATED = 'elderward_seal_created';
@@ -42,6 +41,9 @@ final class Elderward_Seal
     );
 
     private static $cache = null;
+    private static $status = null;
+    // Set when writing the seal failed in this request: stop retrying.
+    private static $failed = false;
     private static $lock = null;
 
     public static function collections()
@@ -96,9 +98,14 @@ final class Elderward_Seal
         return $items;
     }
 
+    /**
+     * Hash of one entry. serialize() is byte-exact for any string (JSON
+     * would mangle or drop invalid UTF-8, which attacker-chosen file names
+     * in a false positive can contain); nothing is ever unserialized.
+     */
     public static function hash($entry)
     {
-        return hash('sha256', (string) wp_json_encode(self::canonical($entry)));
+        return hash('sha256', serialize(self::canonical($entry))); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- hashing input only, never unserialized.
     }
 
     private static function canonical($value)
@@ -116,7 +123,11 @@ final class Elderward_Seal
     private static function fresh_option($collection)
     {
         $option = self::$collections[$collection];
+        // Another request may have created or changed it since this one
+        // started: drop every cache get_option() could answer from.
         wp_cache_delete($option, 'options');
+        wp_cache_delete('notoptions', 'options');
+        wp_cache_delete('alloptions', 'options');
         return get_option($option, null);
     }
 
@@ -138,6 +149,9 @@ final class Elderward_Seal
         if (null !== self::$cache) {
             return self::$cache;
         }
+        if (self::$failed) {
+            return null;
+        }
         $data = self::read_file();
         if (null === $data) {
             if (!self::writable()) {
@@ -146,7 +160,7 @@ final class Elderward_Seal
             self::lock();
             $data = self::read_file();
             if (null === $data) {
-                if (get_option(self::OPTION_CREATED)) {
+                if (get_option(self::OPTION_CREATED) && !get_option(self::OPTION_LOST)) {
                     update_option(self::OPTION_LOST, time(), false);
                 }
                 $data = array('v' => 1, 'collections' => array());
@@ -163,13 +177,8 @@ final class Elderward_Seal
 
     private static function read_file()
     {
-        $file = self::path();
-        if (!is_file($file)) {
-            return null;
-        }
-        $raw = (string) @file_get_contents($file); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- local file; a missing or unreadable one is handled below.
-        $data = json_decode(trim(preg_replace('/^\s*<\?php.*?\?>/s', '', $raw, 1)), true);
-        if (!is_array($data) || !isset($data['collections']) || !is_array($data['collections'])) {
+        $data = Elderward_Plugin::read_guarded_json(self::path());
+        if (null === $data || !isset($data['collections']) || !is_array($data['collections'])) {
             // Unreadable or garbled: start again, reported as a lost seal.
             return null;
         }
@@ -179,20 +188,30 @@ final class Elderward_Seal
     private static function write_file(array $data)
     {
         $data['updated'] = time();
-        $content = self::GUARD . "\n" . wp_json_encode($data) . "\n";
-        $file = self::path();
-        // Temp file + rename: a scan never reads a half-written seal.
-        $tmp = $file . '.' . wp_generate_password(8, false, false) . '.tmp';
-        if (false === @file_put_contents($tmp, $content)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- must be a plain file outside the database; failure is handled.
+        self::$status = null;
+        if (!Elderward_Plugin::write_guarded_json(self::path(), $data)) {
+            // Disk full, quota, a failed rename: report the seal as off for
+            // the rest of this request instead of retrying on every call.
+            self::$failed = true;
+            self::$cache = null;
             return false;
         }
-        if (!@rename($tmp, $file)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename, WordPress.PHP.NoSilencedErrors.Discouraged -- atomic replace; failure is handled.
-            wp_delete_file($tmp);
-            return false;
+        if (!get_option(self::OPTION_CREATED)) {
+            update_option(self::OPTION_CREATED, 1, false);
         }
-        update_option(self::OPTION_CREATED, 1, false);
         self::$cache = $data;
         return true;
+    }
+
+    /**
+     * Forget what this process read (the MCP server is one long-lived
+     * process; other requests change the seal meanwhile).
+     */
+    public static function reset_cache()
+    {
+        self::$cache = null;
+        self::$status = null;
+        self::$failed = false;
     }
 
     private static function lock()
@@ -292,19 +311,6 @@ final class Elderward_Seal
     }
 
     /**
-     * Whether one entry matches the seal (true when no seal can be kept).
-     */
-    public static function matches($collection, $key, $entry)
-    {
-        $data = self::data();
-        if (null === $data) {
-            return true;
-        }
-        $sealed = isset($data['collections'][$collection]) ? (array) $data['collections'][$collection] : array();
-        return isset($sealed[$key]) && hash_equals((string) $sealed[$key], self::hash($entry));
-    }
-
-    /**
      * After an administrator reviewed them: seal the current state of the
      * given keys (all of the collection when null; a removed key is
      * forgotten). Also clears the lost-seal notice.
@@ -341,6 +347,7 @@ final class Elderward_Seal
         self::unlock();
         if ($ok && null === $collection) {
             delete_option(self::OPTION_LOST);
+            self::$status = null;
         }
         return $ok;
     }
@@ -351,6 +358,9 @@ final class Elderward_Seal
      */
     public static function status()
     {
+        if (null !== self::$status) {
+            return self::$status;
+        }
         $data = self::data();
         $status = array(
             'available' => null !== $data,
@@ -361,6 +371,7 @@ final class Elderward_Seal
         foreach (self::collections() as $collection) {
             $status['diff'][$collection] = self::diff($collection);
         }
+        self::$status = $status;
         return $status;
     }
 
@@ -384,7 +395,7 @@ final class Elderward_Seal
      */
     public static function report(Elderward\Engine\Reporter $reporter)
     {
-        self::$cache = null;
+        self::reset_cache();
         $status = self::status();
         if (!$status['available']) {
             $reporter->finding('INFO', 'TAMPER_SEAL_UNAVAILABLE', Elderward_Plugin::content_dir(), 'PHP cannot write the tamper seal here, so changes made to the saved settings outside Elderward cannot be detected');

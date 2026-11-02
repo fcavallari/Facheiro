@@ -79,5 +79,31 @@ out=$(cd "$WORK" && php "$REPO/bin/elderward.php" scanintegrity=1 "scandirectory
 check "installed copy checked" "$(finding HIGH INTEGRITY_EXTRA wp-content/plugins/elderward/includes/zz.php "$out")" yes
 grep -q "plugin elderward" <<<"$out"; check "installed copy not in the integrity stage" "$?" 1
 
+# A git checkout: development files are verified too, nothing is skipped.
+DEV="$WORK/dev"
+mkdir -p "$DEV"
+(cd "$REPO" && git ls-files --cached --others --exclude-standard | tar -cf - -T -) | tar -xf - -C "$DEV"
+mkdir -p "$DEV/.git/objects"
+printf 'blob\n' > "$DEV/.git/objects/ab"
+devrun() { (cd "$WORK" && php "$DEV/bin/elderward.php" selfcheck=1 "checksumdir=$WORK/none" 2>/dev/null); }
+out=$(devrun)
+grep -q "INTEGRITY_\(MODIFIED\|EXTRA\)" <<<"$out"; check "git checkout: clean" "$?" 1
+printf '<?php // planted\n' > "$DEV/tests/zz.php"
+echo '// appended' >> "$DEV/tests/chunking.php"
+printf '<?php // planted\n' > "$DEV/.git/objects/zz.php"
+mkdir -p "$DEV/vendor/acme"
+printf '<?php // dependency\n' > "$DEV/vendor/acme/a.php"
+out=$(devrun)
+check "git checkout: PHP added to tests/ is HIGH" "$(finding HIGH INTEGRITY_EXTRA tests/zz.php "$out")" yes
+check "git checkout: modified test file is HIGH" "$(finding HIGH INTEGRITY_MODIFIED tests/chunking.php "$out")" yes
+check "git checkout: PHP inside .git is HIGH" "$(finding HIGH INTEGRITY_EXTRA .git/objects/zz.php "$out")" yes
+check "git checkout: vendor/ reported unverified" "$(finding MEDIUM INTEGRITY_NO_REFERENCE /vendor "$out")" yes
+grep -q '\.git/objects/ab' <<<"$out"; check "git checkout: git data not listed" "$?" 1
+mkdir -p "$WORK/cs-dev"
+printf '{"files":{"elderward.php":{"md5":"%s"}}}\n' "$(md5sum "$DEV/elderward.php" | cut -d' ' -f1)" > "$WORK/cs-dev/plugin-elderward-1.0.0.json"
+out=$(cd "$WORK" && php "$DEV/bin/elderward.php" selfcheck=1 "checksumdir=$WORK/cs-dev" 2>/dev/null)
+check "wordpress.org reference: modified test file still extra" "$(finding HIGH INTEGRITY_EXTRA tests/chunking.php "$out")" yes
+grep -q 'tests/regress.sh' <<<"$out"; check "wordpress.org reference: unchanged dev files accepted" "$?" 1
+
 echo "checksums: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
