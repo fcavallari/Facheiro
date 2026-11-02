@@ -244,13 +244,22 @@ final class Elderward_Admin
         if (is_wp_error($zip)) {
             wp_die(esc_html($zip->get_error_message()), esc_html__('Sample not available', 'elderward'), array('response' => 409, 'back_link' => true));
         }
+        // A cancelled download aborts the script mid-readfile(); the
+        // shutdown function still runs, so the zip never stays in the temp
+        // folder.
+        register_shutdown_function(
+            static function () use ($zip) {
+                if (file_exists($zip)) {
+                    @unlink($zip); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- our own temporary file.
+                }
+            }
+        );
         nocache_headers();
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="elderward-sample-' . (int) $id . '-' . gmdate('Ymd-His') . '.zip"');
         header('Content-Length: ' . (int) filesize($zip));
         header('X-Content-Type-Options: nosniff');
         readfile($zip); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- streams our own temporary zip to the administrator.
-        @unlink($zip); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- our own temporary file.
         exit;
     }
 
@@ -785,6 +794,41 @@ final class Elderward_Admin
         if ($fp_view) {
             $filter = '';
         }
+        $page_url = self::page_url();
+        ?>
+        <div class="wrap elderward-wrap">
+            <h1 class="screen-reader-text"><?php esc_html_e('Elderward', 'elderward'); ?></h1>
+            <header class="elderward-brand">
+                <img class="elderward-brand-mark" src="<?php echo esc_url(ELDERWARD_URL . 'assets/img/elderward-mark.svg'); ?>" alt="" width="64" height="64" />
+                <div class="elderward-brand-text">
+                    <img class="elderward-brand-word" src="<?php echo esc_url(ELDERWARD_URL . 'assets/img/elderward-wordmark.svg'); ?>" alt="<?php esc_attr_e('Elderward', 'elderward'); ?>" width="124" height="34" />
+                    <p class="elderward-brand-tag"><?php esc_html_e('Malware scanner and incident response for WordPress', 'elderward'); ?></p>
+                </div>
+                <span class="elderward-brand-version"><?php echo esc_html('v' . ELDERWARD_VERSION); ?></span>
+            </header>
+            <hr class="wp-header-end" />
+            <?php foreach (self::take_notices() as $notice) : ?>
+                <div class="notice notice-<?php echo esc_attr($notice[0]); ?> is-dismissible"><p><?php echo esc_html($notice[1]); ?></p></div>
+            <?php endforeach; ?>
+            <nav class="nav-tab-wrapper elderward-tabs">
+                <a href="<?php echo esc_url($page_url); ?>" class="nav-tab <?php echo '' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Scan', 'elderward'); ?></a>
+                <a href="<?php echo esc_url(self::signatures_url()); ?>" class="nav-tab <?php echo 'signatures' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Signatures', 'elderward'); ?></a>
+                <a href="<?php echo esc_url(add_query_arg('tab', 'assistants', $page_url)); ?>" class="nav-tab <?php echo 'assistants' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('AI assistants', 'elderward'); ?></a>
+            </nav>
+            <?php if ('' !== $tab) : ?>
+                <?php
+                if ('signatures' === $tab) {
+                    self::render_signatures_tab();
+                } else {
+                    self::render_assistants_tab();
+                }
+                ?>
+        </div>
+                <?php return; ?>
+            <?php endif; ?>
+        <?php
+        // The findings queries below are for the Scan tab only.
+
 
         $counts = array_fill_keys($severities, 0);
         $total = 0;
@@ -824,45 +868,13 @@ final class Elderward_Admin
         }
         // phpcs:enable WordPress.DB
 
-        $page_url = self::page_url();
         $export_base = wp_nonce_url(admin_url('admin-post.php?action=elderward_export'), self::NONCE_EXPORT);
-        $root = untrailingslashit(ABSPATH);
         $settings = Elderward_Settings::get();
         $running = null !== $job && 'running' === $job['status'];
         $datetime_format = get_option('date_format') . ' ' . get_option('time_format');
         $next_run = Elderward_Cron::next_run();
         $fp_rules = Elderward_False_Positives::rules();
         ?>
-        <div class="wrap elderward-wrap">
-            <h1 class="screen-reader-text"><?php esc_html_e('Elderward', 'elderward'); ?></h1>
-            <header class="elderward-brand">
-                <img class="elderward-brand-mark" src="<?php echo esc_url(ELDERWARD_URL . 'assets/img/elderward-mark.svg'); ?>" alt="" width="64" height="64" />
-                <div class="elderward-brand-text">
-                    <img class="elderward-brand-word" src="<?php echo esc_url(ELDERWARD_URL . 'assets/img/elderward-wordmark.svg'); ?>" alt="<?php esc_attr_e('Elderward', 'elderward'); ?>" width="124" height="34" />
-                    <p class="elderward-brand-tag"><?php esc_html_e('Malware scanner and incident response for WordPress', 'elderward'); ?></p>
-                </div>
-                <span class="elderward-brand-version"><?php echo esc_html('v' . ELDERWARD_VERSION); ?></span>
-            </header>
-            <hr class="wp-header-end" />
-            <?php foreach (self::take_notices() as $notice) : ?>
-                <div class="notice notice-<?php echo esc_attr($notice[0]); ?> is-dismissible"><p><?php echo esc_html($notice[1]); ?></p></div>
-            <?php endforeach; ?>
-            <nav class="nav-tab-wrapper elderward-tabs">
-                <a href="<?php echo esc_url($page_url); ?>" class="nav-tab <?php echo '' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Scan', 'elderward'); ?></a>
-                <a href="<?php echo esc_url(self::signatures_url()); ?>" class="nav-tab <?php echo 'signatures' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Signatures', 'elderward'); ?></a>
-                <a href="<?php echo esc_url(add_query_arg('tab', 'assistants', $page_url)); ?>" class="nav-tab <?php echo 'assistants' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('AI assistants', 'elderward'); ?></a>
-            </nav>
-            <?php if ('' !== $tab) : ?>
-                <?php
-                if ('signatures' === $tab) {
-                    self::render_signatures_tab();
-                } else {
-                    self::render_assistants_tab();
-                }
-                ?>
-        </div>
-                <?php return; ?>
-            <?php endif; ?>
             <p class="description">
                 <?php esc_html_e('A report-only look at this install: quick checks, core/plugin/theme integrity, timestamps, crontab, database and (optionally) access logs, then the malware signatures in dry-run mode. Nothing is modified.', 'elderward'); ?>
             </p>
@@ -1019,7 +1031,7 @@ final class Elderward_Admin
                     <?php foreach ($findings as $finding) : ?>
                         <?php
                         $path = (string) $finding->path;
-                        $short = (0 === strpos($path, $root . '/')) ? substr($path, strlen($root) + 1) : $path;
+                        $short = Elderward_Plugin::relative_path($path);
                         $context = self::decode_context($finding->context);
                         $fp = (int) $finding->fp;
                         $fingerprint = '' !== (string) $finding->fingerprint ? $finding->fingerprint : Elderward_False_Positives::fingerprint($finding->type, $finding->path, $finding->detail);
@@ -1075,7 +1087,7 @@ final class Elderward_Admin
             <?php endif; ?>
 
             <?php if ($fp_view) : ?>
-                <?php self::render_fp_rules($fp_rules, $datetime_format, $root); ?>
+                <?php self::render_fp_rules($fp_rules, $datetime_format); ?>
             <?php endif; ?>
             <p class="description elderward-sample-help">
                 <?php
@@ -1109,8 +1121,13 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
         $user = !empty($rule['user']) ? get_userdata((int) $rule['user']) : false;
         $name = $user ? $user->display_name : __('a deleted user', 'elderward');
         $when = !empty($rule['time']) ? wp_date($datetime_format, (int) $rule['time']) : '—';
-        /* translators: 1: user display name, 2: date and time */
-        $text = sprintf(__('Marked as a false positive by %1$s on %2$s.', 'elderward'), $name, $when);
+        if (isset($rule['via']) && Elderward_False_Positives::VIA_ASSISTANT === $rule['via']) {
+            /* translators: 1: user display name, 2: date and time */
+            $text = sprintf(__('Marked as a false positive by an AI assistant acting as %1$s on %2$s.', 'elderward'), $name, $when);
+        } else {
+            /* translators: 1: user display name, 2: date and time */
+            $text = sprintf(__('Marked as a false positive by %1$s on %2$s.', 'elderward'), $name, $when);
+        }
         if (!empty($rule['note'])) {
             $text .= ' ' . $rule['note'];
         }
@@ -1121,7 +1138,7 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
      * Every saved false positive, including those for findings that are
      * not in the current results (file since deleted, check not run).
      */
-    private static function render_fp_rules(array $rules, $datetime_format, $root)
+    private static function render_fp_rules(array $rules, $datetime_format)
     {
         ?>
         <div class="elderward-card elderward-fp-rules">
@@ -1141,7 +1158,7 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
                     <?php foreach ($rules as $fingerprint => $rule) : ?>
                         <?php
                         $path = (string) $rule['path'];
-                        $short = (0 === strpos($path, $root . '/')) ? substr($path, strlen($root) + 1) : $path;
+                        $short = Elderward_Plugin::relative_path($path);
                         ?>
                         <tr data-fingerprint="<?php echo esc_attr($fingerprint); ?>">
                             <td><code><?php echo esc_html($rule['type']); ?></code></td>

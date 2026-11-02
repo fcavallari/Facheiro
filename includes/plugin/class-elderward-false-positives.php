@@ -31,6 +31,11 @@ final class Elderward_False_Positives
     const MATCHED = 1;
     const CHANGED = 2;
 
+    // Who saved a rule: an administrator on the admin page, or an AI
+    // assistant through the abilities (acting as that administrator).
+    const VIA_ADMIN = 'admin';
+    const VIA_ASSISTANT = 'assistant';
+
     /**
      * Finding types whose path is the file the finding is about, so the
      * file's content identifies the finding (and can be sent for analysis).
@@ -109,9 +114,10 @@ final class Elderward_False_Positives
     }
 
     /**
-     * One finding of the current job, by id.
+     * One finding of the current job, by id; with its context column when
+     * $with_context is true.
      */
-    public static function finding($id)
+    public static function finding($id, $with_context = false)
     {
         global $wpdb;
         $job = Elderward_Job::current();
@@ -120,7 +126,7 @@ final class Elderward_False_Positives
         }
         $table = Elderward_Plugin::findings_table();
         // phpcs:ignore WordPress.DB -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
-        $row = $wpdb->get_row($wpdb->prepare("SELECT id, severity, type, path, detail, sha256, fp FROM `{$table}` WHERE id = %d AND job_id = %s", (int) $id, $job['id']));
+        $row = $wpdb->get_row($wpdb->prepare("SELECT id, severity, type, path, detail, sha256, fp" . ($with_context ? ', context' : '') . " FROM `{$table}` WHERE id = %d AND job_id = %s", (int) $id, $job['id']));
         return $row ? $row : null;
     }
 
@@ -129,7 +135,7 @@ final class Elderward_False_Positives
      *
      * @return array|WP_Error The saved rule.
      */
-    public static function mark($id, $note)
+    public static function mark($id, $note, $via = self::VIA_ADMIN)
     {
         global $wpdb;
         $row = self::finding($id);
@@ -152,6 +158,7 @@ final class Elderward_False_Positives
             'sha256'   => $sha256,
             'note'     => self::clean_note($note),
             'user'     => get_current_user_id(),
+            'via'      => (self::VIA_ASSISTANT === $via) ? self::VIA_ASSISTANT : self::VIA_ADMIN,
             'time'     => time(),
         );
         $rules[$fingerprint] = $rule;

@@ -8,7 +8,8 @@
  * Runs: initialize, tools/list, discover the elderward abilities, get the
  * triage prompt, start a scan and wait for it (advance-scan if WP-Cron
  * does not move), list HIGH findings, read a flagged file, test and save a
- * signature, mark and unmark a false positive, and checks that a
+ * signature (wp-config.php refused), mark and unmark a false positive
+ * (recorded as made by an assistant), and checks that a
  * subscriber gets no access.
  */
 const { spawn } = require('child_process');
@@ -125,6 +126,10 @@ async function initialize(srv) {
 		if (file.sha256 !== fileFinding.sha256) { fail('hash mismatch'); }
 	}
 	const all = await ability(srv, 'elderward/list-findings', { limit: 200 });
+	if (fileFinding) {
+		const one = await ability(srv, 'elderward/get-finding', { id: fileFinding.id });
+		if (!Array.isArray(one.context)) { fail('get-finding lost the context'); }
+	}
 	const dbFinding = all.findings.find((f) => /^DB_/.test(f.type));
 	if (dbFinding) {
 		try { await ability(srv, 'elderward/read-flagged-file', { id: dbFinding.id }); fail('read a database finding as a file'); } catch (e) { console.log('db finding read refused:', e.message.slice(0, 90)); }
@@ -137,6 +142,10 @@ async function initialize(srv) {
 	if (!tested.candidate.valid || !tested.candidate.matches) { fail('candidate should match the fixture'); }
 	const clean = await ability(srv, 'elderward/test-signature', { signature: candidate, path: 'wp-includes/version.php' });
 	if (clean.candidate.matches) { fail('candidate matched a clean core file'); }
+	try {
+		await ability(srv, 'elderward/test-signature', { signature: candidate, path: 'wp-config.php' });
+		fail('test-signature read wp-config.php');
+	} catch (e) { console.log('wp-config test refused:', e.message.slice(0, 110)); }
 	const bad = await ability(srv, 'elderward/test-signature', { signature: Object.assign({}, candidate, { match: [{ regex: '/.*/' }] }) });
 	console.log('everything-matching regex:', bad.candidate.problem);
 	if (bad.candidate.valid) { fail('a regex matching everything was accepted'); }
@@ -152,6 +161,9 @@ async function initialize(srv) {
 	if (afterMark.findings.some((f) => f.id === target.id)) { fail('marked finding still listed'); }
 	const fps = await ability(srv, 'elderward/list-false-positives');
 	console.log('false positives saved:', fps.false_positives.length, 'file bound:', marked.file_bound);
+	const saved = fps.false_positives.find((f) => f.fingerprint === marked.fingerprint);
+	console.log('marked via:', saved && saved.via);
+	if (!saved || saved.via !== 'assistant') { fail('assistant mark not recorded as such'); }
 	await ability(srv, 'elderward/unmark-false-positive', { fingerprint: marked.fingerprint });
 	srv.close();
 

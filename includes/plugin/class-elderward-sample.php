@@ -87,7 +87,7 @@ final class Elderward_Sample
             'generator'        => 'Elderward ' . ELDERWARD_VERSION,
             'created'          => gmdate('c'),
             'file'             => $entry,
-            'original_path'    => substr($real, strlen($root) + 1),
+            'original_path'    => Elderward_Plugin::relative_path($real, $root),
             'size'             => (int) @filesize($real),
             'mtime'            => gmdate('c', (int) @filemtime($real)),
             'sha256'           => $sha256,

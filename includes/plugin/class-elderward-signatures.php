@@ -303,6 +303,11 @@ final class Elderward_Signatures
         if (false === $real || false === $root || 0 !== strpos($real, untrailingslashit($root) . '/') || !is_file($real) || !is_readable($real)) {
             return new WP_Error('elderward_signature', __('Give a readable file inside the WordPress folder.', 'elderward'));
         }
+        // Match results leak content one regex at a time, so the file with
+        // the database credentials is off limits, as for sample downloads.
+        if (1 === preg_match('/^wp-config/i', basename($real))) {
+            return new WP_Error('elderward_signature', __('wp-config files hold the database password and cannot be tested.', 'elderward'));
+        }
         if (filesize($real) > self::TEST_MAX_BYTES) {
             return new WP_Error('elderward_signature', __('The file is larger than 2 MB, which the file scanner skips too.', 'elderward'));
         }

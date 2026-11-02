@@ -150,6 +150,43 @@ else
     FAIL=$((FAIL+1)); echo "FAIL  real cleanup differs (old exit=$o_rc new exit=$n_rc)"; diff -r "$WORK/clean-old" "$WORK/clean-new" | head
 fi
 
+###############
+# Custom signatures (signatures=, new in the plugin round: no old-script
+# counterpart, so these check the new CLI on its own). A custom signature
+# reports SIGNATURE_MATCH and never modifies the file, even without dryrun.
+##############
+SIGSITE="$WORK/sigsite"
+mkdir -p "$SIGSITE"
+printf '<?php // acme_loader\n$x = $_POST["c"]; eval($x);\n' > "$SIGSITE/hit.php"
+printf '<?php echo "hello";\n' > "$SIGSITE/clean.php"
+cat > "$WORK/sigs.json" <<'JSON'
+{"elderward_signatures":1,"signatures":[{"id":"acme-loader","target":"file","severity":"MEDIUM","description":"ACME loader","match":[{"string":"acme_loader"},{"regex":"/eval\\s*\\(\\s*\\$/"}]}]}
+JSON
+cat > "$WORK/sigs-bad.json" <<'JSON'
+{"elderward_signatures":1,"signatures":[{"id":"everything","target":"file","severity":"LOW","description":"matches all","match":[{"regex":"/.*/"}]}]}
+JSON
+sig_check() {
+    local name="$1" want_rc="$2" want="$3" refuse="$4"; shift 4
+    local out rc
+    out="$(cd "$WORK" && php "$NEW" "$@" 2>/dev/null)"; rc=$?
+    if [ "$rc" == "$want_rc" ] && printf '%s' "$out" | grep -q -- "$want" && { [ -z "$refuse" ] || ! printf '%s' "$out" | grep -q -- "$refuse"; }; then
+        PASS=$((PASS+1)); printf 'PASS  %-39s exit=%s\n' "$name" "$rc"
+    else
+        FAIL=$((FAIL+1)); printf 'FAIL  %-39s exit=%s (want %s)\n' "$name" "$rc" "$want_rc"; printf '%s\n' "$out" | head -10
+    fi
+}
+before="$(sha256sum "$SIGSITE/hit.php")"
+sig_check "custom signature dryrun text"    2 'SIGNATURE_MATCH.*hit\.php' 'clean\.php' dryrun=1 "signatures=$WORK/sigs.json" "scandirectory=$SIGSITE"
+sig_check "custom signature dryrun json"    2 '"type":"SIGNATURE_MATCH"' '' dryrun=1 format=json "signatures=$WORK/sigs.json" "scandirectory=$SIGSITE"
+sig_check "custom signature real run"       2 'SIGNATURE_MATCH' '' "signatures=$WORK/sigs.json" "scandirectory=$SIGSITE"
+if [ "$before" == "$(sha256sum "$SIGSITE/hit.php")" ]; then
+    PASS=$((PASS+1)); echo "PASS  custom signature left the file unchanged"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  custom signature modified the file"
+fi
+sig_check "custom signature matches empty"  1 'empty' '' dryrun=1 "signatures=$WORK/sigs-bad.json" "scandirectory=$SIGSITE"
+sig_check "custom signature file missing"   1 'sigs-nope' '' dryrun=1 "signatures=$WORK/sigs-nope.json" "scandirectory=$SIGSITE"
+
 echo
 echo "passed=$PASS failed=$FAIL skipped=$SKIP  (work dir: $WORK)"
 [ "$FAIL" = 0 ]

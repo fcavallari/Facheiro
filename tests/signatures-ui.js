@@ -6,7 +6,7 @@
  *
  * The fixture must contain "acme_loader" and "eval($". Steps: a bad regex is
  * refused with the form kept; a valid signature is added; the tester matches
- * the fixture by path and a pasted sample; disable/enable; export; import
+ * the fixture by path and a pasted sample, refuses wp-config.php; disable/enable; export; import
  * of a second signature; delete. Leaves the "acme-loader" signature in place
  * so a following scan can be checked for SIGNATURE_MATCH.
  */
@@ -60,6 +60,11 @@ async function runTest(page, fields) {
 	await page.waitForURL(/wp-admin/);
 	await page.goto(tabUrl);
 	if (!(await page.textContent('.nav-tab-active')).includes('Signatures')) { fail('signatures tab not active'); }
+	// A previous run leaves acme-loader in place on purpose; start clean.
+	if (await page.$('.elderward-sig-table tr:has-text("acme-loader") button:has-text("Delete")')) {
+		await page.click('.elderward-sig-table tr:has-text("acme-loader") button:has-text("Delete")');
+		await page.waitForURL(/tab=signatures/);
+	}
 
 	console.log('== bad regex is refused, form keeps the input');
 	await fillForm(page, { id: 'acme-loader', target: 'file', severity: 'medium', description: 'ACME loader backdoor', conditions: 'text: acme_loader\nregex: /eval\\s*\\(/' + '[' });
@@ -88,6 +93,9 @@ async function runTest(page, fields) {
 	out = await runTest(page, { path: '../../../../etc/passwd' });
 	console.log('outside root:', out);
 	if (!/inside the WordPress folder/.test(out)) { fail('tester read a file outside the root'); }
+	out = await runTest(page, { path: 'wp-config.php' });
+	console.log('wp-config:', out);
+	if (!/wp-config files/.test(out)) { fail('tester read wp-config.php'); }
 
 	console.log('== disable, enable');
 	await page.click('.elderward-sig-table tr:has-text("acme-loader") button:has-text("Disable")');

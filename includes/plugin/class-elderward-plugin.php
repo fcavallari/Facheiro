@@ -21,9 +21,6 @@ final class Elderward_Plugin
             // network-wide activations that skipped the hook.
             self::create_table();
         }
-        // Custom signatures from the editor apply to every scan on this site:
-        // admin page, WP-Cron runner and WP-CLI.
-        Elderward_Signatures::install();
         Elderward_Cron::init();
         Elderward_Abilities::init();
         if (is_admin()) {
@@ -66,6 +63,17 @@ final class Elderward_Plugin
         return $wpdb->base_prefix . 'elderward_findings';
     }
 
+    /**
+     * A path relative to the WordPress root (or $root), unchanged when it
+     * lies outside.
+     */
+    public static function relative_path($path, $root = null)
+    {
+        $path = (string) $path;
+        $root = untrailingslashit(null === $root ? ABSPATH : $root);
+        return (0 === strpos($path, $root . '/')) ? substr($path, strlen($root) + 1) : $path;
+    }
+
     public static function create_table()
     {
         global $wpdb;
@@ -103,6 +111,11 @@ final class Elderward_Plugin
      */
     public static function make_context(array $options, Elderward\Engine\Reporter $reporter, $work_dir = null)
     {
+        // Custom signatures from the editor apply to every scan on this site
+        // (admin page, WP-Cron runner, WP-CLI, assistants), and every scan
+        // builds its Context here, so they load here rather than on every
+        // request.
+        Elderward_Signatures::install();
         if (!isset($options['scandirectory'])) {
             $options['scandirectory'] = untrailingslashit(ABSPATH);
         }

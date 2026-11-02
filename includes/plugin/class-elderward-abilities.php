@@ -260,14 +260,21 @@ final class Elderward_Abilities
     public static function start_scan($input = array())
     {
         $log = isset($input['log']) ? sanitize_text_field((string) $input['log']) : '';
-        if ('' === $log) {
-            $settings = Elderward_Settings::get();
-            $log = $settings['log'];
-        }
         $options = array();
-        $real = Elderward_Settings::resolve_log_path($log);
-        if (is_wp_error($real)) {
-            return $real;
+        if ('' === $log) {
+            // The saved path, as the scheduled scan uses it: a log that has
+            // since moved or rotated away is skipped, not a reason to refuse
+            // the scan.
+            $settings = Elderward_Settings::get();
+            $real = Elderward_Settings::resolve_log_path($settings['log']);
+            if (is_wp_error($real)) {
+                $real = '';
+            }
+        } else {
+            $real = Elderward_Settings::resolve_log_path($log);
+            if (is_wp_error($real)) {
+                return $real;
+            }
         }
         if ('' !== $real) {
             $options['scanlog'] = $real;
@@ -385,7 +392,7 @@ final class Elderward_Abilities
         $binary = false !== strpos($content, "\0");
         return array(
             'id'                    => (int) $row->id,
-            'path'                  => self::relative($real),
+            'path'                  => Elderward_Plugin::relative_path($real),
             'size'                  => (int) filesize($real),
             'sha256'                => hash_file('sha256', $real),
             'sha256_at_scan'        => (null === $row->sha256 || '' === $row->sha256) ? null : $row->sha256,
@@ -398,7 +405,7 @@ final class Elderward_Abilities
 
     public static function mark_false_positive($input)
     {
-        $rule = Elderward_False_Positives::mark((int) $input['id'], (string) $input['note']);
+        $rule = Elderward_False_Positives::mark((int) $input['id'], (string) $input['note'], Elderward_False_Positives::VIA_ASSISTANT);
         if (is_wp_error($rule)) {
             return $rule;
         }
@@ -436,12 +443,13 @@ final class Elderward_Abilities
                 'fingerprint' => $fingerprint,
                 'type'        => $rule['type'],
                 'severity'    => isset($rule['severity']) ? $rule['severity'] : '',
-                'path'        => self::relative($rule['path']),
+                'path'        => Elderward_Plugin::relative_path($rule['path']),
                 'detail'      => self::cap($rule['detail']),
                 'sha256'      => $rule['sha256'],
                 'by'          => $user ? $user->user_login : null,
                 'at'          => gmdate('c', (int) $rule['time']),
                 'note'        => $rule['note'],
+                'via'         => isset($rule['via']) ? $rule['via'] : Elderward_False_Positives::VIA_ADMIN,
             );
         }
         return array('false_positives' => $list, 'untrusted_data_notice' => self::UNTRUSTED);
@@ -573,20 +581,14 @@ final class Elderward_Abilities
         }
         wp_cache_delete('notoptions', 'options');
         Elderward_False_Positives::reset_cache();
-        Elderward_Signatures::install();
     }
 
     private static function row($id)
     {
-        $row = Elderward_False_Positives::finding($id);
+        $row = Elderward_False_Positives::finding($id, true);
         if (null === $row) {
             return new WP_Error('elderward_finding', 'No finding with that id in the current results.');
         }
-        global $wpdb;
-        $table = Elderward_Plugin::findings_table();
-        // phpcs:ignore WordPress.DB -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
-        $context = $wpdb->get_var($wpdb->prepare("SELECT context FROM `{$table}` WHERE id = %d", $id));
-        $row->context = $context;
         return $row;
     }
 
@@ -605,7 +607,7 @@ final class Elderward_Abilities
             'id'             => (int) $row->id,
             'severity'       => $row->severity,
             'type'           => $row->type,
-            'path'           => self::relative((string) $row->path),
+            'path'           => Elderward_Plugin::relative_path((string) $row->path),
             'detail'         => self::cap($row->detail),
             'context'        => array_map(array(__CLASS__, 'cap'), $context),
             'sha256'         => (null === $row->sha256 || '' === $row->sha256) ? null : $row->sha256,
@@ -614,11 +616,6 @@ final class Elderward_Abilities
         );
     }
 
-    private static function relative($path)
-    {
-        $root = untrailingslashit(ABSPATH);
-        return (0 === strpos($path, $root . '/')) ? substr($path, strlen($root) + 1) : $path;
-    }
 
     public static function cap($text)
     {
