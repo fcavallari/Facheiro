@@ -219,11 +219,24 @@ Expect: exit 3 and finding types `UPLOADS_PHP`, `HIDDEN_PHP`, `MU_PLUGIN`, `PHP_
 
 **F4. Access control.** Logged in as a Subscriber/Editor, `tools.php?page=elderward` → "You are not allowed"; an `admin-ajax.php` POST with `action=elderward_step` and no nonce → HTTP 403; `admin-post.php?action=elderward_export&format=json` logged out → no finding lines in the response.
 
-**F5. Uninstall.** `wp plugin deactivate elderward && wp plugin uninstall elderward --skip-delete` → the findings table, the `elderward_*` options and `wp-content/uploads/elderward/` are gone. Reactivate → the table is recreated.
+**F5. Uninstall.** `wp plugin deactivate elderward && wp plugin uninstall elderward --skip-delete` → the findings table, the `elderward_*` options (job, lock, settings, db version), the `elderward_*` cron events and `wp-content/uploads/elderward/` are gone. Reactivate → the table is recreated.
 
 **F6. Large tables.** Pad the database (30k posts with ids 13 apart, a block of 600 consecutive posts that all contain `<iframe`, 20k options with ids 17 apart, `autoload='no'`, a planted injection every 1000 rows; the SQL is in the plugin's git history under "range paging"). Then `wp elderward db --format=json | sort` must equal `php bin/elderward.php scandb=1 format=json | sort` (range paging vs streaming), and an admin scan with the step budget forced down (copy `tests/mu-plugin-test-hooks.php` into `wp-content/mu-plugins/` and `wp option update elderward_test_budget 0.05`) must finish with the same `DB_*` rows in the findings table and show "Scanning database: … past id …" messages while it runs. A step that dies (`wp option update elderward_test_die 1`, then start a scan) must leave the job **failed** with "PHP stopped the request: elderward test fatal" on the next status read, with no `elderward_job_lock` option left behind; a step that exits silently (`elderward_test_exit 1`) must fail the job after three attempts with "cut short 3 times". Remove the mu-plugin afterwards. **PASTE the step counts.**
 
-**F7. Plugin Check.** With the [Plugin Check](https://wordpress.org/plugins/plugin-check/) plugin installed: `wp plugin check elderward --format=table`. Expect zero errors; **PASTE any warnings** (expected ones: the direct filesystem writes in the engine, `shell_exec` in the crontab scanner, and the `$wpdb` adapter's unprepared fixed SELECTs — each is documented in `readme.txt`).
+**F7. Background runner and schedule.** With `tests/mu-plugin-test-hooks.php` installed and `wp option update elderward_test_chunk 2` (short cron chunks, so hand-overs happen):
+
+```sh
+wp eval 'Elderward_Job::start(array(), "manual", true); Elderward_Cron::kick();'   # no browser anywhere
+watch -n 3 'wp option get elderward_job --format=json | head -c 200; wp cron event list | grep elderward'
+ELDERWARD_LOG=/path/to/logs node tests/background-ui.js                             # settings, leave-and-return, browser runner
+wp option update elderward_test_no_loopback 1 && node tests/background-ui.js --stale; wp option delete elderward_test_no_loopback
+wp cron event run elderward_scheduled_scan                                           # a scheduled run, started by cron
+wp plugin deactivate elderward && wp cron event list | grep elderward; wp plugin activate elderward
+```
+
+Expect: the WP-CLI-started job reaches `done` on its own, the web server log shows a chain of `POST /wp-cron.php` requests (one per chunk), and no `elderward_run_job` event or `elderward_job_lock` option is left when it ends. `background-ui.js` must report "Settings saved." without a warning, a "Next run" on the chosen weekday and time in the site's timezone (`wp cron event list` shows `elderward_scheduled_scan` with recurrence `1 week`), a background scan that completes while the tab is on the dashboard with **zero** `elderward_step` requests from the tab, and a browser-runner scan that does send them. With the loopback blocked, `--stale` must see the page kick WP-Cron once, take over after about 150 s ("continues from this tab") and finish the scan. The scheduled run creates a job with `origin=schedule` that completes in the background and shows "Last scheduled scan: complete". Deactivation leaves no `elderward_*` cron events and cancels a running job; activation re-creates the recurring event from the saved settings. Nothing in `debug.log`. **PASTE the takeover time and the wp-cron request count.**
+
+**F8. Plugin Check.** With the [Plugin Check](https://wordpress.org/plugins/plugin-check/) plugin installed: `wp plugin check elderward --format=table`. Expect zero errors; **PASTE any warnings** (expected ones: the direct filesystem writes in the engine, `shell_exec` in the crontab scanner, and the `$wpdb` adapter's unprepared fixed SELECTs — each is documented in `readme.txt`).
 
 ---
 

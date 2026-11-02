@@ -26,6 +26,8 @@ Elderward helps you find out whether a WordPress site has been compromised, how,
 
 Anything that blocks a check - an unreadable file, a failed query, a missing PHP extension - is itself reported as an `ERROR` finding, never skipped. A clean report means every scanner actually looked.
 
+**Scans run in the background** through WP-Cron, so you can start one and close the tab; the page shows the progress whenever you come back. A setting switches to running the steps from the browser tab instead, for hosts where WP-Cron is unreliable. **Scheduled scans** (daily, twice daily or weekly at a time you choose) run the same report-only scan automatically.
+
 **Cleanup and restore run from the command line**, where you can take a backup first and preview with a dry run:
 
 * `wp elderward scan --dryrun` then `wp elderward scan` removes known malware from infected files (atomic write, never truncates the original).
@@ -39,10 +41,19 @@ Development happens at [github.com/fioa8c/elderward](https://github.com/fioa8c/e
 
 1. Upload the `elderward` folder to `/wp-content/plugins/`, or install it from the Plugins screen.
 2. Activate the plugin. It creates one database table (`{prefix}elderward_findings`) to hold the latest report.
-3. Open **Tools > Elderward** (Network Admin > Settings > Elderward on multisite) and click **Start scan**. The scan runs in short steps while the page is open and resumes if you reload.
-4. To act on the findings, use the WP-CLI commands shown under the results, after taking a backup.
+3. Open **Tools > Elderward** (Network Admin > Settings > Elderward on multisite) and click **Start scan**. The scan continues in the background; the page shows its progress and reloads with the findings when it ends.
+4. Under **Settings** on the same page, choose how scans run (background through WP-Cron, or from the browser tab) and, if you want, a schedule.
+5. To act on the findings, use the WP-CLI commands shown under the results, after taking a backup.
 
 == Frequently Asked Questions ==
+
+= Does the scan keep running if I close the page? =
+
+Yes, with the default setting. The scan is a chain of short WP-Cron jobs; the page only watches it. WP-Cron needs the site to be able to request its own `wp-cron.php` (Site Health reports a failing "loopback request" when it cannot) or a server cron job that calls it. When the page notices that no progress is being made, it asks WP-Cron again and then runs the steps itself for as long as it stays open, so a scan never gets stuck; the **In this browser tab** setting makes that the normal mode. With `DISABLE_WP_CRON` set, background and scheduled scans advance only when your server's cron job runs `wp-cron.php`.
+
+= Can I schedule scans? =
+
+Yes: daily, twice daily or weekly at a time of day (and weekday) in the site's timezone, from the Settings section of the Elderward page. A scheduled scan runs in the background, uses the access log path saved in the settings, and is skipped when another scan is already running. The results replace the previous report on the page.
 
 = Does the plugin send data anywhere? =
 
@@ -89,4 +100,4 @@ Both are operated by the WordPress Foundation; see the [WordPress.org privacy po
 == Changelog ==
 
 = 1.0.0 =
-* First release as a WordPress plugin: admin page with a resumable report-only scan, WP-CLI commands, and the standalone CLI.
+* First release as a WordPress plugin: admin page with a report-only scan that runs in the background through WP-Cron (or from the browser tab), scheduled scans, WP-CLI commands, and the standalone CLI.

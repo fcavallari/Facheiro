@@ -17,8 +17,13 @@ global $wpdb;
 $elderward_table = $wpdb->base_prefix . 'elderward_findings';
 $wpdb->query('DROP TABLE IF EXISTS `' . $elderward_table . '`'); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name from the base prefix, never user input.
 
+wp_clear_scheduled_hook('elderward_scheduled_scan');
+wp_clear_scheduled_hook('elderward_run_job');
+
 delete_option('elderward_db_version');
 delete_option('elderward_job');
+delete_option('elderward_job_lock');
+delete_option('elderward_settings');
 if (is_multisite()) {
     delete_site_option('elderward_job');
 }

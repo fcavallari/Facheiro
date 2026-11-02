@@ -35,7 +35,7 @@ The signature scan, quick checks and timestamp checks need nothing else. The oth
 
 Install the `elderward` folder under `wp-content/plugins/` and activate it. Then:
 
-1. **Tools > Elderward → Start scan.** Optionally give it an access log file or directory first. The scan runs in short steps while the page is open, resumes after a reload, and changes nothing on the site. Findings appear worst-first with severity filters and can be exported as text or NDJSON.
+1. **Tools > Elderward → Start scan.** Optionally give it an access log file or directory first. The scan runs in the background through WP-Cron, so you can close the tab and come back; it changes nothing on the site. Findings appear worst-first with severity filters and can be exported as text or NDJSON. **Settings** on the same page switch the runner to the browser tab (steps run only while the page is open, for hosts where WP-Cron is unreliable) and set up a daily, twice-daily or weekly scheduled scan.
 2. **Act on the results from WP-CLI**, after taking a backup:
 
 ```
@@ -215,7 +215,8 @@ tests/admin-ui.js  Playwright run through the admin page
 - Signature-based: it finds and removes *known* malware. A clean scan is not proof of a clean site.
 - Log IoC checks show attack *attempts*, including plenty that failed (status 403/404). Treat them as awareness and a starting point for investigation, not confirmation of compromise.
 - Files larger than 2 MB are skipped by the file scanner.
-- The admin page is report-only in this release; cleanup, restore and scheduled scans run from the command line.
+- The admin page is report-only in this release; cleanup and restore run from the command line.
+- Background and scheduled scans depend on WP-Cron: the site must be able to request its own `wp-cron.php`, or a server cron job must call it. The page falls back to stepping the scan itself when WP-Cron stops responding.
 
 ## License
 

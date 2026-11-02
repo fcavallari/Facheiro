@@ -15,6 +15,24 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Thrown inside a step when the stored job is no longer the running job it
+ * started with (cancelled from the page, by deactivation, or replaced), so
+ * the step stops without writing its stale copy back.
+ */
+final class Elderward_Job_Stopped extends RuntimeException
+{
+    // The job as stored now (null when none), for the caller to report.
+    public $job = null;
+
+    public static function with($job)
+    {
+        $stopped = new self('elderward job stopped');
+        $stopped->job = $job;
+        return $stopped;
+    }
+}
+
 final class Elderward_Job
 {
     const OPTION = 'elderward_job';
@@ -30,6 +48,12 @@ final class Elderward_Job
     // job "running" with no message and a stale lock.
     private static $in_flight = null;
     private static $shutdown_registered = false;
+    // Whether the last step() call got the lock and ran, as opposed to
+    // finding another request at work.
+    private static $last_step_ran = false;
+    // True while step() runs units: every save first makes sure the stored
+    // job is still this running job (see Elderward_Job_Stopped).
+    private static $stepping = false;
 
     public static function current()
     {
@@ -39,6 +63,17 @@ final class Elderward_Job
 
     private static function save(array $job)
     {
+        if (self::$stepping) {
+            // Another request (cancel, deactivation, a new start) may have
+            // changed the job since this step loaded it; read past the
+            // per-request option cache before overwriting it.
+            wp_cache_delete(self::OPTION, 'options');
+            $stored = self::current();
+            if (null === $stored || $stored['id'] !== $job['id'] || 'running' !== $stored['status']) {
+                $stopped = Elderward_Job_Stopped::with($stored);
+                throw $stopped;
+            }
+        }
         $job['updated'] = time();
         update_option(self::OPTION, $job, false);
         return $job;
@@ -48,11 +83,19 @@ final class Elderward_Job
      * Start a new report-only scanall. Only one job is kept: previous
      * findings are removed. Returns the job or a WP_Error.
      *
-     * @param array $options Engine options (scanlog etc.).
+     * @param array     $options    Engine options (scanlog etc.).
+     * @param string    $origin     'manual' (the page) or 'schedule'.
+     * @param bool|null $background Run through WP-Cron after the page is
+     *                              gone; null follows the runner setting.
      */
-    public static function start(array $options)
+    public static function start(array $options, $origin = 'manual', $background = null)
     {
         global $wpdb;
+
+        if (null === $background) {
+            $settings = Elderward_Settings::get();
+            $background = ('background' === $settings['runner']);
+        }
 
         $existing = self::current();
         if (null !== $existing && 'running' === $existing['status']) {
@@ -92,6 +135,8 @@ final class Elderward_Job
             'counts'      => array(),
             'summaries'   => array(),
             'units_done'  => 0,
+            'origin'      => ('schedule' === $origin) ? 'schedule' : 'manual',
+            'background'  => (bool) $background,
             'started'     => time(),
             'finished'    => null,
             'message'     => '',
@@ -102,9 +147,13 @@ final class Elderward_Job
 
     /**
      * Run work units until the time budget is spent. Returns the job.
+     *
+     * @param float|null $stop_at Absolute microtime the step must not run
+     *                            past, when the caller has its own limit.
      */
-    public static function step()
+    public static function step($stop_at = null)
     {
+        self::$last_step_ran = false;
         $job = self::current();
         if (null === $job || 'running' !== $job['status']) {
             return $job;
@@ -120,10 +169,15 @@ final class Elderward_Job
             self::release_lock();
             return $job;
         }
+        self::$last_step_ran = true;
+        self::$stepping = true;
 
         wp_raise_memory_limit('admin');
         $budget = self::budget_seconds();
         $deadline = microtime(true) + $budget;
+        if (null !== $stop_at && (float) $stop_at < $deadline) {
+            $deadline = (float) $stop_at;
+        }
         self::watch($job);
 
         $reporter = new Elderward_Store_Reporter($job['id'], $job['counts']);
@@ -181,19 +235,42 @@ final class Elderward_Job
                 }
                 $job = self::save($job);
             }
+        } catch (Elderward_Job_Stopped $e) {
+            // Cancelled or replaced while this step ran: its copy is stale,
+            // the stored job is what the caller should see.
+            $job = $e->job;
         } catch (Elderward\Engine\Fatal $e) {
             $job['error'] = $e->getMessage();
             $job['counts'] = $reporter->counts();
-            $job = self::complete($job, 'failed');
+            $job = self::finish_failed($job);
         } catch (Throwable $e) { // phpcs:ignore PHPCompatibility.Classes.NewClasses.throwableFound -- plugin side requires PHP 7.2.
             $job['error'] = get_class($e) . ': ' . $e->getMessage();
             $job['counts'] = $reporter->counts();
-            $job = self::complete($job, 'failed');
+            $job = self::finish_failed($job);
         }
 
+        self::$stepping = false;
         self::$in_flight = null;
         self::release_lock();
         return $job;
+    }
+
+    private static function finish_failed(array $job)
+    {
+        try {
+            return self::complete($job, 'failed');
+        } catch (Elderward_Job_Stopped $e) {
+            return $e->job;
+        }
+    }
+
+    /**
+     * Whether the last step() call did the stepping itself (true) or found
+     * another request holding the lock (false).
+     */
+    public static function last_step_ran()
+    {
+        return self::$last_step_ran;
     }
 
     /**
@@ -264,6 +341,8 @@ final class Elderward_Job
         }
         $job = self::$in_flight;
         self::$in_flight = null;
+        // The step is over; the fresh read below replaces the stale-copy check.
+        self::$stepping = false;
         $fatal = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR);
         if (!is_array($error) || !isset($error['type']) || !in_array((int) $error['type'], $fatal, true)) {
             // Nothing recorded (for instance exit() elsewhere): leave the
@@ -305,6 +384,8 @@ final class Elderward_Job
         $job['queue'] = null;
         $job['state'] = array();
         self::remove_work_dir(self::work_dir($job['id']));
+        // A finished job leaves no pending background event behind.
+        Elderward_Cron::clear_step();
         return self::save($job);
     }
 

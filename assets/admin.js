@@ -9,7 +9,17 @@
 	var progress = document.getElementById('elderward-progress');
 	var bar = progress ? progress.querySelector('.elderward-bar-fill') : null;
 	var statusText = document.getElementById('elderward-status-text');
+	var runnerNote = document.getElementById('elderward-runner-note');
 	var stopped = false;
+	// Background mode: the page only watches. If WP-Cron stops reporting
+	// progress for `stale` seconds it is kicked once; if that changes nothing
+	// within KICK_GRACE_MS the page steps the job itself, as in browser mode.
+	var STALE = Number(cfg.stale) || 120;
+	var KICK_GRACE_MS = 30000;
+	var kickedAt = 0;
+	var tookOver = false;
+
+	scheduleForm();
 
 	if (!startBtn) {
 		return;
@@ -32,6 +42,12 @@
 		}
 	}
 
+	function setNote(text) {
+		if (runnerNote) {
+			runnerNote.textContent = text;
+		}
+	}
+
 	function render(data) {
 		if (!data) {
 			return;
@@ -42,6 +58,9 @@
 		var line = data.stage ? cfg.i18n.running.replace('%s', data.stage) : cfg.i18n.starting;
 		if (data.message) {
 			line += ' — ' + data.message;
+		}
+		if (data.background && !tookOver && typeof data.idle === 'number') {
+			line += ' (' + cfg.i18n.idle.replace('%d', String(data.idle)) + ')';
 		}
 		setText(line);
 	}
@@ -61,6 +80,7 @@
 		}
 	}
 
+	// Browser mode (and the fallback): this tab runs the steps.
 	function loop() {
 		if (stopped) {
 			return;
@@ -84,8 +104,56 @@
 		});
 	}
 
+	// Background mode: WP-Cron runs the steps, this tab shows the status.
+	function watch() {
+		if (stopped) {
+			return;
+		}
+		post('elderward_status').then(function (result) {
+			if (!result || !result.success) {
+				setText((result && result.data && result.data.message) || cfg.i18n.network);
+				window.setTimeout(watch, 3000);
+				return;
+			}
+			var data = result.data;
+			render(data);
+			if (data.status !== 'running') {
+				finished(data);
+				return;
+			}
+			if (typeof data.idle === 'number' && data.idle >= STALE) {
+				if (!kickedAt) {
+					kickedAt = Date.now();
+					post('elderward_kick').catch(function () {});
+				} else if (Date.now() - kickedAt > KICK_GRACE_MS) {
+					tookOver = true;
+					setNote(cfg.i18n.takeover);
+					loop();
+					return;
+				}
+			} else {
+				kickedAt = 0;
+			}
+			window.setTimeout(watch, 2000);
+		}).catch(function () {
+			setText(cfg.i18n.network);
+			window.setTimeout(watch, 3000);
+		});
+	}
+
+	function follow(background) {
+		setNote(background ? cfg.i18n.background : cfg.i18n.browser);
+		if (background) {
+			watch();
+		} else {
+			loop();
+		}
+	}
+
 	function begin() {
 		stopped = false;
+		kickedAt = 0;
+		tookOver = false;
 		startBtn.disabled = true;
 		cancelBtn.disabled = false;
 		progress.hidden = false;
@@ -102,7 +170,7 @@
 				return;
 			}
 			render(result.data);
-			loop();
+			follow(!!result.data.background);
 		}).catch(function () {
 			startBtn.disabled = false;
 			cancelBtn.disabled = true;
@@ -120,9 +188,29 @@
 		});
 	});
 
-	// A scan left running (page reload, closed tab) resumes where it stopped.
+	// A scan left running (page reload, closed tab) is picked up again.
 	if (cfg.status === 'running') {
 		begin();
-		loop();
+		follow(!!cfg.background);
+	}
+
+	// Settings: show the time and weekday fields only when they apply.
+	function scheduleForm() {
+		var select = document.getElementById('elderward-schedule');
+		if (!select) {
+			return;
+		}
+		var when = document.querySelector('.elderward-schedule-when');
+		var day = document.querySelector('.elderward-schedule-day');
+		function update() {
+			if (when) {
+				when.hidden = select.value === 'off';
+			}
+			if (day) {
+				day.hidden = select.value !== 'weekly';
+			}
+		}
+		select.addEventListener('change', update);
+		update();
 	}
 })();

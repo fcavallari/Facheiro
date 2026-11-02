@@ -98,6 +98,50 @@
 	color: #d63638;
 }
 
+#elderward-runner-note {
+	margin: 4px 0 0;
+}
+
+.elderward-settings h2 {
+	margin: 4px 0 0;
+	font-size: 1.1em;
+}
+
+.elderward-settings .form-table th {
+	padding-left: 0;
+}
+
+.elderward-settings .form-table td fieldset label {
+	display: block;
+	font-weight: 400;
+	margin: 0;
+}
+
+.elderward-settings .form-table td fieldset p.description {
+	margin: 2px 0 10px 24px;
+}
+
+.elderward-schedule-when {
+	margin-left: 6px;
+}
+
+.elderward-schedule-when label {
+	display: inline;
+	font-weight: 400;
+}
+
+.elderward-schedule-when[hidden],
+.elderward-schedule-day[hidden] {
+	display: none;
+}
+
+.elderward-note {
+	padding: 8px 12px;
+	border-left: 4px solid #dba617;
+	background: #fcf9e8;
+	margin: 0 0 12px;
+}
+
 .elderward-filters {
 	margin: 0 0 8px;
 }

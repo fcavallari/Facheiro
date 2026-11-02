@@ -21,6 +21,7 @@ final class Elderward_Plugin
             // network-wide activations that skipped the hook.
             self::create_table();
         }
+        Elderward_Cron::init();
         if (is_admin()) {
             Elderward_Admin::init();
         }
@@ -29,6 +30,12 @@ final class Elderward_Plugin
     public static function activate()
     {
         self::create_table();
+        Elderward_Cron::sync_schedule();
+    }
+
+    public static function deactivate()
+    {
+        Elderward_Cron::deactivate();
     }
 
     /**

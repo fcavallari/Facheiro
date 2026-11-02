@@ -6,6 +6,8 @@
  *   wp option update elderward_test_budget 0.05   # force many pauses/resumes
  *   wp option update elderward_test_die 1         # next finding INSERT dies with a PHP fatal (one-shot)
  *   wp option update elderward_test_exit 1        # every finding INSERT exits silently, like a cut-off request
+ *   wp option update elderward_test_chunk 3       # shorten the WP-Cron chunk (more hand-overs between cron requests)
+ *   wp option update elderward_test_no_loopback 1 # the site cannot reach its own wp-cron.php (blocked loopback)
  *
  * @package Elderward
  */
@@ -13,6 +15,18 @@ add_filter('elderward_step_budget_seconds', function ($budget) {
     $forced = get_option('elderward_test_budget');
     return (false === $forced) ? $budget : (float) $forced;
 });
+add_filter('elderward_background_chunk_seconds', function ($chunk) {
+    $forced = get_option('elderward_test_chunk');
+    return (false === $forced) ? $chunk : (float) $forced;
+});
+// Simulate a host where loopback requests fail: every request to the
+// site's own wp-cron.php errors out, as Site Health would report.
+add_filter('pre_http_request', function ($pre, $args, $url) {
+    if (false === strpos($url, 'wp-cron.php') || !get_option('elderward_test_no_loopback')) {
+        return $pre;
+    }
+    return new WP_Error('http_request_failed', 'elderward test: loopback blocked');
+}, 10, 3);
 // Simulate a step dying with a PHP fatal while it writes a finding. The
 // option lookup inside a 'query' filter runs a query itself, hence the guard.
 add_filter('query', function ($sql) {

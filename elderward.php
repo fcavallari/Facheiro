@@ -33,11 +33,14 @@ require_once ELDERWARD_DIR . 'includes/engine/load.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-plugin.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-wp-http.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-wp-db.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-settings.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-cron.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-job.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-store-reporter.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-admin.php';
 
 register_activation_hook(__FILE__, array('Elderward_Plugin', 'activate'));
+register_deactivation_hook(__FILE__, array('Elderward_Plugin', 'deactivate'));
 add_action('plugins_loaded', array('Elderward_Plugin', 'init'));
 
 if (defined('WP_CLI') && WP_CLI) {

@@ -15,7 +15,12 @@ final class Elderward_Admin
     const PAGE = 'elderward';
     const NONCE_SCAN = 'elderward_scan';
     const NONCE_EXPORT = 'elderward_export';
+    const NONCE_SETTINGS = 'elderward_settings';
     const PER_PAGE = 200;
+    // Seconds without a saved step after which the page treats the
+    // background runner as stalled: it kicks WP-Cron once, then steps from
+    // the browser.
+    const STALE_SECONDS = 120;
 
     private static $hook_suffix = '';
 
@@ -31,7 +36,14 @@ final class Elderward_Admin
         add_action('wp_ajax_elderward_step', array(__CLASS__, 'ajax_step'));
         add_action('wp_ajax_elderward_status', array(__CLASS__, 'ajax_status'));
         add_action('wp_ajax_elderward_cancel', array(__CLASS__, 'ajax_cancel'));
+        add_action('wp_ajax_elderward_kick', array(__CLASS__, 'ajax_kick'));
         add_action('admin_post_elderward_export', array(__CLASS__, 'export'));
+        add_action('admin_post_elderward_save_settings', array(__CLASS__, 'save_settings'));
+    }
+
+    public static function page_url()
+    {
+        return is_multisite() ? network_admin_url('settings.php?page=' . self::PAGE) : admin_url('tools.php?page=' . self::PAGE);
     }
 
     public static function register_menu()
@@ -66,19 +78,26 @@ final class Elderward_Admin
         wp_enqueue_script('elderward-admin', ELDERWARD_URL . 'assets/admin.js', array(), ELDERWARD_VERSION, true);
         $job = Elderward_Job::current();
         wp_localize_script('elderward-admin', 'elderwardAdmin', array(
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce'   => wp_create_nonce(self::NONCE_SCAN),
-            'status'  => null === $job ? '' : $job['status'],
-            'i18n'    => array(
-                'starting'  => __('Starting scan…', 'elderward'),
+            'ajaxUrl'    => admin_url('admin-ajax.php'),
+            'nonce'      => wp_create_nonce(self::NONCE_SCAN),
+            'status'     => null === $job ? '' : $job['status'],
+            'background' => null !== $job && !empty($job['background']),
+            'stale'      => self::STALE_SECONDS,
+            'i18n'       => array(
+                'starting'   => __('Starting scan…', 'elderward'),
                 /* translators: %s: name of the scanner currently running */
-                'running'   => __('Scanning: %s', 'elderward'),
-                'done'      => __('Scan complete. Reloading…', 'elderward'),
+                'running'    => __('Scanning: %s', 'elderward'),
+                'done'       => __('Scan complete. Reloading…', 'elderward'),
                 /* translators: %s: error message */
-                'failed'    => __('Scan failed: %s', 'elderward'),
-                'cancelled' => __('Scan cancelled.', 'elderward'),
-                'network'   => __('Lost contact with the server; retrying…', 'elderward'),
-                'confirm'   => __('Cancel the running scan?', 'elderward'),
+                'failed'     => __('Scan failed: %s', 'elderward'),
+                'cancelled'  => __('Scan cancelled.', 'elderward'),
+                'network'    => __('Lost contact with the server; retrying…', 'elderward'),
+                'confirm'    => __('Cancel the running scan?', 'elderward'),
+                /* translators: %d: seconds since the background runner last saved progress */
+                'idle'       => __('last activity %d s ago', 'elderward'),
+                'background' => __('Running in the background through WP-Cron: you can leave this page and come back later.', 'elderward'),
+                'browser'    => __('Keep this page open: the scan runs in short steps from this tab.', 'elderward'),
+                'takeover'   => __('The background runner has not reported progress for a while, so the scan continues from this tab for as long as it stays open. Check that this site can reach its own wp-cron.php (Site Health), or switch the runner setting to this browser tab.', 'elderward'),
             ),
         ));
     }
@@ -97,19 +116,36 @@ final class Elderward_Admin
 
         $options = array();
         $log = isset($_POST['log']) ? sanitize_text_field(wp_unslash($_POST['log'])) : '';
-        if ('' !== $log) {
-            // The only free-text input: it must name an existing, readable
-            // log file or directory. Nothing else is accepted.
-            $real = realpath($log);
-            if (false === $real || !is_readable($real) || !(is_file($real) || is_dir($real))) {
-                wp_send_json_error(array('message' => __('The access log path does not exist or is not readable by PHP.', 'elderward')), 400);
-            }
+        // The only free-text input: it must name an existing, readable log
+        // file or directory. Nothing else is accepted.
+        $real = Elderward_Settings::resolve_log_path($log);
+        if (is_wp_error($real)) {
+            wp_send_json_error(array('message' => $real->get_error_message()), 400);
+        }
+        if ('' !== $real) {
             $options['scanlog'] = $real;
         }
 
-        $job = Elderward_Job::start($options);
+        $job = Elderward_Job::start($options, 'manual');
         if (is_wp_error($job)) {
             wp_send_json_error(array('message' => $job->get_error_message()), 409);
+        }
+        if (!empty($job['background'])) {
+            Elderward_Cron::kick();
+        }
+        wp_send_json_success(self::status_payload($job));
+    }
+
+    /**
+     * The page saw no progress for a while: ask WP-Cron for another run.
+     */
+    public static function ajax_kick()
+    {
+        check_ajax_referer(self::NONCE_SCAN, 'nonce');
+        self::require_access();
+        $job = Elderward_Job::current();
+        if (null !== $job && 'running' === $job['status'] && !empty($job['background'])) {
+            Elderward_Cron::kick();
         }
         wp_send_json_success(self::status_payload($job));
     }
@@ -142,14 +178,92 @@ final class Elderward_Admin
             return array('status' => '', 'percent' => 0, 'stage' => '', 'message' => '', 'counts' => array(), 'error' => '');
         }
         return array(
-            'status'  => $job['status'],
-            'percent' => Elderward_Job::percent($job),
-            'stage'   => Elderward_Job::stage_label($job),
-            'message' => $job['message'],
-            'counts'  => $job['counts'],
-            'error'   => $job['error'],
-            'units'   => $job['units_done'],
+            'status'     => $job['status'],
+            'percent'    => Elderward_Job::percent($job),
+            'stage'      => Elderward_Job::stage_label($job),
+            'message'    => $job['message'],
+            'counts'     => $job['counts'],
+            'error'      => $job['error'],
+            'units'      => $job['units_done'],
+            'background' => !empty($job['background']),
+            'origin'     => isset($job['origin']) ? $job['origin'] : 'manual',
+            // Seconds since a step last saved progress; the page uses it to
+            // notice a background runner that stopped coming back.
+            'idle'       => max(0, time() - (int) $job['updated']),
         );
+    }
+
+    /**
+     * Settings form target (admin-post): validate, save, re-arm the
+     * schedule, and warn when background mode cannot work on this host.
+     */
+    public static function save_settings()
+    {
+        if (!Elderward_Plugin::can_manage()) {
+            wp_die(esc_html__('You are not allowed to do that.', 'elderward'), '', array('response' => 403));
+        }
+        check_admin_referer(self::NONCE_SETTINGS);
+
+        $raw = isset($_POST['elderward']) && is_array($_POST['elderward']) ? wp_unslash($_POST['elderward']) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each scalar is sanitized below, then whitelisted in Elderward_Settings::sanitize().
+        $input = array();
+        foreach ($raw as $key => $value) {
+            if (is_scalar($value)) {
+                $input[sanitize_key($key)] = sanitize_text_field((string) $value);
+            }
+        }
+        $settings = Elderward_Settings::save($input);
+
+        $notices = array(array('success', __('Settings saved.', 'elderward')));
+        if ('' !== $settings['log']) {
+            $real = Elderward_Settings::resolve_log_path($settings['log']);
+            if (is_wp_error($real)) {
+                $notices[] = array('warning', __('The access log path for scheduled scans does not exist or is not readable by PHP; scheduled scans will skip the log check until it is.', 'elderward'));
+            }
+        }
+        if ('background' === $settings['runner'] || 'off' !== $settings['schedule']) {
+            if (Elderward_Cron::trigger_disabled()) {
+                $notices[] = array('warning', __('DISABLE_WP_CRON is set on this site, so WordPress does not trigger WP-Cron on its own. Background and scheduled scans only advance when your server\'s cron job calls wp-cron.php.', 'elderward'));
+            } else {
+                $loopback = self::loopback_problem();
+                if (null !== $loopback) {
+                    $notices[] = array('warning', sprintf(
+                        /* translators: %s: the Site Health loopback error */
+                        __('This site could not reach its own wp-cron.php (%s). Background scans will only advance while the Elderward page is open, and scheduled scans may never start. Fix the loopback problem shown in Site Health, or switch the runner to the browser tab.', 'elderward'),
+                        $loopback
+                    ));
+                }
+            }
+        }
+        set_transient('elderward_notice_' . get_current_user_id(), $notices, MINUTE_IN_SECONDS);
+        wp_safe_redirect(self::page_url());
+        exit;
+    }
+
+    /**
+     * Site Health's loopback test, which is what WP-Cron spawning needs.
+     * Returns the problem text or null when the loopback works.
+     */
+    private static function loopback_problem()
+    {
+        if (!class_exists('WP_Site_Health')) {
+            require_once ABSPATH . 'wp-admin/includes/class-wp-site-health.php';
+        }
+        $result = WP_Site_Health::get_instance()->can_perform_loopback();
+        if (is_object($result) && isset($result->status) && 'good' === $result->status) {
+            return null;
+        }
+        $message = (is_object($result) && isset($result->message)) ? wp_strip_all_tags((string) $result->message) : '';
+        return '' === $message ? __('loopback request failed', 'elderward') : $message;
+    }
+
+    private static function take_notices()
+    {
+        $key = 'elderward_notice_' . get_current_user_id();
+        $notices = get_transient($key);
+        if (false !== $notices) {
+            delete_transient($key);
+        }
+        return is_array($notices) ? $notices : array();
     }
 
     /**
@@ -265,9 +379,13 @@ final class Elderward_Admin
         }
         // phpcs:enable WordPress.DB
 
-        $page_url = is_multisite() ? network_admin_url('settings.php?page=' . self::PAGE) : admin_url('tools.php?page=' . self::PAGE);
+        $page_url = self::page_url();
         $export_base = wp_nonce_url(admin_url('admin-post.php?action=elderward_export'), self::NONCE_EXPORT);
         $root = untrailingslashit(ABSPATH);
+        $settings = Elderward_Settings::get();
+        $running = null !== $job && 'running' === $job['status'];
+        $datetime_format = get_option('date_format') . ' ' . get_option('time_format');
+        $next_run = Elderward_Cron::next_run();
         ?>
         <div class="wrap elderward-wrap">
             <h1 class="screen-reader-text"><?php esc_html_e('Elderward', 'elderward'); ?></h1>
@@ -280,6 +398,9 @@ final class Elderward_Admin
                 <span class="elderward-brand-version"><?php echo esc_html('v' . ELDERWARD_VERSION); ?></span>
             </header>
             <hr class="wp-header-end" />
+            <?php foreach (self::take_notices() as $notice) : ?>
+                <div class="notice notice-<?php echo esc_attr($notice[0]); ?> is-dismissible"><p><?php echo esc_html($notice[1]); ?></p></div>
+            <?php endforeach; ?>
             <p class="description">
                 <?php esc_html_e('A report-only look at this install: quick checks, core/plugin/theme integrity, timestamps, crontab, database and (optionally) access logs, then the malware signatures in dry-run mode. Nothing is modified.', 'elderward'); ?>
             </p>
@@ -287,26 +408,41 @@ final class Elderward_Admin
             <div class="elderward-card">
                 <form id="elderward-start-form" onsubmit="return false;">
                     <label for="elderward-log"><?php esc_html_e('Access log file or directory (optional)', 'elderward'); ?></label>
-                    <input type="text" id="elderward-log" class="regular-text code" placeholder="/var/log/apache2" autocomplete="off" />
+                    <input type="text" id="elderward-log" class="regular-text code" placeholder="/var/log/apache2" autocomplete="off" value="<?php echo esc_attr($settings['log']); ?>" />
                     <p class="description"><?php esc_html_e('Must be readable by the PHP user. Rotated .log.N and .gz files in a directory are included.', 'elderward'); ?></p>
                     <p>
-                        <button type="button" class="button button-primary" id="elderward-start" <?php disabled(null !== $job && 'running' === $job['status']); ?>><?php esc_html_e('Start scan', 'elderward'); ?></button>
-                        <button type="button" class="button" id="elderward-cancel" <?php disabled(null === $job || 'running' !== $job['status']); ?>><?php esc_html_e('Cancel', 'elderward'); ?></button>
+                        <button type="button" class="button button-primary" id="elderward-start" <?php disabled($running); ?>><?php esc_html_e('Start scan', 'elderward'); ?></button>
+                        <button type="button" class="button" id="elderward-cancel" <?php disabled(!$running); ?>><?php esc_html_e('Cancel', 'elderward'); ?></button>
                     </p>
                 </form>
-                <div id="elderward-progress" class="elderward-progress" <?php echo (null !== $job && 'running' === $job['status']) ? '' : 'hidden'; ?>>
+                <div id="elderward-progress" class="elderward-progress" <?php echo $running ? '' : 'hidden'; ?>>
                     <div class="elderward-bar"><div class="elderward-bar-fill" style="width: <?php echo null === $job ? 0 : (int) Elderward_Job::percent($job); ?>%"></div></div>
                     <p id="elderward-status-text"><?php echo null === $job ? '' : esc_html($job['message']); ?></p>
+                    <p id="elderward-runner-note" class="description">
+                        <?php
+                        if ($running) {
+                            echo !empty($job['background'])
+                                ? esc_html__('Running in the background through WP-Cron: you can leave this page and come back later.', 'elderward')
+                                : esc_html__('Keep this page open: the scan runs in short steps from this tab.', 'elderward');
+                        }
+                        ?>
+                    </p>
                 </div>
                 <?php if (null !== $job) : ?>
                     <p class="elderward-last">
                         <?php
-                        printf(
+                        if (isset($job['origin']) && 'schedule' === $job['origin']) {
                             /* translators: 1: status word, 2: start date/time, 3: end date/time or dash */
-                            esc_html__('Last scan: %1$s. Started %2$s, finished %3$s.', 'elderward'),
+                            $template = __('Last scheduled scan: %1$s. Started %2$s, finished %3$s.', 'elderward');
+                        } else {
+                            /* translators: 1: status word, 2: start date/time, 3: end date/time or dash */
+                            $template = __('Last scan: %1$s. Started %2$s, finished %3$s.', 'elderward');
+                        }
+                        printf(
+                            esc_html($template),
                             '<strong>' . esc_html(self::status_word($job['status'])) . '</strong>',
-                            esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $job['started'])),
-                            esc_html(null === $job['finished'] ? '—' : wp_date(get_option('date_format') . ' ' . get_option('time_format'), $job['finished']))
+                            esc_html(wp_date($datetime_format, $job['started'])),
+                            esc_html(null === $job['finished'] ? '—' : wp_date($datetime_format, $job['finished']))
                         );
                         if ('' !== $job['error']) {
                             echo ' <span class="elderward-error">' . esc_html($job['error']) . '</span>';
@@ -314,6 +450,72 @@ final class Elderward_Admin
                         ?>
                     </p>
                 <?php endif; ?>
+            </div>
+
+            <div class="elderward-card elderward-settings">
+                <h2><?php esc_html_e('Settings', 'elderward'); ?></h2>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <input type="hidden" name="action" value="elderward_save_settings" />
+                    <?php wp_nonce_field(self::NONCE_SETTINGS); ?>
+                    <table class="form-table" role="presentation">
+                        <tr>
+                            <th scope="row"><?php esc_html_e('How scans run', 'elderward'); ?></th>
+                            <td>
+                                <fieldset>
+                                    <legend class="screen-reader-text"><?php esc_html_e('How scans run', 'elderward'); ?></legend>
+                                    <label><input type="radio" name="elderward[runner]" value="background" <?php checked($settings['runner'], 'background'); ?> /> <?php esc_html_e('In the background (WP-Cron)', 'elderward'); ?></label>
+                                    <p class="description"><?php esc_html_e('The scan keeps going after you leave the page. WordPress drives it through WP-Cron, so the site must be able to request its own wp-cron.php, or a server cron job must call it.', 'elderward'); ?></p>
+                                    <label><input type="radio" name="elderward[runner]" value="browser" <?php checked($settings['runner'], 'browser'); ?> /> <?php esc_html_e('In this browser tab', 'elderward'); ?></label>
+                                    <p class="description"><?php esc_html_e('Steps run only while the Elderward page is open; a reload resumes. Use it when WP-Cron is unreliable on your host.', 'elderward'); ?></p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="elderward-schedule"><?php esc_html_e('Scheduled scan', 'elderward'); ?></label></th>
+                            <td>
+                                <select id="elderward-schedule" name="elderward[schedule]">
+                                    <?php foreach (Elderward_Settings::schedules() as $value => $label) : ?>
+                                        <option value="<?php echo esc_attr($value); ?>" <?php selected($settings['schedule'], $value); ?>><?php echo esc_html($label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <span class="elderward-schedule-when" <?php echo 'off' === $settings['schedule'] ? 'hidden' : ''; ?>>
+                                    <label for="elderward-time"><?php esc_html_e('at', 'elderward'); ?></label>
+                                    <input type="time" id="elderward-time" name="elderward[time]" value="<?php echo esc_attr($settings['time']); ?>" required />
+                                    <span class="elderward-schedule-day" <?php echo 'weekly' === $settings['schedule'] ? '' : 'hidden'; ?>>
+                                        <label for="elderward-day"><?php esc_html_e('on', 'elderward'); ?></label>
+                                        <select id="elderward-day" name="elderward[day]">
+                                            <?php for ($day = 0; $day < 7; $day++) : ?>
+                                                <option value="<?php echo (int) $day; ?>" <?php selected((int) $settings['day'], $day); ?>><?php echo esc_html($GLOBALS['wp_locale']->get_weekday($day)); ?></option>
+                                            <?php endfor; ?>
+                                        </select>
+                                    </span>
+                                </span>
+                                <p class="description">
+                                    <?php
+                                    /* translators: %s: the site's timezone, for example UTC+2 or Europe/Lisbon */
+                                    printf(esc_html__('Site time (%s). A scheduled scan always runs in the background, uses the access log below, and is skipped while another scan is in progress.', 'elderward'), esc_html(wp_timezone_string()));
+                                    if (null !== $next_run) {
+                                        echo ' ';
+                                        /* translators: %s: date and time of the next scheduled scan */
+                                        printf(esc_html__('Next run: %s.', 'elderward'), '<strong>' . esc_html(wp_date($datetime_format, $next_run)) . '</strong>');
+                                    }
+                                    ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="elderward-settings-log"><?php esc_html_e('Access log for scheduled scans', 'elderward'); ?></label></th>
+                            <td>
+                                <input type="text" id="elderward-settings-log" name="elderward[log]" class="regular-text code" placeholder="/var/log/apache2" value="<?php echo esc_attr($settings['log']); ?>" />
+                                <p class="description"><?php esc_html_e('Optional. Also pre-fills the field above.', 'elderward'); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+                    <?php if (Elderward_Cron::trigger_disabled()) : ?>
+                        <p class="elderward-note"><?php esc_html_e('DISABLE_WP_CRON is set on this site, so WordPress does not trigger WP-Cron on its own. Background and scheduled scans only advance when your server\'s cron job calls wp-cron.php (every minute or two is ideal).', 'elderward'); ?></p>
+                    <?php endif; ?>
+                    <?php submit_button(__('Save settings', 'elderward'), 'secondary', 'submit', false); ?>
+                </form>
             </div>
 
             <?php if (null !== $job) : ?>
