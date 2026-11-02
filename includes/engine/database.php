@@ -282,16 +282,23 @@ class DatabaseScanner extends Scanner
         ///////////////
         // The posts table can be huge: a LIKE prefilter runs server-side and
         // only candidates come back (value capped) for the real pattern check.
+        // The prefilter lists what the built-in post signatures look for; a
+        // custom post signature can look for anything (spam links, a script
+        // URL), so when there is one every live post is read, still paged.
         // Revisions and autosaves (post_type revision) would repeat every
         // injected post once per saved version: one finding per live post.
         //////////////
+        $custom = Signatures::custom();
+        $where = "post_type <> 'revision'";
+        if (empty($custom['db_posts'])) {
+            $where .= " AND (post_content LIKE '%<?php%' OR post_content LIKE '%eval(%'"
+                . " OR post_content LIKE '%fromCharCode%' OR post_content LIKE '%atob(%'"
+                . " OR post_content LIKE '%unescape(%' OR post_content LIKE '%<iframe%')";
+        }
         $query = array(
             'columns' => 'ID, post_title, post_type, SUBSTRING(post_content, 1, ' . self::VALUE_SCAN_CAP . ')',
             'from'    => $posts_table,
-            'where'   => "post_type <> 'revision'"
-                . " AND (post_content LIKE '%<?php%' OR post_content LIKE '%eval(%'"
-                . " OR post_content LIKE '%fromCharCode%' OR post_content LIKE '%atob(%'"
-                . " OR post_content LIKE '%unescape(%' OR post_content LIKE '%<iframe%')",
+            'where'   => $where,
             'pk'      => 'ID',
         );
         $next = $this->iterate('posts', 'posts', $query, function ($row) use (&$counts, &$suppressed, $ctx, $posts_table, $signatures, $scanner) {

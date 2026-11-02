@@ -1,0 +1,55 @@
+{
+  "elderward_signatures": 1,
+  "signatures": [
+    {
+      "id": "acme-loader",
+      "target": "file",
+      "severity": "HIGH",
+      "description": "ACME loader backdoor",
+      "enabled": true,
+      "match": [
+        {"string": "acme_loader"},
+        {"regex": "/eval\\s*\\(\\s*base64_decode\\s*\\(\\s*\\$/i"}
+      ]
+    },
+    {
+      "id": "cookie-eval-backdoor",
+      "target": "file",
+      "severity": "HIGH",
+      "description": "Backdoor that runs PHP sent in the wp_sess_k cookie",
+      "enabled": true,
+      "match": [
+        {"string": "wp_sess_k"},
+        {"regex": "/\\$_COOKIE\\s*\\[/"},
+        {"regex": "/eval\\s*\\(\\s*\\$\\w+\\s*\\(/i"}
+      ]
+    },
+    {
+      "id": "cdn-stats-injection",
+      "target": "file",
+      "severity": "HIGH",
+      "description": "Script injected into theme JavaScript, loading code from cdn-stats.example",
+      "enabled": true,
+      "match": [
+        {"string": "cdn-stats.example"},
+        {"regex": "/createElement\\s*\\(\\s*['\"]script['\"]\\s*\\)/i"}
+      ]
+    },
+    {
+      "id": "hidden-spam-links",
+      "target": "db_option",
+      "severity": "MEDIUM",
+      "description": "Hidden links to spam sites in an option (SEO spam)",
+      "enabled": true,
+      "pattern": "@<div[^>]{0,80}display\\s*:\\s*none[^>]{0,80}>\\s*<a\\s[^>]{0,200}href=[\"']https?://[^\"']{0,100}(?:meds|casino|loan)@i"
+    },
+    {
+      "id": "referrer-redirect",
+      "target": "db_post",
+      "severity": "HIGH",
+      "description": "Script in post content that redirects visitors coming from search engines",
+      "enabled": true,
+      "pattern": "@document\\.referrer[^<]{0,200}(?:window|document)\\.location@i"
+    }
+  ]
+}
