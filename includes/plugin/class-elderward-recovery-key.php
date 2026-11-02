@@ -161,10 +161,30 @@ final class Elderward_Recovery_Key
     {
         self::revoke();
         foreach (self::state_dirs() as $dir) {
-            if (is_dir($dir) && !is_link($dir)) {
+            if (self::own_private_dir($dir)) {
                 self::delete_tree($dir);
             }
         }
+    }
+
+    /**
+     * The same test recovery.php applies before using a state folder: a
+     * real directory owned by this PHP user that nobody else can enter. In
+     * a shared system temp folder another account could otherwise plant a
+     * folder (or swap in a link) under the predictable name and have the
+     * uninstall delete through it.
+     */
+    private static function own_private_dir($dir)
+    {
+        clearstatcache(true, $dir);
+        if (!is_dir($dir) || is_link($dir)) {
+            return false;
+        }
+        $me = function_exists('posix_geteuid') ? posix_geteuid() : getmyuid();
+        if (fileowner($dir) !== $me) {
+            return false;
+        }
+        return 0 === (fileperms($dir) & 0077);
     }
 
     /**
