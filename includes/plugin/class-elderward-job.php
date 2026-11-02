@@ -292,7 +292,7 @@ final class Elderward_Job
             return sprintf(
                 /* translators: 1: stage name, 2: number of attempts */
                 __('The step running "%1$s" was cut short %2$d times without finishing (PHP memory limit or a server timeout). The PHP error log has the details; the WP-CLI command for this check runs without the request limits.', 'elderward'),
-                Elderward\Engine\Runner::stage_label($stage),
+                Elderward_Plugin::stage_label($stage),
                 self::MAX_ATTEMPTS
             );
         }
@@ -412,7 +412,7 @@ final class Elderward_Job
         if ('running' !== $job['status'] || $job['stage_index'] >= count($job['stages'])) {
             return '';
         }
-        return Elderward\Engine\Runner::stage_label($job['stages'][$job['stage_index']]);
+        return Elderward_Plugin::stage_label($job['stages'][$job['stage_index']]);
     }
 
     private static function budget_seconds()

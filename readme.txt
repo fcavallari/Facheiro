@@ -115,9 +115,11 @@ Yes: use recovery mode (see the Recovery tab), or, with shell access, `php bin/e
 
 No. The signatures find known malware, the integrity check only covers packages that exist on wordpress.org, and the timestamp and log checks are leads, not proof. Treat the report as a starting point for an investigation.
 
-= Are the finding texts translated? =
+= Is Elderward available in my language? =
 
-The admin interface is translatable. The finding details themselves (the technical description of each issue) are in English, because they are also written to exports and tickets that other tools and people read.
+The admin pages are available in English and Brazilian Portuguese (pt_BR), and follow each user's language setting (Users > Profile > Language). The recovery page, which runs without WordPress, has its own Portuguese strings: it follows the browser's language, and a link in its header switches between English and Portuguese. Other languages can be added through translate.wordpress.org once the plugin is in the directory.
+
+The finding details themselves (the technical description of each issue) stay in English, because they are also written to exports and tickets that other tools and people read, and the command-line tools print them the same way.
 
 == Screenshots ==
 
@@ -149,4 +151,5 @@ AI assistants connect to your site through the separate MCP Adapter plugin, usin
 * Signature editor for custom, detection-only signatures, with a tester and JSON import/export (also usable by the standalone CLI through `signatures=`).
 * Hardening for Apache/LiteSpeed (`.htaccess`, applied with an automatic health check and rollback) and Nginx (downloadable configuration), with Recommended and Strict templates and a live check.
 * Recovery mode: a key-protected page that shows what broke the site and runs the full scan without loading WordPress.
+* Brazilian Portuguese translation of the admin pages and the recovery page.
 * WordPress abilities for AI assistants over MCP (WordPress 6.9+ with the MCP Adapter plugin), a triage prompt, and a copyable brief for chatbots without MCP.

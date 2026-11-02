@@ -184,7 +184,7 @@ final class Elderward_Admin_Hardening
         $state = Elderward_Hardening::state();
         $detected = Elderward_Hardening::detect_server();
         $features = Elderward_Hardening::features();
-        $checked = isset($state['checked']['results']) ? $state['checked']['results'] : array();
+        $checked = isset($state['checked']['results']) ? Elderward_Hardening::describe_all((array) $state['checked']['results']) : array();
         $datetime_format = get_option('date_format') . ' ' . get_option('time_format');
         $status_words = array(
             'protected' => __('Protected', 'elderward'),

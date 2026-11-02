@@ -16,6 +16,7 @@ What you get:
 - **Recovery mode**: a key-protected page that works when WordPress itself does not load (white screen, critical error), shows what broke the site and runs the full scan.
 - **AI assistant tools** over MCP (WordPress 6.9+ with the MCP Adapter plugin), so Claude, ChatGPT, Antigravity or Cursor can run scans, explain the findings and draft signatures with you, and never clean or change files.
 - **Cleanup and restore** from WP-CLI or the standalone CLI, with a dry run first.
+- **English and Brazilian Portuguese** admin pages and recovery page.
 
 It runs four ways, all on the same engine:
 
@@ -293,6 +294,21 @@ php bin/elderward.php scanall=1 scandirectory=/var/www/html signatures=/path/sig
 ```
 
 Regexes are full PCRE patterns with delimiters and flags. Every pattern (including the crontab, access log and database sets) is compile-checked before a scan starts, so a malformed regex stops the run and names the broken signature instead of silently never matching. `remove_regex` fails loudly if it matched nothing, and dry run covers both action types.
+
+## Translations
+
+The admin pages use the `elderward` text domain; translations ship in `languages/` (Brazilian Portuguese: `elderward-pt_BR.po`, compiled to `.mo` and `.l10n.php`) and follow each user's language. Language packs from translate.wordpress.org, once the plugin is in the directory, take precedence. The recovery page runs without WordPress, so it has its own table, `includes/recovery/i18n/pt_BR.php` (English text => translation); it picks the language from the browser and offers a switch in its header. Finding details from the engine stay in English everywhere, like the CLI output and exports.
+
+After changing interface strings, refresh the template and the translations (WP-CLI 2.8+):
+
+```
+wp i18n make-pot . languages/elderward.pot --slug=elderward --domain=elderward \
+    --exclude=tests,site,vendor,node_modules,includes/engine,includes/recovery,bin
+wp i18n update-po languages/elderward.pot languages/elderward-pt_BR.po   # then translate the new entries
+wp i18n make-mo languages && wp i18n make-php languages
+```
+
+A string added to the recovery page goes through `App::t()` / `App::e()` and needs its line in `includes/recovery/i18n/pt_BR.php`; keep the placeholders (`%s`, `%1$s`, `%d`) identical.
 
 ## Development
 

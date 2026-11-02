@@ -16,6 +16,7 @@ final class Elderward_Plugin
 
     public static function init()
     {
+        add_action('init', array(__CLASS__, 'load_textdomain'));
         if (get_option(self::OPTION_DB_VERSION) !== self::DB_VERSION) {
             // Covers installs activated before a schema change and
             // network-wide activations that skipped the hook.
@@ -26,6 +27,35 @@ final class Elderward_Plugin
         if (is_admin()) {
             Elderward_Admin::init();
         }
+    }
+
+    /**
+     * Translations shipped in languages/ (pt_BR for now). Language packs
+     * from translate.wordpress.org, once the plugin is in the directory,
+     * load from wp-content/languages/plugins and take precedence.
+     */
+    public static function load_textdomain()
+    {
+        load_plugin_textdomain('elderward', false, dirname(plugin_basename(ELDERWARD_FILE)) . '/languages');
+    }
+
+    /**
+     * Scan stage names from the engine (English there, since the CLI
+     * prints them), translated for the admin pages.
+     */
+    public static function stage_label($stage)
+    {
+        $labels = array(
+            'quick'      => __('Quick checks', 'elderward'),
+            'integrity'  => __('Integrity', 'elderward'),
+            'timestamps' => __('Timestamps', 'elderward'),
+            'crontab'    => __('Crontab', 'elderward'),
+            'database'   => __('Database', 'elderward'),
+            'logs'       => __('Access logs', 'elderward'),
+            'correlate'  => __('Access logs', 'elderward'),
+            'signatures' => __('Malware signatures (dry run)', 'elderward'),
+        );
+        return isset($labels[$stage]) ? $labels[$stage] : Elderward\Engine\Runner::stage_label($stage);
     }
 
     public static function activate()
