@@ -698,9 +698,9 @@ final class Elderward_Hardening
         $results = array();
         if (0 === $r['home']['code']) {
             foreach (array_keys(self::features()) as $id) {
-                $results[$id] = array('status' => 'unknown', 'detail' => __('This site could not reach itself over HTTP, so nothing could be checked. Tools > Site Health reports this as a loopback problem.', 'elderward'));
+                $results[$id] = array('status' => 'unknown', 'unreachable' => true);
             }
-            return $results;
+            return self::describe_all($results);
         }
 
         // Refused = 403; null when a probe got no answer at all.
@@ -714,43 +714,84 @@ final class Elderward_Hardening
             }
             return $all;
         };
-        $verdict = function ($ok, $yes, $no) {
-            if (null === $ok) {
-                return array('status' => 'unknown', 'detail' => __('The site did not answer the test request.', 'elderward'));
-            }
-            return $ok ? array('status' => 'protected', 'detail' => $yes) : array('status' => 'exposed', 'detail' => $no);
+        $status = function ($ok) {
+            return null === $ok ? 'unknown' : ($ok ? 'protected' : 'exposed');
         };
 
-        $results['uploads_php'] = $verdict($denied('uploads'), __('PHP requests in uploads are refused.', 'elderward'), __('A PHP file in uploads would run.', 'elderward'));
-        $results['core_includes'] = $verdict($denied('includes', 'admin_includes'), __('wp-includes and wp-admin/includes refuse direct PHP requests.', 'elderward'), __('PHP files in wp-includes or wp-admin/includes can be requested directly.', 'elderward'));
-        $results['config'] = $verdict($denied('config'), __('wp-config files and their copies are refused.', 'elderward'), __('A copy such as wp-config.php.bak would be downloadable.', 'elderward'));
-        $results['sensitive'] = $verdict($denied('sql', 'log'), __('Backup, dump and log files are refused.', 'elderward'), __('Files such as .sql dumps, .bak copies and logs would be downloadable.', 'elderward'));
-        $results['dotfiles'] = $verdict($denied('dotfile', 'dotdir'), __('Hidden files and folders are refused.', 'elderward'), __('Hidden files and folders such as .git or .env would be downloadable.', 'elderward'));
         $xmlrpc = $r['xmlrpc']['code'];
-        $results['xmlrpc'] = $verdict(0 === $xmlrpc ? null : in_array($xmlrpc, array(401, 403, 404, 410), true), __('xmlrpc.php is refused.', 'elderward'), __('xmlrpc.php answers requests.', 'elderward'));
-        $results['themes_php'] = $verdict($denied('themes'), __('Direct PHP requests in themes are refused.', 'elderward'), __('PHP files in themes can be requested directly.', 'elderward'));
-        $results['plugins_php'] = $verdict($denied('plugins'), __('Direct PHP requests in plugins are refused.', 'elderward'), __('PHP files in plugins can be requested directly.', 'elderward'));
-
+        $results['uploads_php'] = array('status' => $status($denied('uploads')));
+        $results['core_includes'] = array('status' => $status($denied('includes', 'admin_includes')));
+        $results['config'] = array('status' => $status($denied('config')));
+        $results['sensitive'] = array('status' => $status($denied('sql', 'log')));
+        $results['dotfiles'] = array('status' => $status($denied('dotfile', 'dotdir')));
+        $results['xmlrpc'] = array('status' => $status(0 === $xmlrpc ? null : in_array($xmlrpc, array(401, 403, 404, 410), true)));
+        $results['themes_php'] = array('status' => $status($denied('themes')));
+        $results['plugins_php'] = array('status' => $status($denied('plugins')));
         if (0 === $r['listing']['code']) {
-            $results['indexes'] = $verdict(null, '', '');
+            $results['indexes'] = array('status' => 'unknown');
         } else {
             $listed = 200 === $r['listing']['code'] && 1 === preg_match('/<title>\s*Index of|<h1>\s*Index of/i', $r['listing']['body']);
-            $results['indexes'] = $verdict(!$listed, __('The uploads folder is not listed.', 'elderward'), __('The uploads folder lists its files.', 'elderward'));
+            $results['indexes'] = array('status' => $status(!$listed));
         }
-
         $missing = array();
         foreach ($r['home']['headers'] as $name => $value) {
             if ('' === $value) {
                 $missing[] = $name;
             }
         }
-        /* translators: %s: list of HTTP header names */
-        $results['headers'] = $verdict(empty($missing), __('All three security headers are sent.', 'elderward'), sprintf(__('Missing: %s.', 'elderward'), implode(', ', $missing)));
+        $results['headers'] = array('status' => $status(empty($missing)), 'missing' => $missing);
 
+        // Saved without text, so the page explains it in the reader's
+        // language, whoever ran the check.
         $state = self::state();
         $state['checked'] = array('time' => time(), 'results' => $results);
         self::save_state($state);
+        return self::describe_all($results);
+    }
+
+    /**
+     * Add the explanation ('detail') to each check result, in the current
+     * language.
+     */
+    public static function describe_all(array $results)
+    {
+        foreach ($results as $id => $result) {
+            $results[$id]['detail'] = self::describe($id, $result);
+        }
         return $results;
+    }
+
+    private static function describe($id, array $result)
+    {
+        $status = isset($result['status']) ? $result['status'] : 'unknown';
+        if ('unknown' === $status) {
+            return isset($result['unreachable']) ? __('This site could not reach itself over HTTP, so nothing could be checked. Tools > Site Health reports this as a loopback problem.', 'elderward') : __('The site did not answer the test request.', 'elderward');
+        }
+        $ok = 'protected' === $status;
+        switch ($id) {
+            case 'uploads_php':
+                return $ok ? __('PHP requests in uploads are refused.', 'elderward') : __('A PHP file in uploads would run.', 'elderward');
+            case 'core_includes':
+                return $ok ? __('wp-includes and wp-admin/includes refuse direct PHP requests.', 'elderward') : __('PHP files in wp-includes or wp-admin/includes can be requested directly.', 'elderward');
+            case 'config':
+                return $ok ? __('wp-config files and their copies are refused.', 'elderward') : __('A copy such as wp-config.php.bak would be downloadable.', 'elderward');
+            case 'sensitive':
+                return $ok ? __('Backup, dump and log files are refused.', 'elderward') : __('Files such as .sql dumps, .bak copies and logs would be downloadable.', 'elderward');
+            case 'dotfiles':
+                return $ok ? __('Hidden files and folders are refused.', 'elderward') : __('Hidden files and folders such as .git or .env would be downloadable.', 'elderward');
+            case 'xmlrpc':
+                return $ok ? __('xmlrpc.php is refused.', 'elderward') : __('xmlrpc.php answers requests.', 'elderward');
+            case 'themes_php':
+                return $ok ? __('Direct PHP requests in themes are refused.', 'elderward') : __('PHP files in themes can be requested directly.', 'elderward');
+            case 'plugins_php':
+                return $ok ? __('Direct PHP requests in plugins are refused.', 'elderward') : __('PHP files in plugins can be requested directly.', 'elderward');
+            case 'indexes':
+                return $ok ? __('The uploads folder is not listed.', 'elderward') : __('The uploads folder lists its files.', 'elderward');
+            case 'headers':
+                /* translators: %s: list of HTTP header names */
+                return $ok ? __('All three security headers are sent.', 'elderward') : sprintf(__('Missing: %s.', 'elderward'), implode(', ', isset($result['missing']) ? (array) $result['missing'] : array()));
+        }
+        return '';
     }
 
     /**

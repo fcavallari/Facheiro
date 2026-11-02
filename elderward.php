@@ -9,7 +9,7 @@
  * @wordpress-plugin
  * Plugin Name:       Elderward
  * Plugin URI:        https://github.com/fioa8c/elderward
- * Description:       Malware scanner and incident-response toolkit: file signatures, core/plugin/theme integrity, database, crontab and access-log checks.
+ * Description:       Malware scanner and incident response: integrity, database and log checks, server hardening, and a recovery mode for sites that no longer load.
  * Version:           1.0.0
  * Requires at least: 6.0
  * Requires PHP:      7.2
@@ -18,6 +18,7 @@
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       elderward
+ * Domain Path:       /languages
  */
 
 if (!defined('ABSPATH')) {
