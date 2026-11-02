@@ -184,7 +184,7 @@ final class Elderward_Admin_Recovery
             </div>
             <ul class="elderward-examples">
                 <li><?php esc_html_e('Without a valid, unexpired key file it answers "not found" and does nothing else.', 'elderward'); ?></li>
-                <li><?php esc_html_e('Only a fingerprint (SHA-256) of a key created here is stored, and the key is shown to you once without being saved anywhere. Keys are 32 random characters; every wrong guess costs a second. A key typed into the file by hand also gets a 15-minute lockout after 10 wrong tries.', 'elderward'); ?></li>
+                <li><?php esc_html_e('Only a fingerprint (SHA-256) of a key created here is stored, and the key is shown to you once without being saved anywhere. Keys are 32 random characters, so a wrong guess is simply refused. A key typed into the file by hand may be weaker: each wrong try costs a second, and a client gets a 15-minute lockout after 10 wrong tries.', 'elderward'); ?></li>
                 <li><?php esc_html_e('A sign-in lasts one hour, ends when the key is revoked or replaced, and is tied to a cookie the page sets only for itself.', 'elderward'); ?></li>
                 <li><?php esc_html_e('It reads the database settings from wp-config.php without running it, only reads files and the database, and never changes or uploads anything.', 'elderward'); ?></li>
                 <li><?php esc_html_e('Use it over HTTPS: on plain HTTP the key crosses the network unencrypted.', 'elderward'); ?></li>

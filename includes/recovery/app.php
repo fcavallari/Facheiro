@@ -38,6 +38,10 @@ final class App
     // running it) stops the scan instead of looping forever.
     const MAX_ATTEMPTS = 3;
     const LOCK_SECONDS = 900;
+    // Clients tracked in the attempts file at most: behind a proxy the
+    // forwarded address can be spoofed, and the file must not grow with
+    // every request an attacker sends.
+    const MAX_CLIENTS = 500;
     const MAX_FINDINGS = 5000;
     const COOKIE = 'elderward_recovery';
 
@@ -182,9 +186,11 @@ final class App
 
     /**
      * A generated key is 32 random characters (~190 bits): guessing it is
-     * hopeless, so a wrong key only costs a second and never locks anyone
-     * out (a lockout would let anyone block the owner). A hand-written key
-     * may be weaker, so it gets a per-client lockout as well.
+     * hopeless, so a wrong key is simply refused. It neither locks anyone
+     * out (a lockout would let anyone block the owner) nor sleeps (a delay
+     * would let anyone tie up the site's PHP workers from this page while
+     * adding nothing against a key that size). A hand-written key may be
+     * weaker, so it gets a per-client lockout and a one-second delay.
      */
     private static function login()
     {
@@ -209,18 +215,24 @@ final class App
             exit;
         }
         if (!self::$key['manual']) {
-            sleep(1);
             http_response_code(403);
             self::page_login('That key is not valid.');
             return;
         }
         $mine['fails'] = (int) $mine['fails'] + 1;
         $attempts[$id] = $mine;
-        // Keep the file small: forget clients idle for a while.
+        // Keep the file small: forget clients idle for a while, and never
+        // track more than MAX_CLIENTS (the oldest go first).
         foreach ($attempts as $client => $entry) {
             if ($now - (int) $entry['since'] > self::LOCK_SECONDS) {
                 unset($attempts[$client]);
             }
+        }
+        if (count($attempts) > self::MAX_CLIENTS) {
+            uasort($attempts, function ($a, $b) {
+                return (int) $b['since'] - (int) $a['since'];
+            });
+            $attempts = array_slice($attempts, 0, self::MAX_CLIENTS, true);
         }
         self::write_state('attempts', $attempts);
         sleep(1);

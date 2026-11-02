@@ -166,6 +166,8 @@ $EW scanintegrity=1 scandirectory=$WP
 
 Expect: `INFO,INTEGRITY_RESTORED,...functions.php,core <ver>: pristine copy restored...` and a clean rescan. This is the one live path with no offline equivalent tested (the full core zip download + `wordpress/` prefix extraction), so **PASTE the output either way.**
 
+**D4. Restore stays inside the package (offline).** Covered by `tests/regress.sh` ("restore through symlink refused"). By hand: in a fake root, make a verified plugin's subfolder a symlink to a folder outside the site (`ln -s /tmp/ew/outside $WP/wp-content/plugins/hello-dolly/sub`), give `checksumdir` a manifest that lists `sub/extra.php` and a zip that holds it, and run `scanintegrity=1 restore=1 checksumdir=... scandirectory=$WP`. Expect `ERROR,RESTORE_FAILED,...sub/extra.php,...resolves outside the package directory` and nothing written to `/tmp/ew/outside`. A plugin whose header says `Version: ../../x` reports `INTEGRITY_NO_REFERENCE ... could not determine the installed version`.
+
 ---
 
 ## E. Database scan (needs a real WordPress DB)

@@ -912,23 +912,40 @@ final class Elderward_Admin
         exit;
     }
 
+    /**
+     * Every finding of the job, worst severity first. One pass per
+     * severity, each paged by id: paging by id over a severity-sorted
+     * result would skip every lower-id row after the first page, and an
+     * export that silently drops findings is worse than none.
+     */
     private static function iterate_findings($job_id)
     {
         global $wpdb;
         $table = Elderward_Plugin::findings_table();
-        $last = 0;
+        $known = array('HIGH', 'ERROR', 'MEDIUM', 'LOW', 'INFO');
         // phpcs:disable WordPress.DB -- the plugin's own table (name from the base prefix, never user input); values go through prepare(); results must not be cached.
-        while (true) {
-            $rows = $wpdb->get_results($wpdb->prepare(
-                "SELECT id, severity, type, path, detail, context, sha256, fp FROM `{$table}` WHERE job_id = %s AND id > %d ORDER BY FIELD(severity,'HIGH','ERROR','MEDIUM','LOW','INFO'), id LIMIT 500",
-                $job_id, $last
-            ));
-            if (empty($rows)) {
-                return;
-            }
-            foreach ($rows as $row) {
-                $last = max($last, (int) $row->id);
-                yield $row;
+        foreach (array_merge($known, array(null)) as $severity) {
+            $last = 0;
+            while (true) {
+                if (null === $severity) {
+                    // Anything with an unexpected severity, so nothing is lost.
+                    $rows = $wpdb->get_results($wpdb->prepare(
+                        "SELECT id, severity, type, path, detail, context, sha256, fp FROM `{$table}` WHERE job_id = %s AND id > %d AND severity NOT IN ('HIGH','ERROR','MEDIUM','LOW','INFO') ORDER BY id LIMIT 500",
+                        $job_id, $last
+                    ));
+                } else {
+                    $rows = $wpdb->get_results($wpdb->prepare(
+                        "SELECT id, severity, type, path, detail, context, sha256, fp FROM `{$table}` WHERE job_id = %s AND severity = %s AND id > %d ORDER BY id LIMIT 500",
+                        $job_id, $severity, $last
+                    ));
+                }
+                if (empty($rows)) {
+                    break;
+                }
+                foreach ($rows as $row) {
+                    $last = max($last, (int) $row->id);
+                    yield $row;
+                }
             }
         }
         // phpcs:enable WordPress.DB

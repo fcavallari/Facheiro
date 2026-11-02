@@ -105,7 +105,7 @@ class IntegrityScanner extends Scanner
         if (preg_match('/\$wp_version\s*=\s*\'([^\']+)\'/', (string) @file_get_contents($version_file), $matches)) {
             $wp_version = $matches[1];
         }
-        if (null === $wp_version) {
+        if (null === $wp_version || !self::is_safe_version($wp_version)) {
             $this->report('ERROR', 'INTEGRITY_NO_REFERENCE', $version_file, 'could not read the core version');
             $totals['NO_REFERENCE']++;
             return;
@@ -360,6 +360,17 @@ class IntegrityScanner extends Scanner
         $known_benign_list = Signatures::known_benign();
         $restorable = array();
         foreach ($manifest as $relative_path => $expected) {
+            ///////////////
+            // A reference manifest (or the theme zip it was built from) is
+            // trusted content, but a path in it still has to stay inside the
+            // package: nothing outside $base_dir is ever read, reported or
+            // restored because of an entry here.
+            //////////////
+            if (!self::is_safe_relative_path($relative_path)) {
+                $this->report('ERROR', 'INTEGRITY_NO_REFERENCE', $base_dir, $label . ': reference manifest entry "' . $relative_path . '" is not a plain relative path, ignored');
+                $totals['NO_REFERENCE']++;
+                continue;
+            }
             $full_path = $base_dir . '/' . $relative_path;
             if (!is_file($full_path)) {
                 $this->report('LOW', 'INTEGRITY_MISSING', $full_path, $label . ': file from the official package is missing');
@@ -425,10 +436,17 @@ class IntegrityScanner extends Scanner
         // With quarantinedir= set, the original is copied there first, with a
         // .quarantine suffix so nothing serves or executes it.
         //////////////
-        $quarantine_root = rtrim($this->ctx->get('quarantinedir'), '/') . '/' . str_replace(' ', '-', $label);
+        $quarantine_base = rtrim($this->ctx->get('quarantinedir'), '/');
+        $quarantine_root = $quarantine_base . '/' . str_replace(' ', '-', $label);
         $dest = $quarantine_root . '/' . $relative_path . '.quarantine';
         $dest_dir = dirname($dest);
         if (!is_dir($dest_dir) && !@mkdir($dest_dir, 0700, true)) {
+            return (false);
+        }
+        // The label and the path are checked before this point, but the
+        // quarantine folder itself may hold a planted symlink: the copy only
+        // goes where quarantinedir really is.
+        if (!self::is_inside($dest_dir, $quarantine_base)) {
             return (false);
         }
         return (@copy($target, $dest));
@@ -463,6 +481,10 @@ class IntegrityScanner extends Scanner
         }
 
         foreach ($items as $item) {
+            if (!self::is_safe_relative_path($item['rel'])) {
+                $this->report('ERROR', 'RESTORE_FAILED', $base_dir, $label . ': "' . $item['rel'] . '" is not a plain relative path, refusing to restore');
+                continue;
+            }
             $target = $base_dir . '/' . $item['rel'];
 
             $content = $zip->getFromName($zip_prefix . $item['rel']);
@@ -481,6 +503,19 @@ class IntegrityScanner extends Scanner
                 continue;
             }
 
+            ///////////////
+            // The write must land inside the package directory. A symlink
+            // planted by the web user (the file itself, or a package
+            // subfolder pointing elsewhere) would otherwise make a restore
+            // run as a more privileged operator write outside the tree. The
+            // link check is read-only, so the dry run reports it too; the
+            // folder check comes after the folder exists, below.
+            //////////////
+            if (@is_link($target)) {
+                $this->report('ERROR', 'RESTORE_FAILED', $target, $label . ': the file is a symbolic link, refusing to restore over it (remove the link first)');
+                continue;
+            }
+
             if ($this->ctx->has('dryrun')) {
                 $this->report('INFO', 'INTEGRITY_RESTORABLE', $target, $label . ' (dry run: not restored)');
                 continue;
@@ -496,6 +531,10 @@ class IntegrityScanner extends Scanner
                 $this->report('ERROR', 'RESTORE_FAILED', $target, $label . ': could not create the target directory');
                 continue;
             }
+            if (!self::is_inside($target_dir, $base_dir)) {
+                $this->report('ERROR', 'RESTORE_FAILED', $target, $label . ': the target folder resolves outside the package directory (symlink?), refusing to restore');
+                continue;
+            }
             if (!write_cleaned_file($target, $content)) {
                 $this->report('ERROR', 'RESTORE_FAILED', $target, $label . ': could not write the restored file');
                 continue;
@@ -506,6 +545,51 @@ class IntegrityScanner extends Scanner
         $zip->close();
     }
 
+    ///////////////
+    // Versions read from headers on a compromised host go into URLs, file
+    // names under checksumdir= and the quarantine folder name: only plain
+    // version strings are accepted, anything else is "no reference".
+    //////////////
+    public static function is_safe_version($version)
+    {
+        return (is_string($version) && preg_match('/^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$/', $version) === 1);
+    }
+
+    ///////////////
+    // A package-relative path as the manifests and zips carry them: no
+    // absolute path, no "." or ".." segment, no backslash, no NUL byte.
+    //////////////
+    public static function is_safe_relative_path($path)
+    {
+        if (!is_string($path) || '' === $path || strlen($path) > 4096) {
+            return (false);
+        }
+        if (false !== strpos($path, "\0") || false !== strpos($path, '\\') || '/' === $path[0]) {
+            return (false);
+        }
+        foreach (explode('/', $path) as $segment) {
+            if ('' === $segment || '.' === $segment || '..' === $segment) {
+                return (false);
+            }
+        }
+        return (true);
+    }
+
+    ///////////////
+    // Whether $dir, once symlinks are resolved, is $base or lies under it.
+    //////////////
+    public static function is_inside($dir, $base)
+    {
+        $real_dir = @realpath($dir);
+        $real_base = @realpath($base);
+        if (false === $real_dir || false === $real_base) {
+            return (false);
+        }
+        $real_dir = rtrim(str_replace('\\', '/', $real_dir), '/');
+        $real_base = rtrim(str_replace('\\', '/', $real_base), '/');
+        return ($real_dir === $real_base || 0 === strpos($real_dir, $real_base . '/'));
+    }
+
     public static function read_theme_version($theme_dir)
     {
         $header = @file_get_contents($theme_dir . '/style.css', false, null, 0, 8192);
@@ -513,7 +597,8 @@ class IntegrityScanner extends Scanner
             return (null);
         }
         if (preg_match('/^[ \t\/*#@]*Version:\s*(\S+)/mi', $header, $matches)) {
-            return trim($matches[1]);
+            $version = trim($matches[1]);
+            return (self::is_safe_version($version) ? $version : null);
         }
         return (null);
     }
@@ -528,7 +613,8 @@ class IntegrityScanner extends Scanner
                 continue;
             }
             if (preg_match('/^[ \t\/*#@]*Version:\s*(\S+)/mi', $header, $matches)) {
-                return trim($matches[1]);
+                $version = trim($matches[1]);
+                return (self::is_safe_version($version) ? $version : null);
             }
         }
         return (null);
