@@ -4,7 +4,7 @@
  *   ELDERWARD_URL=http://127.0.0.1:8089 ELDERWARD_USER=admin ELDERWARD_PASS=adminpass \
  *   ELDERWARD_LOG=/path/to/logs node tests/admin-ui.js
  *
- * Logs in, starts a scan from Tools > Elderward, waits for it to finish,
+ * Logs in, starts a scan from the Elderward admin page, waits for it to finish,
  * prints the severity counts from the findings table, downloads the JSON
  * export and checks it against the table, and verifies that the ajax
  * endpoints refuse requests without a nonce.
@@ -29,7 +29,7 @@ const logPath = process.env.ELDERWARD_LOG || '';
 	await page.click('#wp-submit');
 	await page.waitForURL(/wp-admin/);
 
-	await page.goto(base + '/wp-admin/tools.php?page=elderward');
+	await page.goto(base + '/wp-admin/admin.php?page=elderward');
 	await page.waitForSelector('#elderward-start');
 	// The access-log location is a setting used by every scan.
 	await page.fill('#elderward-settings-log', logPath || '');
@@ -46,7 +46,7 @@ const logPath = process.env.ELDERWARD_LOG || '';
 	}, null, { timeout: 600000 });
 	await page.waitForLoadState('load');
 	await page.waitForTimeout(1500);
-	await page.goto(base + '/wp-admin/tools.php?page=elderward');
+	await page.goto(base + '/wp-admin/admin.php?page=elderward');
 
 	const status = await page.textContent('.elderward-last');
 	console.log('status line:', status.trim().replace(/\s+/g, ' '));

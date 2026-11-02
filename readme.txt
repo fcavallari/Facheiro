@@ -14,7 +14,7 @@ Malware scanner and incident-response toolkit: file signatures, core/plugin/them
 
 Elderward helps you find out whether a WordPress site has been compromised, how, and what to do about it. It was written for incident responders and runs entirely on your own server: there is no account, no external service and no data leaves the site.
 
-**One report-only scan from Tools > Elderward** runs every check and lists the findings worst-first:
+**One report-only scan from the Elderward menu** runs every check and lists the findings worst-first:
 
 * **Quick checks** - executable PHP inside `wp-content/uploads`, `auto_prepend_file`/`auto_append_file` directives in `.user.ini`, `php.ini` and `.htaccess` (code that runs on every request), an inventory of must-use plugins, hidden dotfile PHP.
 * **Integrity** - WordPress core, every plugin and every theme compared with the official wordpress.org packages for the installed version: modified files, missing files, and extra files that the package does not contain (extra PHP inside core or a plugin is the classic dropped webshell). Packages that cannot be verified, such as premium plugins or child themes, are reported as such so a clean report never silently means "unchecked".
@@ -47,7 +47,7 @@ Development happens at [github.com/fioa8c/elderward](https://github.com/fioa8c/e
 
 1. Upload the `elderward` folder to `/wp-content/plugins/`, or install it from the Plugins screen.
 2. Activate the plugin. It creates one database table (`{prefix}elderward_findings`) to hold the latest report.
-3. Open **Tools > Elderward** (Network Admin > Settings > Elderward on multisite) and click **Start scan**. The scan continues in the background; the page shows its progress and reloads with the findings when it ends.
+3. Open **Elderward** in the admin menu (in the Network Admin on multisite) and click **Start scan**. The scan continues in the background; the page shows its progress and reloads with the findings when it ends.
 4. Under **Settings** on the same page, choose how scans run (background through WP-Cron, or from the browser tab) and, if you want, a schedule.
 5. To act on the findings, use the WP-CLI commands shown under the results, after taking a backup.
 6. Optional: to use an AI assistant, install the MCP Adapter plugin and follow the steps on the **AI assistants** tab.
@@ -108,7 +108,7 @@ The admin interface is translatable. The finding details themselves (the technic
 
 == Screenshots ==
 
-1. Tools > Elderward: start a scan and watch it progress.
+1. The Elderward page: start a scan and watch it progress.
 2. The findings table, sorted worst-first, with severity filters, false-positive marks, sample downloads and export.
 3. The signature editor and tester.
 4. Connecting an AI assistant.

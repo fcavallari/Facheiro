@@ -20,7 +20,7 @@ const base = process.env.ELDERWARD_URL || 'http://127.0.0.1:8089';
 const user = process.env.ELDERWARD_USER || 'admin';
 const pass = process.env.ELDERWARD_PASS || 'adminpass';
 const stale = process.argv.includes('--stale');
-const pageUrl = base + '/wp-admin/tools.php?page=elderward';
+const pageUrl = base + '/wp-admin/admin.php?page=elderward';
 
 function fail(msg) {
 	console.error('FAIL: ' + msg);

@@ -60,7 +60,7 @@ if (isset($options['help'])) {
     echo "Elderward - malware scanner and cleanup utility\n";
     echo "\n";
     echo "Usage:  php bin/elderward.php [option=value ...]\n";
-    echo "        (inside WordPress: wp elderward <command>, or Tools > Elderward)\n";
+    echo "        (inside WordPress: wp elderward <command>, or the Elderward admin menu)\n";
     echo "\n";
     echo "Options:\n";
     echo "  scandirectory=/path   Directory to scan for malware (default: current directory)\n";

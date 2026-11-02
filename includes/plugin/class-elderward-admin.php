@@ -1,6 +1,6 @@
 <?php
 /**
- * Tools > Elderward: start a report-only scan, watch it progress, read
+ * The Elderward admin menu: start a report-only scan, watch it progress, read
  * and export the findings.
  *
  * @package Elderward
@@ -24,6 +24,9 @@ final class Elderward_Admin
     // the browser.
     const STALE_SECONDS = 120;
 
+    // Right after Tools (75), before Settings (80).
+    const MENU_POSITION = 76;
+
     private static $hook_suffix = '';
 
     public static function init()
@@ -34,6 +37,8 @@ final class Elderward_Admin
             add_action('admin_menu', array(__CLASS__, 'register_menu'));
         }
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue'));
+        add_action('admin_enqueue_scripts', array(__CLASS__, 'menu_icon'));
+        add_action('admin_init', array(__CLASS__, 'redirect_old_location'));
         add_action('wp_ajax_elderward_start', array(__CLASS__, 'ajax_start'));
         add_action('wp_ajax_elderward_step', array(__CLASS__, 'ajax_step'));
         add_action('wp_ajax_elderward_status', array(__CLASS__, 'ajax_status'));
@@ -50,30 +55,33 @@ final class Elderward_Admin
 
     public static function page_url()
     {
-        return is_multisite() ? network_admin_url('settings.php?page=' . self::PAGE) : admin_url('tools.php?page=' . self::PAGE);
+        return is_multisite() ? network_admin_url('admin.php?page=' . self::PAGE) : admin_url('admin.php?page=' . self::PAGE);
     }
 
     public static function register_menu()
     {
-        self::$hook_suffix = add_management_page(
+        self::$hook_suffix = add_menu_page(
             __('Elderward', 'elderward'),
             __('Elderward', 'elderward'),
             'manage_options',
             self::PAGE,
-            array(__CLASS__, 'render_page')
+            array(__CLASS__, 'render_page'),
+            'none',
+            self::MENU_POSITION
         );
         add_action('load-' . self::$hook_suffix, array(__CLASS__, 'add_help'));
     }
 
     public static function register_network_menu()
     {
-        self::$hook_suffix = add_submenu_page(
-            'settings.php',
+        self::$hook_suffix = add_menu_page(
             __('Elderward', 'elderward'),
             __('Elderward', 'elderward'),
             'manage_network',
             self::PAGE,
-            array(__CLASS__, 'render_page')
+            array(__CLASS__, 'render_page'),
+            'none',
+            self::MENU_POSITION
         );
         add_action('load-' . self::$hook_suffix, array(__CLASS__, 'add_help'));
     }
@@ -124,6 +132,45 @@ final class Elderward_Admin
             '<p><strong>' . esc_html__('More help', 'elderward') . '</strong></p>'
             . '<p><a href="https://github.com/fioa8c/elderward#readme" target="_blank" rel="noopener noreferrer">' . esc_html__('Elderward documentation', 'elderward') . '</a></p>'
         );
+    }
+
+    /**
+     * The menu icon is the Elderward mark, drawn as a CSS mask so it takes
+     * the admin colour scheme's colours (normal, hover, current) like the
+     * core icons. WordPress's own SVG recolouring only rewrites fills, and
+     * the mark is drawn with strokes.
+     */
+    public static function menu_icon()
+    {
+        if (!Elderward_Plugin::can_manage()) {
+            return;
+        }
+        $url = esc_url_raw(ELDERWARD_URL . 'assets/img/elderward-menu.svg');
+        wp_add_inline_style('admin-menu', '#adminmenu .toplevel_page_' . self::PAGE . ' div.wp-menu-image::before {'
+            . 'content: ""; display: block; width: 20px; height: 20px; margin: 7px auto 0; padding: 0;'
+            . 'background-color: currentColor;'
+            . '-webkit-mask: url("' . $url . '") no-repeat center / 20px 20px;'
+            . 'mask: url("' . $url . '") no-repeat center / 20px 20px; }');
+    }
+
+    /**
+     * The page used to live under Tools (Settings in the network admin):
+     * old bookmarks land on the new location.
+     */
+    public static function redirect_old_location()
+    {
+        global $pagenow;
+        if (!isset($_GET['page']) || self::PAGE !== $_GET['page'] || !in_array($pagenow, array('tools.php', 'settings.php'), true)) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- only picks where to redirect; nothing is changed.
+            return;
+        }
+        $args = array();
+        foreach (array('tab', 'severity', 'view', 'paged', 'edit') as $key) {
+            if (isset($_GET[$key])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- carried over to the redirect, then validated by the page.
+                $args[$key] = sanitize_text_field(wp_unslash($_GET[$key])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
+            }
+        }
+        wp_safe_redirect(add_query_arg($args, self::page_url()));
+        exit;
     }
 
     public static function enqueue($hook_suffix)

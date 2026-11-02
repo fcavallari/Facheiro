@@ -1,5 +1,5 @@
 /*
- * Playwright check of the signature editor (Tools > Elderward > Signatures).
+ * Playwright check of the signature editor (Elderward > Signatures).
  *
  *   ELDERWARD_URL=http://127.0.0.1:8089 ELDERWARD_USER=admin ELDERWARD_PASS=adminpass \
  *   node tests/signatures-ui.js <fixture path relative to the WordPress root>
@@ -16,7 +16,7 @@ const base = process.env.ELDERWARD_URL || 'http://127.0.0.1:8089';
 const user = process.env.ELDERWARD_USER || 'admin';
 const pass = process.env.ELDERWARD_PASS || 'adminpass';
 const fixture = process.argv[2] || 'wp-content/plugins/acme/loader.php';
-const tabUrl = base + '/wp-admin/tools.php?page=elderward&tab=signatures';
+const tabUrl = base + '/wp-admin/admin.php?page=elderward&tab=signatures';
 
 function fail(msg) {
 	console.error('FAIL: ' + msg);
