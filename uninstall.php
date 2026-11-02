@@ -1,7 +1,8 @@
 <?php
 /**
  * Removes everything Elderward stored: the findings table, its options,
- * and the work directory under uploads.
+ * the work directory under uploads, its hardening rules in .htaccess files,
+ * and the recovery key and recovery state.
  *
  * @package Elderward
  */
@@ -19,6 +20,13 @@ $wpdb->query('DROP TABLE IF EXISTS `' . $elderward_table . '`'); // phpcs:ignore
 
 wp_clear_scheduled_hook('elderward_scheduled_scan');
 wp_clear_scheduled_hook('elderward_run_job');
+
+// Hardening rules and the recovery key live in files, not options.
+require_once __DIR__ . '/includes/plugin/class-elderward-hardening.php';
+require_once __DIR__ . '/includes/plugin/class-elderward-recovery-key.php';
+Elderward_Hardening::uninstall();
+Elderward_Recovery_Key::uninstall();
+delete_option('elderward_hardening');
 
 delete_option('elderward_db_version');
 delete_option('elderward_job');

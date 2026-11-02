@@ -38,7 +38,9 @@ Install the `elderward` folder under `wp-content/plugins/` and activate it. Then
 1. **Elderward (admin menu) → Start scan.** The scan runs in the background through WP-Cron, so you can close the tab and come back; it changes nothing on the site. Findings appear worst-first with severity filters and can be exported as text or NDJSON. **Settings** on the same page set the access log file or directory that every scan checks, switch scans to run only while the page is open (for hosts where WP-Cron is unreliable), and set up daily, twice-daily or weekly automatic scans. Each setting has a **?** with more detail, and the screen's **Help** tab explains the whole page.
 2. **Review the findings.** *False positive* records a reviewed, benign finding with a note: later scans keep it in the record (and in the JSON export, flagged `"false_positive": true`) but out of the counts and the default view. A mark on a file stores the file's SHA-256 and stops applying as soon as the file changes, so the finding comes back. *Download sample* packs a flagged file into a zip encrypted with the password `infected` (AES-256), with a `manifest.json`, for you to submit to an analyst or sandbox; Elderward never uploads anything, and never packages `wp-config.php` or files outside the WordPress root. File findings also show the SHA-256 with a VirusTotal lookup link (hash only, opened by your browser).
 3. **Signatures tab.** Add custom signatures for files, option values or post content, test them against a pasted sample or a file of the site, and import/export them as JSON (see [Custom signatures](#custom-signatures)). Custom signatures only detect.
-4. **Act on the results from WP-CLI**, after taking a backup:
+4. **Hardening tab.** Server rules that refuse what should never be served (see [Hardening](#hardening)).
+5. **Recovery tab.** A key for recovery mode, the page that scans the site when WordPress no longer loads (see [Recovery mode](#recovery-mode)).
+6. **Act on the results from WP-CLI**, after taking a backup:
 
 ```
 wp elderward scan --dryrun                        # preview the signature cleanup
@@ -60,7 +62,44 @@ wp elderward cron                                 # current user's crontab
 wp elderward log /var/log/apache2 [--correlate] [--window=300]
 ```
 
-`wp help elderward <command>` lists each command's options. On multisite the page lives under Network Admin > Settings and is limited to super admins.
+```
+wp elderward harden [--server=apache|nginx] [--preset=recommended|strict] [--features=a,b] [--print|--apply|--remove|--check]
+wp elderward recovery-key create|status|revoke [--expires=<days>|never]
+```
+
+`wp help elderward <command>` lists each command's options. On multisite the menu is in the Network Admin and limited to super admins.
+
+### Hardening
+
+The Hardening tab (and `wp elderward harden`) writes web server rules for a template (**Recommended** or **Strict**) or any mix of protections:
+
+| Protection | Template | Apache/LiteSpeed (`.htaccess`) | Nginx |
+|---|---|---|---|
+| Block PHP in uploads | Recommended | `uploads/.htaccess` `FilesMatch` deny | `location ~* ^/wp-content/uploads/.*\.php` deny |
+| Block WordPress internals | Recommended | `wp-includes/.htaccess` (allows `wp-tinymce.php`, `ms-files.php`), `wp-admin/includes/.htaccess` | regex location with the same exceptions, `^~ /wp-admin/includes/` |
+| Protect wp-config files | Recommended | `^wp-config` (also `.bak`, `.old` copies) | `^/wp-config` |
+| Block backups, logs, server settings | Recommended | `.bak .old .orig .save .swp .sql .log .ini .sh ~`, `readme.html`, `license.txt` | same |
+| Block hidden files and folders | Recommended | dotfiles plus a rewrite for dot-folders, `.well-known` allowed | `location ~ /\.(?!well-known)` |
+| Turn off folder listings | Recommended | `Options -Indexes` | `autoindex off` |
+| Block direct PHP in themes | Strict | `themes/.htaccess` | regex location |
+| Security headers | Strict | `nosniff`, `X-Frame-Options SAMEORIGIN`, `Referrer-Policy` | `add_header ... always` |
+| Turn off XML-RPC | Strict | `xmlrpc.php` deny | `location = /xmlrpc.php` |
+| Block direct PHP in plugins | custom only | rewrite rule, `elderward/recovery.php` allowed | regex location, same exception |
+
+On Apache/LiteSpeed the rules go between `# BEGIN Elderward` and `# END Elderward` (`insert_with_markers()`). Before writing, every needed file must be writable; after writing, the home page, login and admin-ajax are requested, and if any starts failing (e.g. `Options` not allowed by `AllowOverride`) every file is restored byte-for-byte. Removing takes the blocks out and deletes files Elderward created. Nginx configuration is downloaded (or printed with `--print`) and included in the `server { }` block above the PHP location. **Check now** / `--check` requests files that do not exist (a PHP file in uploads, a `.sql` dump, a dot-folder…) and reports a protection as active only when the server refuses them, so it verifies hand-made rules too and creates nothing.
+
+### Recovery mode
+
+`wp-content/plugins/elderward/recovery.php` scans the site **without loading WordPress**, for when a fatal error or malware takes the site (and its admin) down. It shows the latest PHP fatal errors from the logs with the plugin or theme they point at, the WordPress version and `.maintenance` state, and runs the same report-only scan as the admin page, database included (credentials parsed from `wp-config.php`, never executed), stepping it in short requests.
+
+It is inert unless a key exists: without `wp-content/elderward-recovery-key.php` (or with an expired one) it answers 404. Create the key on the Recovery tab or with `wp elderward recovery-key create --expires=7`; Elderward stores only its SHA-256. If the site is already broken, create the file by hand:
+
+```
+<?php exit; ?>
+{"key":"at-least-24-random-characters-of-your-own"}
+```
+
+Sign-in sets an HMAC-signed, HttpOnly, SameSite=Strict cookie for one hour, bound to the key (replacing or revoking the key ends every session); actions carry a session-bound token; wrong keys are rate-limited (10 per 15 minutes per client). The page keeps its state in exit-guarded files in the system temp folder (or `wp-content/elderward-recovery/`). Revoke the key when you are done.
 
 ### AI assistants (MCP)
 
@@ -76,7 +115,7 @@ On WordPress 6.9+ Elderward registers WordPress abilities (category `elderward`)
 
 Only administrators (`Elderward_Plugin::can_manage()`) can call them. There is no ability that cleans, restores or writes site files. Every output that carries scanned data has an `untrusted_data_notice`, and the triage prompt tells the assistant to treat file names, paths, details and file contents as attacker-controlled data, never as instructions. Without MCP, the tab offers a brief (instructions plus the top 100 findings as JSON lines between untrusted-data markers) to paste into any chatbot. `tests/mcp-stdio.js` drives a whole session over STDIO.
 
-The plugin stores the latest report in one table (`{prefix}elderward_findings`) and its scan state in an option; uninstalling removes both and the work folder under `wp-content/uploads/elderward/`.
+The plugin stores the latest report in one table (`{prefix}elderward_findings`) and its scan state in an option; uninstalling removes both, the work folder under `wp-content/uploads/elderward/`, Elderward's `.htaccess` blocks, and the recovery key and state.
 
 ## The standalone CLI
 
@@ -241,7 +280,10 @@ tests/regress.sh   old-vs-new output diff over synthetic fixtures (needs the Mar
 tests/chunking.php proves a scan run one unit per request yields the same findings as one uninterrupted run
 tests/admin-ui.js  Playwright run through the admin page
 tests/background-ui.js, findings-ui.js, signatures-ui.js   Playwright: runner/schedule, false positives and samples, signature editor
+tests/hardening-ui.js   Playwright: Hardening tab on an Apache site (apply, check, Nginx download, remove)
+tests/recovery.js  Playwright: recovery key, recovery page on a broken site, scan, export, revoke
 tests/mcp-stdio.js MCP client session over STDIO through the MCP Adapter
+recovery.php, includes/recovery/   recovery mode (runs without WordPress; PHP 5.6 syntax)
 ```
 
 `composer install` brings PHPCS with the WordPress and PHPCompatibility standards; `composer phpcs` must come back clean before a release. `TESTPLAN.md` lists the fixtures and the live wordpress.org tests that need a networked site.
@@ -251,7 +293,9 @@ tests/mcp-stdio.js MCP client session over STDIO through the MCP Adapter
 - Signature-based: it finds and removes *known* malware. A clean scan is not proof of a clean site.
 - Log IoC checks show attack *attempts*, including plenty that failed (status 403/404). Treat them as awareness and a starting point for investigation, not confirmation of compromise.
 - Files larger than 2 MB are skipped by the file scanner.
-- The admin page is report-only in this release; cleanup and restore run from the command line.
+- Scans are report-only in this release; cleanup and restore run from the command line. The admin pages change files only when you apply hardening rules (`.htaccess`) or create a recovery key.
+- Hardening rules are written for Apache/LiteSpeed only; Nginx configuration has to be included by someone with server access. IIS is not supported.
+- The hardening check cannot tell a refusal by the web server from one by a firewall or CDN in front of the site.
 - AI assistant access needs WordPress 6.9+ and the MCP Adapter plugin. What you share with an assistant goes to its provider.
 - Background and scheduled scans depend on WP-Cron: the site must be able to request its own `wp-cron.php`, or a server cron job must call it. The page falls back to stepping the scan itself when WP-Cron stops responding.
 

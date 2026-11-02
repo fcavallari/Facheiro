@@ -34,6 +34,10 @@ Anything that blocks a check - an unreadable file, a failed query, a missing PHP
 
 **Work with an AI assistant.** On WordPress 6.9 or later, Elderward registers its scan, findings, signature and false-positive tools as WordPress abilities. With the official MCP Adapter plugin, Claude, ChatGPT, Antigravity, Cursor or any other MCP client can run scans, explain the findings, read flagged files, and draft and test signatures with you. Everything scanned is labelled as untrusted data for the assistant, and it has no tool that cleans or changes files. Without MCP, the AI assistants tab gives you a ready-made brief to paste into any chatbot.
 
+**Harden the server.** The Hardening tab adds web server rules that refuse what should never be served: PHP dropped into uploads, copies of `wp-config.php`, `.git` and other hidden files, backups and logs, WordPress internals, folder listings. Choose Apache/LiteSpeed or Nginx, start from the Recommended or Strict template or pick each protection yourself (each one says what it could break), and review the exact rules before applying. On Apache and LiteSpeed, Elderward writes them into `.htaccess` files between its own markers, checks the site afterwards and undoes the change automatically if the site stops working. On Nginx, download the configuration file and include it in the server block. **Check now** confirms what the live site enforces, whoever added the rules.
+
+**Recovery mode for a site that no longer loads.** When malware or a broken update causes a white screen or a critical error, the admin pages stop working too. Recovery mode is a separate, key-protected page that does not load WordPress: it shows the PHP errors that broke the site and the plugin or theme they come from, and runs the full report-only scan, database included. Create the key on the Recovery tab while the site works, with WP-CLI, or - if the site is already down - by uploading a key file. Without a key the page answers "not found".
+
 **Cleanup and restore run from the command line**, where you can take a backup first and preview with a dry run:
 
 * `wp elderward scan --dryrun` then `wp elderward scan` removes known malware from infected files (atomic write, never truncates the original).
@@ -50,7 +54,8 @@ Development happens at [github.com/fioa8c/elderward](https://github.com/fioa8c/e
 3. Open **Elderward** in the admin menu (in the Network Admin on multisite) and click **Start scan**. The scan continues in the background; the page shows its progress and reloads with the findings when it ends.
 4. Under **Settings** on the same page, choose how scans run (background through WP-Cron, or from the browser tab) and, if you want, a schedule.
 5. To act on the findings, use the WP-CLI commands shown under the results, after taking a backup.
-6. Optional: to use an AI assistant, install the MCP Adapter plugin and follow the steps on the **AI assistants** tab.
+6. Recommended: apply the Recommended template on the **Hardening** tab, and create a recovery key on the **Recovery** tab so recovery mode is ready if the site ever breaks.
+7. Optional: to use an AI assistant, install the MCP Adapter plugin and follow the steps on the **AI assistants** tab.
 
 == Frequently Asked Questions ==
 
@@ -84,7 +89,7 @@ No. There is no telemetry, no account and no remote service. The only outbound r
 
 = Will the scan modify my site? =
 
-The admin page is report-only: it never writes, deletes or restores files and never changes the database. Cleanup (`wp elderward scan`) and restore (`wp elderward integrity --restore`) are separate, explicit commands with a `--dryrun` preview. Take a backup before running them.
+Scans are report-only: they never write, delete or restore files and never change the database. The only files the admin pages ever change are `.htaccess` files, when you apply protections on the Hardening tab, and the recovery key file, when you create one. Cleanup (`wp elderward scan`) and restore (`wp elderward integrity --restore`) are separate, explicit commands with a `--dryrun` preview. Take a backup before running them.
 
 = Why does the plugin use shell_exec? =
 
@@ -92,11 +97,19 @@ Only for the crontab check, which runs the fixed, read-only command `crontab -l`
 
 = Why does the plugin write files directly instead of using WP_Filesystem? =
 
-Cleanup and restore have to write files atomically (temporary file plus rename, so a failed write can never truncate the original) and copy originals to a quarantine folder before overwriting them, which the FTP and SSH transports of WP_Filesystem cannot do. Those writes only happen from the command line, never from the admin page. The admin scan writes nothing but its own work files under `wp-content/uploads/elderward/` (a file list and downloaded official packages), which are removed when the scan ends.
+Cleanup and restore have to write files atomically (temporary file plus rename, so a failed write can never truncate the original) and copy originals to a quarantine folder before overwriting them, which the FTP and SSH transports of WP_Filesystem cannot do. Those writes only happen from the command line, never from the admin page. The admin scan writes nothing but its own work files under `wp-content/uploads/elderward/` (a file list and downloaded official packages), which are removed when the scan ends. The Hardening tab writes `.htaccess` through WordPress's own `insert_with_markers()`, and removes its block in place; the recovery key and recovery mode's state are small plain files, because recovery mode must read them without WordPress.
+
+= What if hardening breaks my site? =
+
+Before writing anything, Elderward checks that every file it needs can be written. After writing, it loads the home page, the login page and an admin request; if any of them starts failing (most often because the host does not allow one of the rules in `.htaccess`), it puts every file back exactly as it was and tells you which protections to leave out. Rules live only between `# BEGIN Elderward` and `# END Elderward`, and **Remove Elderward rules** takes them out again. If a protection breaks a feature without breaking the whole site, switch it off and apply again. If you cannot reach the admin at all, delete the lines between those markers in the `.htaccess` files over FTP.
+
+= Is the recovery page a security risk? =
+
+It does nothing without a recovery key: no valid, unexpired key file means a plain 404. Keys created by Elderward are 32 random characters and only their SHA-256 is stored; wrong guesses are slowed down and then blocked for 15 minutes; a sign-in lasts one hour and ends when the key is revoked or replaced. The page only reads files and the database, never changes anything, and reads `wp-config.php` without executing it. Use it over HTTPS and revoke the key when you are done.
 
 = Can I run it on a site that no longer loads? =
 
-Yes. `php bin/elderward.php scanall=1 scandirectory=/path/to/wp-root` runs the same scanners without WordPress, reading the database credentials from `wp-config.php` without executing it. Run `php bin/elderward.php help=1` for the options.
+Yes: use recovery mode (see the Recovery tab), or, with shell access, `php bin/elderward.php scanall=1 scandirectory=/path/to/wp-root` runs the same scanners without WordPress, reading the database credentials from `wp-config.php` without executing it. Run `php bin/elderward.php help=1` for the options.
 
 = Is a clean scan proof that the site is clean? =
 
@@ -111,7 +124,9 @@ The admin interface is translatable. The finding details themselves (the technic
 1. The Elderward page: start a scan and watch it progress.
 2. The findings table, sorted worst-first, with severity filters, false-positive marks, sample downloads and export.
 3. The signature editor and tester.
-4. Connecting an AI assistant.
+4. Hardening: server choice, templates and protections.
+5. Recovery mode, working while WordPress itself shows a critical error.
+6. Connecting an AI assistant.
 
 == External services ==
 
@@ -120,7 +135,7 @@ This plugin connects to two WordPress.org services, only while an integrity chec
 * `https://api.wordpress.org/core/checksums/` - the official checksum manifest for the installed WordPress version and locale. Sent: the version number and locale.
 * `https://downloads.wordpress.org/` - the plugin checksum manifests and the official plugin, theme and core packages. Sent: the plugin or theme slug and version.
 
-Both are operated by the WordPress Foundation; see the [WordPress.org privacy policy](https://wordpress.org/about/privacy/). No other hosts are contacted by the plugin.
+Both are operated by the WordPress Foundation; see the [WordPress.org privacy policy](https://wordpress.org/about/privacy/). No other hosts are contacted by the plugin. The **Check now** button on the Hardening tab and the safety check after applying hardening rules send requests to your own site only.
 
 The findings page shows a **Look up on VirusTotal** link next to file findings. It is an ordinary link: only when you click it, your browser opens `https://www.virustotal.com/gui/file/<sha256>` with the file's SHA-256 hash in the address. The site itself makes no request and sends no file. VirusTotal is operated by Google; see its [terms](https://docs.virustotal.com/docs/terms-of-service) and [privacy policy](https://docs.virustotal.com/docs/privacy-policy).
 
@@ -132,4 +147,6 @@ AI assistants connect to your site through the separate MCP Adapter plugin, usin
 * First release as a WordPress plugin: admin page with a report-only scan that runs in the background through WP-Cron (or from the browser tab), scheduled scans, WP-CLI commands, and the standalone CLI.
 * False-positive marks bound to the reviewed file content, and encrypted sample downloads for manual analysis.
 * Signature editor for custom, detection-only signatures, with a tester and JSON import/export (also usable by the standalone CLI through `signatures=`).
+* Hardening for Apache/LiteSpeed (`.htaccess`, applied with an automatic health check and rollback) and Nginx (downloadable configuration), with Recommended and Strict templates and a live check.
+* Recovery mode: a key-protected page that shows what broke the site and runs the full scan without loading WordPress.
 * WordPress abilities for AI assistants over MCP (WordPress 6.9+ with the MCP Adapter plugin), a triage prompt, and a copyable brief for chatbots without MCP.

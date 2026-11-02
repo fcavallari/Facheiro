@@ -51,6 +51,8 @@ final class Elderward_Admin
         add_action('admin_post_elderward_signatures_export', array(__CLASS__, 'signatures_export'));
         add_action('wp_ajax_elderward_sig_test', array(__CLASS__, 'ajax_signature_test'));
         add_action('admin_post_elderward_save_settings', array(__CLASS__, 'save_settings'));
+        Elderward_Admin_Hardening::init();
+        Elderward_Admin_Recovery::init();
     }
 
     public static function page_url()
@@ -113,6 +115,13 @@ final class Elderward_Admin
             'elderward-signatures' => array(__('Signatures', 'elderward'), array(
                 __('A signature describes something to look for. Built-in signatures ship with Elderward; on the Signatures tab you can add your own for a threat specific to this site, try them on a file or a pasted sample, and import or export them.', 'elderward'),
                 __('Custom signatures only report matches. They never clean or delete anything.', 'elderward'),
+            )),
+            'elderward-hardening'  => array(__('Hardening', 'elderward'), array(
+                __('The Hardening tab adds web server rules that refuse dangerous requests: PHP in uploads, wp-config copies, hidden files such as .git, WordPress internals. Pick your server, a template (Recommended or Strict) or individual protections, and review the exact rules before applying.', 'elderward'),
+                __('On Apache and LiteSpeed, Elderward writes the rules into .htaccess files, checks the site afterwards and undoes the change if the site breaks. On Nginx, download the configuration file and include it in the server configuration. "Check now" confirms what the live site enforces.', 'elderward'),
+            )),
+            'elderward-recovery'   => array(__('Recovery', 'elderward'), array(
+                __('Recovery mode scans the site when WordPress itself no longer loads (a white screen or a fatal error), from a page that does not depend on WordPress. It is locked by a key you create on the Recovery tab, with WP-CLI, or by uploading a key file.', 'elderward'),
             )),
             'elderward-assistants' => array(__('AI assistants', 'elderward'), array(
                 __('The AI assistants tab explains how to let an assistant such as Claude run scans and explain the findings, through the MCP Adapter plugin, or how to copy a summary into any chat.', 'elderward'),
@@ -187,7 +196,7 @@ final class Elderward_Admin
             'status'     => null === $job ? '' : $job['status'],
             'background' => null !== $job && !empty($job['background']),
             'stale'      => self::STALE_SECONDS,
-            'i18n'       => array(
+            'i18n'       => array_merge(Elderward_Admin_Hardening::i18n(), Elderward_Admin_Recovery::i18n(), array(
                 'starting'   => __('Starting scan…', 'elderward'),
                 /* translators: %s: name of the scanner currently running */
                 'running'    => __('Scanning: %s', 'elderward'),
@@ -213,7 +222,7 @@ final class Elderward_Admin
                 'copied'     => __('Copied.', 'elderward'),
                 'sigDelete'  => __('Delete this custom signature?', 'elderward'),
                 'takeover'   => __('The background scan stopped making progress, so it continues from this tab for as long as the page stays open. Tools > Site Health shows whether this site can reach its own wp-cron.php; otherwise set Run scans to "Only while this page is open".', 'elderward'),
-            ),
+            )),
         ));
     }
 
@@ -375,7 +384,7 @@ final class Elderward_Admin
         return add_query_arg(array_merge(array('tab' => 'signatures'), $args), self::page_url());
     }
 
-    private static function notify(array $notices)
+    public static function notify(array $notices)
     {
         set_transient('elderward_notice_' . get_current_user_id(), $notices, MINUTE_IN_SECONDS);
     }
@@ -947,7 +956,7 @@ final class Elderward_Admin
         $filter = isset($_GET['severity']) ? sanitize_key(wp_unslash($_GET['severity'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter on a listing.
         $filter = in_array(strtoupper($filter), $severities, true) ? strtoupper($filter) : '';
         $paged = isset($_GET['paged']) ? max(1, (int) $_GET['paged']) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination.
-        $tab = (isset($_GET['tab']) && in_array($_GET['tab'], array('signatures', 'assistants'), true)) ? sanitize_key(wp_unslash($_GET['tab'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- selects a tab.
+        $tab = (isset($_GET['tab']) && in_array($_GET['tab'], array('signatures', 'hardening', 'recovery', 'assistants'), true)) ? sanitize_key(wp_unslash($_GET['tab'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- selects a tab.
         $fp_view = isset($_GET['view']) && 'fp' === $_GET['view']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter on a listing.
         if ($fp_view) {
             $filter = '';
@@ -974,12 +983,18 @@ final class Elderward_Admin
             <nav class="nav-tab-wrapper elderward-tabs">
                 <a href="<?php echo esc_url($page_url); ?>" class="nav-tab <?php echo '' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Scan', 'elderward'); ?></a>
                 <a href="<?php echo esc_url(self::signatures_url()); ?>" class="nav-tab <?php echo 'signatures' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Signatures', 'elderward'); ?></a>
+                <a href="<?php echo esc_url(add_query_arg('tab', 'hardening', $page_url)); ?>" class="nav-tab <?php echo 'hardening' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Hardening', 'elderward'); ?></a>
+                <a href="<?php echo esc_url(add_query_arg('tab', 'recovery', $page_url)); ?>" class="nav-tab <?php echo 'recovery' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Recovery', 'elderward'); ?></a>
                 <a href="<?php echo esc_url(add_query_arg('tab', 'assistants', $page_url)); ?>" class="nav-tab <?php echo 'assistants' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('AI assistants', 'elderward'); ?></a>
             </nav>
             <?php if ('' !== $tab) : ?>
                 <?php
                 if ('signatures' === $tab) {
                     self::render_signatures_tab();
+                } elseif ('hardening' === $tab) {
+                    Elderward_Admin_Hardening::render();
+                } elseif ('recovery' === $tab) {
+                    Elderward_Admin_Recovery::render();
                 } else {
                     self::render_assistants_tab();
                 }
@@ -1343,7 +1358,7 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
     /**
      * A "?" button that shows or hides the help text with the same id.
      */
-    private static function help_button($id)
+    public static function help_button($id)
     {
         printf(
             '<button type="button" class="elderward-help-toggle" aria-expanded="false" aria-controls="%1$s" title="%2$s"><span aria-hidden="true">?</span><span class="screen-reader-text">%2$s</span></button>',
@@ -1352,7 +1367,7 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
         );
     }
 
-    private static function help_text($id, array $paragraphs)
+    public static function help_text($id, array $paragraphs)
     {
         echo '<div class="elderward-help-text" id="' . esc_attr($id) . '" hidden>';
         foreach ($paragraphs as $paragraph) {

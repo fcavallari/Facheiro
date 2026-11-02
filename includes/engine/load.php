@@ -5,9 +5,10 @@
 // functions: nothing runs until an entry point builds a Context.
 //////////////
 
-// Loaded by the plugin (ABSPATH defined) or the standalone CLI; never
+// Loaded by the plugin (ABSPATH defined), the standalone CLI, or the
+// key-protected recovery page (ELDERWARD_RECOVERY); never
 // served directly over the web.
-if (!defined('ABSPATH') && PHP_SAPI !== 'cli') {
+if (!defined('ABSPATH') && !defined('ELDERWARD_RECOVERY') && PHP_SAPI !== 'cli') {
     exit;
 }
 

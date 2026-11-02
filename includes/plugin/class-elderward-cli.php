@@ -239,6 +239,163 @@ class Elderward_CLI
         }
     }
 
+    /**
+     * Hardens the web server: prints, applies, removes or checks the rules.
+     *
+     * Apache/LiteSpeed rules are written into .htaccess files between
+     * "# BEGIN Elderward" and "# END Elderward"; the site is checked before
+     * and after, and every file is put back if it stops answering. For
+     * Nginx, --print outputs the file to include in the server block.
+     *
+     * ## OPTIONS
+     *
+     * [--server=<server>]
+     * : apache (also LiteSpeed) or nginx. Default: detected, else apache.
+     *
+     * [--preset=<preset>]
+     * : recommended (default) or strict.
+     *
+     * [--features=<list>]
+     * : Comma-separated protections instead of a preset: uploads_php,
+     * core_includes, config, sensitive, dotfiles, indexes, themes_php,
+     * headers, xmlrpc, plugins_php.
+     *
+     * [--print]
+     * : Print the rules (the default when nothing else is asked).
+     *
+     * [--apply]
+     * : Write the .htaccess rules (Apache/LiteSpeed only).
+     *
+     * [--remove]
+     * : Remove every Elderward rule from the .htaccess files.
+     *
+     * [--check]
+     * : Send test requests to the live site and report what it enforces.
+     *
+     * ## EXAMPLES
+     *
+     *     wp elderward harden --server=nginx --print > /etc/nginx/snippets/elderward.conf
+     *     wp elderward harden --apply
+     *     wp elderward harden --preset=strict --apply
+     *     wp elderward harden --check
+     *
+     * @when after_wp_load
+     */
+    public function harden($args, $assoc_args)
+    {
+        $detected = Elderward_Hardening::detect_server();
+        $server = isset($assoc_args['server']) ? strtolower($assoc_args['server']) : (null === $detected ? 'apache' : $detected);
+        if (!array_key_exists($server, Elderward_Hardening::servers())) {
+            WP_CLI::error('--server must be apache or nginx.');
+        }
+        $preset = isset($assoc_args['preset']) ? strtolower($assoc_args['preset']) : 'recommended';
+        if (isset($assoc_args['features'])) {
+            $features = Elderward_Hardening::clean_features(explode(',', $assoc_args['features']));
+            $unknown = array_diff(array_map('trim', explode(',', $assoc_args['features'])), $features, array(''));
+            if (!empty($unknown)) {
+                WP_CLI::error('Unknown protection: ' . implode(', ', $unknown));
+            }
+            $preset = 'custom';
+        } elseif (in_array($preset, array('recommended', 'strict'), true)) {
+            $features = Elderward_Hardening::preset_features($preset);
+        } else {
+            WP_CLI::error('--preset must be recommended or strict.');
+        }
+
+        if (isset($assoc_args['check'])) {
+            $failed = false;
+            foreach (Elderward_Hardening::check() as $id => $result) {
+                WP_CLI::line(sprintf('%-9s %-14s %s', strtoupper($result['status']), $id, $result['detail']));
+                $failed = $failed || ('exposed' === $result['status'] && in_array($id, $features, true));
+            }
+            WP_CLI::halt($failed ? 2 : 0);
+        }
+        if (isset($assoc_args['apply']) || isset($assoc_args['remove'])) {
+            if ('apache' !== $server) {
+                WP_CLI::error('Elderward writes rules only for Apache/LiteSpeed. For Nginx, use --print and include the file.');
+            }
+            Elderward_Hardening::remember($server, $preset, $features);
+            $report = isset($assoc_args['remove']) ? Elderward_Hardening::remove() : Elderward_Hardening::apply($features);
+            foreach ($report['files'] as $file) {
+                WP_CLI::line(sprintf('%-8s %s', $file['action'], $file['file']));
+            }
+            if (!$report['ok']) {
+                WP_CLI::error('' !== $report['message'] ? $report['message'] : 'The rules could not be written.');
+            }
+            WP_CLI::success(isset($assoc_args['remove']) ? 'Elderward rules removed.' : 'Protections applied; the site still answers normally.');
+            return;
+        }
+        if ('nginx' === $server) {
+            WP_CLI::line(rtrim(Elderward_Hardening::nginx_rules($features)));
+            return;
+        }
+        foreach (Elderward_Hardening::apache_preview($features) as $file => $lines) {
+            WP_CLI::line('# ' . $file);
+            WP_CLI::line("# BEGIN Elderward\n" . implode("\n", $lines) . "\n# END Elderward\n");
+        }
+    }
+
+    /**
+     * Creates, shows or revokes the key for the recovery page.
+     *
+     * The recovery page (wp-content/plugins/elderward/recovery.php) scans
+     * the site without loading WordPress. It answers 404 unless a key
+     * exists.
+     *
+     * ## OPTIONS
+     *
+     * <action>
+     * : create, status or revoke.
+     *
+     * [--expires=<days>]
+     * : For create: 1 to 365 days, or "never". Default 7.
+     *
+     * ## EXAMPLES
+     *
+     *     wp elderward recovery-key create --expires=7
+     *     wp elderward recovery-key revoke
+     *
+     * @subcommand recovery-key
+     * @when after_wp_load
+     */
+    public function recovery_key($args, $assoc_args)
+    {
+        $action = isset($args[0]) ? $args[0] : 'status';
+        if ('create' === $action) {
+            $expires = isset($assoc_args['expires']) ? (string) $assoc_args['expires'] : '7';
+            if ('never' !== $expires && (!ctype_digit($expires) || (int) $expires < 1 || (int) $expires > 365)) {
+                WP_CLI::error('--expires must be 1 to 365 days, or never.');
+            }
+            $key = Elderward_Recovery_Key::create($expires, 'wp-cli');
+            if (is_wp_error($key)) {
+                WP_CLI::error($key->get_error_message());
+            }
+            WP_CLI::line('Recovery page: ' . Elderward_Recovery_Key::url());
+            WP_CLI::line('Recovery key:  ' . $key);
+            WP_CLI::success('Store the key somewhere safe: it is not shown again.');
+            return;
+        }
+        if ('revoke' === $action) {
+            if (!Elderward_Recovery_Key::revoke()) {
+                WP_CLI::error('Could not delete ' . Elderward_Recovery_Key::path());
+            }
+            WP_CLI::success('Recovery key revoked.');
+            return;
+        }
+        if ('status' !== $action) {
+            WP_CLI::error('Action must be create, status or revoke.');
+        }
+        $status = Elderward_Recovery_Key::status();
+        if (null === $status) {
+            WP_CLI::line('Recovery mode is off (no key).');
+            return;
+        }
+        WP_CLI::line('Recovery mode is ' . (Elderward_Recovery_Key::active() ? 'on' : 'off (key invalid or expired)') . '.');
+        WP_CLI::line('Key file: ' . Elderward_Recovery_Key::path() . ($status['manual'] ? ' (added by hand)' : ''));
+        WP_CLI::line('Expires:  ' . (0 === $status['expires'] ? 'never' : gmdate('Y-m-d H:i', $status['expires']) . ' UTC'));
+        WP_CLI::line('Page:     ' . Elderward_Recovery_Key::url());
+    }
+
     private function run(array $options, $mode, array $assoc_args)
     {
         $json = isset($assoc_args['format']) && 'json' === strtolower($assoc_args['format']);

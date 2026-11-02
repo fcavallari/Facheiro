@@ -21,6 +21,8 @@
 
 	scheduleForm();
 	helpToggles();
+	hardening();
+	confirmButtons();
 	falsePositives();
 	signatureEditor();
 	copyButtons();
@@ -339,6 +341,183 @@
 				}
 			});
 		});
+	}
+
+	// Buttons that ask first: data-confirm="harden-apply" uses i18n.hardenApply.
+	function confirmButtons() {
+		document.querySelectorAll('button[data-confirm]').forEach(function (button) {
+			button.addEventListener('click', function (event) {
+				var key = button.getAttribute('data-confirm').replace(/-([a-z])/g, function (m, c) { return c.toUpperCase(); });
+				if (cfg.i18n[key] && !window.confirm(cfg.i18n[key])) {
+					event.preventDefault();
+				}
+			});
+		});
+		document.querySelectorAll('[data-copy-text]').forEach(function (button) {
+			button.addEventListener('click', function () {
+				var text = button.getAttribute('data-copy-text');
+				var label = button.textContent;
+				var done = function () {
+					button.textContent = cfg.i18n.copied;
+					window.setTimeout(function () { button.textContent = label; }, 2000);
+				};
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					navigator.clipboard.writeText(text).then(done, done);
+				} else {
+					done();
+				}
+			});
+		});
+	}
+
+	// Hardening tab: templates set the switches, any switch makes it Custom,
+	// the preview follows every change, buttons follow the server choice.
+	function hardening() {
+		var form = document.getElementById('elderward-harden-form');
+		if (!form) {
+			return;
+		}
+		var nonce = form.getAttribute('data-nonce');
+		var preview = document.getElementById('elderward-harden-preview');
+		var boxes = form.querySelectorAll('input[name="features[]"]');
+		var presets = form.querySelectorAll('input[name="preset"]');
+		var timer = null;
+
+		function server() {
+			var picked = form.querySelector('input[name="server"]:checked');
+			return picked ? picked.value : 'apache';
+		}
+		function selected() {
+			return Array.prototype.filter.call(boxes, function (box) { return box.checked; }).map(function (box) { return box.value; });
+		}
+		function showServer() {
+			var current = server();
+			document.querySelectorAll('[data-server-only]').forEach(function (el) {
+				el.hidden = el.getAttribute('data-server-only') !== current;
+			});
+		}
+		function hpost(action, fields) {
+			var body = new FormData();
+			body.append('action', action);
+			body.append('nonce', nonce);
+			Object.keys(fields).forEach(function (key) {
+				[].concat(fields[key]).forEach(function (value) { body.append(key, value); });
+			});
+			return fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body }).then(function (r) { return r.json(); });
+		}
+		function refresh() {
+			window.clearTimeout(timer);
+			timer = window.setTimeout(function () {
+				hpost('elderward_harden_preview', { server: server(), 'features[]': selected() }).then(function (result) {
+					if (!result || !result.success) {
+						return;
+					}
+					preview.textContent = '';
+					result.data.forEach(function (file) {
+						if (file.file) {
+							var name = document.createElement('p');
+							name.className = 'elderward-preview-file';
+							var code = document.createElement('code');
+							code.textContent = file.file;
+							name.appendChild(code);
+							preview.appendChild(name);
+						}
+						var pre = document.createElement('pre');
+						pre.className = 'elderward-cli';
+						pre.textContent = file.content;
+						preview.appendChild(pre);
+					});
+				});
+			}, 150);
+		}
+
+		presets.forEach(function (radio) {
+			radio.addEventListener('change', function () {
+				var list = JSON.parse(radio.getAttribute('data-features') || 'null');
+				if (list) {
+					boxes.forEach(function (box) { box.checked = list.indexOf(box.value) !== -1; });
+				}
+				refresh();
+			});
+		});
+		boxes.forEach(function (box) {
+			box.addEventListener('change', function () {
+				var now = selected();
+				var match = null;
+				presets.forEach(function (radio) {
+					var list = JSON.parse(radio.getAttribute('data-features') || 'null');
+					if (list && list.length === now.length && list.every(function (id) { return now.indexOf(id) !== -1; })) {
+						match = radio;
+					}
+				});
+				(match || form.querySelector('input[name="preset"][value="custom"]')).checked = true;
+				refresh();
+			});
+		});
+		form.querySelectorAll('input[name="server"]').forEach(function (radio) {
+			radio.addEventListener('change', function () { showServer(); refresh(); });
+		});
+		var copy = document.getElementById('elderward-harden-copy');
+		if (copy) {
+			copy.addEventListener('click', function () {
+				var pre = preview.querySelector('pre');
+				if (pre && navigator.clipboard) {
+					var label = copy.textContent;
+					navigator.clipboard.writeText(pre.textContent).then(function () {
+						copy.textContent = cfg.i18n.copied;
+						window.setTimeout(function () { copy.textContent = label; }, 2000);
+					});
+				}
+			});
+		}
+
+		var run = document.getElementById('elderward-harden-check-run');
+		if (run) {
+			run.addEventListener('click', function () {
+				var label = run.textContent;
+				run.disabled = true;
+				run.textContent = cfg.i18n.hardenChecking;
+				hpost('elderward_harden_check', {}).then(function (result) {
+					run.disabled = false;
+					run.textContent = label;
+					if (!result || !result.success) {
+						window.alert((result && result.data && result.data.message) || cfg.i18n.network);
+						return;
+					}
+					var words = { protected: cfg.i18n.statusProtected, exposed: cfg.i18n.statusExposed, unknown: cfg.i18n.statusUnknown };
+					var list = document.getElementById('elderward-harden-check-list');
+					list.textContent = '';
+					Object.keys(result.data.results).forEach(function (id) {
+						var item = result.data.results[id];
+						var li = document.createElement('li');
+						var pill = document.createElement('span');
+						pill.className = 'elderward-check elderward-check-' + item.status;
+						pill.textContent = words[item.status] || item.status;
+						var name = document.createElement('strong');
+						name.textContent = result.data.labels[id] || id;
+						li.appendChild(pill);
+						li.appendChild(document.createTextNode(' '));
+						li.appendChild(name);
+						li.appendChild(document.createTextNode(' ' + item.detail));
+						list.appendChild(li);
+						var inline = form.querySelector('.elderward-check[data-feature="' + id + '"]');
+						if (inline) {
+							inline.hidden = false;
+							inline.className = 'elderward-check elderward-check-' + item.status;
+							inline.textContent = words[item.status] || item.status;
+						}
+					});
+					document.getElementById('elderward-harden-check-when').textContent = cfg.i18n.checkedNow;
+				}).catch(function () {
+					run.disabled = false;
+					run.textContent = label;
+					window.alert(cfg.i18n.network);
+				});
+			});
+		}
+
+		showServer();
+		refresh();
 	}
 
 	// "?" buttons: show or hide the help text they point at.

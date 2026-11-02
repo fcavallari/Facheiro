@@ -42,6 +42,10 @@ require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-signatures.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-abilities.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-store-reporter.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-admin.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-hardening.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-admin-hardening.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-recovery-key.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-admin-recovery.php';
 
 register_activation_hook(__FILE__, array('Elderward_Plugin', 'activate'));
 register_deactivation_hook(__FILE__, array('Elderward_Plugin', 'deactivate'));
