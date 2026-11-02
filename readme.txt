@@ -1,6 +1,6 @@
 === Elderward ===
 Contributors: fioa8c
-Tags: malware, security, scanner, integrity, incident response
+Tags: malware, security, scanner, hardening, incident response
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.2
@@ -8,7 +8,7 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Malware scanner and incident-response toolkit: file signatures, core/plugin/theme integrity, database, crontab and access-log checks.
+Malware scanner and incident response: integrity, database and log checks, server hardening, and a recovery mode for sites that no longer load.
 
 == Description ==
 
@@ -52,7 +52,7 @@ Development happens at [github.com/fioa8c/elderward](https://github.com/fioa8c/e
 1. Upload the `elderward` folder to `/wp-content/plugins/`, or install it from the Plugins screen.
 2. Activate the plugin. It creates one database table (`{prefix}elderward_findings`) to hold the latest report.
 3. Open **Elderward** in the admin menu (in the Network Admin on multisite) and click **Start scan**. The scan continues in the background; the page shows its progress and reloads with the findings when it ends.
-4. Under **Settings** on the same page, choose how scans run (background through WP-Cron, or from the browser tab) and, if you want, a schedule.
+4. Under **Settings** on the same page, optionally give the location of the web server's access logs, choose how scans run (in the background through WP-Cron, or only while the page is open) and, if you want, automatic scans.
 5. To act on the findings, use the WP-CLI commands shown under the results, after taking a backup.
 6. Recommended: apply the Recommended template on the **Hardening** tab, and create a recovery key on the **Recovery** tab so recovery mode is ready if the site ever breaks.
 7. Optional: to use an AI assistant, install the MCP Adapter plugin and follow the steps on the **AI assistants** tab.
@@ -85,7 +85,7 @@ Any assistant that can use an MCP server: Claude (Desktop and Code), Antigravity
 
 = Does the plugin send data anywhere? =
 
-No. There is no telemetry, no account and no remote service. The only outbound requests are made during the integrity check, to `api.wordpress.org` (core and plugin checksum manifests) and `downloads.wordpress.org` (official plugin/theme/core packages, needed to verify themes and to restore files). The requests carry only the WordPress version, the plugin or theme slug and its version. Findings are stored in your own database and shown only to administrators.
+No. There is no telemetry, no account and no remote service. The only outbound requests are made during the integrity check, to `api.wordpress.org` (core and plugin checksum manifests) and `downloads.wordpress.org` (official plugin/theme/core packages, needed to verify themes and to restore files). The requests carry only the WordPress version, the plugin or theme slug and its version. The hardening check and the safety check after applying hardening rules request your own site only. Findings are stored in your own database and shown only to administrators.
 
 = Will the scan modify my site? =
 

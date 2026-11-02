@@ -12,3 +12,6 @@ vendor
 node_modules
 build
 .wordpress-org
+site
+.claude
+dist

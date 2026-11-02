@@ -8,18 +8,34 @@
 
 Elderward is a free malware scanner and incident-response toolkit for WordPress sites. It checks files for signs of compromise and can remove known malware, verifies core, plugins and themes against the official wordpress.org packages, scans the database for rogue administrators and injected content, and reads access logs for known indicators of compromise (IoCs) so you can understand how the attack happened — not just clean up after it.
 
-It runs three ways, all on the same engine:
+What you get:
 
-- **WordPress plugin** — its own **Elderward** admin menu runs a report-only scan of everything and shows the findings; `wp elderward ...` runs every scanner, cleanup and restore from WP-CLI.
-- **Standalone CLI** — `php bin/elderward.php ...` needs no working WordPress: upload the folder to a dead site and scan it.
-- Nothing leaves the server. The only outbound requests go to wordpress.org, during the integrity check, for checksum manifests and official packages.
+- **A report-only scan of everything** from its own **Elderward** admin menu, in the background through WP-Cron or on a schedule, with findings worst-first, false-positive marks bound to the reviewed file, encrypted sample downloads and NDJSON export.
+- **Custom signatures** written and tested in the admin (detection-only), shared as JSON with the CLI.
+- **Server hardening** for Apache/LiteSpeed (`.htaccess`, applied with a health check and automatic rollback) and Nginx (a configuration file to include), from a Recommended or Strict template or protection by protection, and a live check of what the server enforces.
+- **Recovery mode**: a key-protected page that works when WordPress itself does not load (white screen, critical error), shows what broke the site and runs the full scan.
+- **AI assistant tools** over MCP (WordPress 6.9+ with the MCP Adapter plugin), so Claude, ChatGPT, Antigravity or Cursor can run scans, explain the findings and draft signatures with you, and never clean or change files.
+- **Cleanup and restore** from WP-CLI or the standalone CLI, with a dry run first.
+
+It runs four ways, all on the same engine:
+
+- **WordPress plugin** — the admin pages above.
+- **WP-CLI** — `wp elderward ...` runs every scanner, cleanup, restore and hardening command, with text or NDJSON output and alerting exit codes.
+- **Recovery mode** — `recovery.php` in the plugin folder, when WordPress no longer loads but the web server still runs PHP.
+- **Standalone CLI** — `php bin/elderward.php ...` needs no working WordPress at all: upload the folder to a dead site and scan it from a shell.
+
+Nothing leaves the server on its own. The only outbound requests go to wordpress.org during the integrity check (checksum manifests and official packages); hardening checks only request the site itself.
 
 It started as a variation of the Jetpack Cleanup Util, packaged so anyone can run it on their own host.
 
+The project homepage (English and Brazilian Portuguese) lives in `site/`.
+
 ## Requirements
 
-- WordPress 6.0+ and PHP 7.2+ for the plugin; the standalone CLI runs on PHP 5.6+
-- Shell access (WP-CLI or `php`) to clean or restore files; the admin page needs no shell
+- WordPress 6.0+ and PHP 7.2+ for the plugin; the standalone CLI and recovery mode run on PHP 5.6+
+- Shell access (WP-CLI or `php`) to clean or restore files; the admin pages need no shell
+- WordPress 6.9+ and the [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin for the AI assistant tools
+- Apache or LiteSpeed with `AllowOverride` for hardening rules Elderward writes itself; on Nginx you include the generated file in the server configuration
 
 The signature scan, quick checks and timestamp checks need nothing else. The other scanners use PHP extensions that locked-down hosts sometimes lack; a missing one is reported as an `ERROR` finding rather than skipped:
 
@@ -33,7 +49,15 @@ The signature scan, quick checks and timestamp checks need nothing else. The oth
 
 ## The plugin
 
-Install the `elderward` folder under `wp-content/plugins/` and activate it. Then:
+Elderward is not on WordPress.org yet. Install it from this repository; the folder must be named `elderward`:
+
+```
+cd wp-content/plugins
+git clone https://github.com/fioa8c/elderward.git elderward
+wp plugin activate elderward
+```
+
+(or download the repository as a zip, unpack it as `wp-content/plugins/elderward/`, and activate it on the Plugins screen). Activation creates one table, `{prefix}elderward_findings`. Then:
 
 1. **Elderward (admin menu) → Start scan.** The scan runs in the background through WP-Cron, so you can close the tab and come back; it changes nothing on the site. Findings appear worst-first with severity filters and can be exported as text or NDJSON. **Settings** on the same page set the access log file or directory that every scan checks, switch scans to run only while the page is open (for hosts where WP-Cron is unreliable), and set up daily, twice-daily or weekly automatic scans. Each setting has a **?** with more detail, and the screen's **Help** tab explains the whole page.
 2. **Review the findings.** *False positive* records a reviewed, benign finding with a note: later scans keep it in the record (and in the JSON export, flagged `"false_positive": true`) but out of the counts and the default view. A mark on a file stores the file's SHA-256 and stops applying as soon as the file changes, so the finding comes back. *Download sample* packs a flagged file into a zip encrypted with the password `infected` (AES-256), with a `manifest.json`, for you to submit to an analyst or sandbox; Elderward never uploads anything, and never packages `wp-config.php` or files outside the WordPress root. File findings also show the SHA-256 with a VirusTotal lookup link (hash only, opened by your browser).
@@ -284,7 +308,10 @@ tests/hardening-ui.js   Playwright: Hardening tab on an Apache site (apply, chec
 tests/recovery.js  Playwright: recovery key, recovery page on a broken site, scan, export, revoke
 tests/mcp-stdio.js MCP client session over STDIO through the MCP Adapter
 recovery.php, includes/recovery/   recovery mode (runs without WordPress; PHP 5.6 syntax)
+site/              the project homepage (static HTML, not part of the plugin zip)
 ```
+
+`.distignore` lists what stays out of the WordPress.org package (tests, tooling, docs for contributors, the homepage).
 
 `composer install` brings PHPCS with the WordPress and PHPCompatibility standards; `composer phpcs` must come back clean before a release. `TESTPLAN.md` lists the fixtures and the live wordpress.org tests that need a networked site.
 

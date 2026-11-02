@@ -6,7 +6,8 @@
 # diffs stdout (sorted: unit ordering inside a scanner is not a contract)
 # and exit codes. Any difference fails the run.
 #
-#   tests/regress.sh [git-ref-of-old-script]   (default: add-db-scanner)
+#   tests/regress.sh [git-ref-of-old-script]   (default: 1f5abde, main when the
+#   single-file script was merged)
 #
 # The database cases need the MariaDB fixture from TESTPLAN E (database
 # wp_test reachable through /run/mysqld/mysqld.sock); they are skipped
@@ -14,7 +15,7 @@
 set -u
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-OLD_REF="${1:-add-db-scanner}"
+OLD_REF="${1:-1f5abde}"
 WORK="$(mktemp -d)"
 OLD="$WORK/old-elderward.php"
 NEW="$REPO/bin/elderward.php"
