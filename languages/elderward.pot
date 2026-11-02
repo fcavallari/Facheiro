@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-02T20:46:17+00:00\n"
+"POT-Creation-Date: 2026-11-02T21:25:30+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: elderward\n"
@@ -20,8 +20,8 @@ msgstr ""
 #: includes/plugin/class-elderward-admin.php:69
 #: includes/plugin/class-elderward-admin.php:82
 #: includes/plugin/class-elderward-admin.php:83
-#: includes/plugin/class-elderward-admin.php:1114
-#: includes/plugin/class-elderward-admin.php:1118
+#: includes/plugin/class-elderward-admin.php:1131
+#: includes/plugin/class-elderward-admin.php:1135
 msgid "Elderward"
 msgstr ""
 
@@ -125,7 +125,7 @@ msgstr ""
 #: includes/plugin/class-elderward-admin.php:836
 #: includes/plugin/class-elderward-admin.php:882
 #: includes/plugin/class-elderward-admin.php:1020
-#: includes/plugin/class-elderward-admin.php:1096
+#: includes/plugin/class-elderward-admin.php:1113
 msgid "You are not allowed to do that."
 msgstr ""
 
@@ -275,7 +275,7 @@ msgid "%1$d protections applied by %2$s on %3$s."
 msgstr ""
 
 #: includes/plugin/class-elderward-admin-hardening.php:289
-#: includes/plugin/class-elderward-admin.php:1533
+#: includes/plugin/class-elderward-admin.php:1550
 msgid "a deleted user"
 msgstr ""
 
@@ -518,7 +518,7 @@ msgid "Without a valid, unexpired key file it answers \"not found\" and does not
 msgstr ""
 
 #: includes/plugin/class-elderward-admin-recovery.php:187
-msgid "Only a fingerprint (SHA-256) of a key created here is stored, and the key is shown to you once without being saved anywhere. Keys are 32 random characters; every wrong guess costs a second. A key typed into the file by hand also gets a 15-minute lockout after 10 wrong tries."
+msgid "Only a fingerprint (SHA-256) of a key created here is stored, and the key is shown to you once without being saved anywhere. Keys are 32 random characters, so a wrong guess is simply refused. A key typed into the file by hand may be weaker: each wrong try costs a second, and a client gets a 15-minute lockout after 10 wrong tries."
 msgstr ""
 
 #: includes/plugin/class-elderward-admin-recovery.php:188
@@ -570,7 +570,7 @@ msgid "Mark as false positive hides a finding you checked from later scans, with
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:112
-#: includes/plugin/class-elderward-admin.php:1415
+#: includes/plugin/class-elderward-admin.php:1432
 msgid "Settings"
 msgstr ""
 
@@ -587,7 +587,7 @@ msgid "Access logs: optional location of the web server logs (a file or a folder
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:117
-#: includes/plugin/class-elderward-admin.php:1133
+#: includes/plugin/class-elderward-admin.php:1150
 msgid "Signatures"
 msgstr ""
 
@@ -600,7 +600,7 @@ msgid "Custom signatures only report matches. They never clean or delete anythin
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:121
-#: includes/plugin/class-elderward-admin.php:1134
+#: includes/plugin/class-elderward-admin.php:1151
 msgid "Hardening"
 msgstr ""
 
@@ -613,7 +613,7 @@ msgid "On Apache and LiteSpeed, Elderward writes the rules into .htaccess files,
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:125
-#: includes/plugin/class-elderward-admin.php:1135
+#: includes/plugin/class-elderward-admin.php:1152
 msgid "Recovery"
 msgstr ""
 
@@ -622,7 +622,7 @@ msgid "Recovery mode scans the site when WordPress itself no longer loads (a whi
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:128
-#: includes/plugin/class-elderward-admin.php:1136
+#: includes/plugin/class-elderward-admin.php:1153
 msgid "AI assistants"
 msgstr ""
 
@@ -631,7 +631,7 @@ msgid "The AI assistants tab explains how to let an assistant such as Claude run
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:131
-#: includes/plugin/class-elderward-admin.php:1388
+#: includes/plugin/class-elderward-admin.php:1405
 msgid "Cleaning up"
 msgstr ""
 
@@ -686,12 +686,12 @@ msgid "last activity %d s ago"
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:213
-#: includes/plugin/class-elderward-admin.php:1238
+#: includes/plugin/class-elderward-admin.php:1255
 msgid "Running in the background: you can leave this page and come back later."
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:214
-#: includes/plugin/class-elderward-admin.php:1239
+#: includes/plugin/class-elderward-admin.php:1256
 msgid "Keep this page open: the scan runs in short steps from this tab."
 msgstr ""
 
@@ -829,7 +829,7 @@ msgid "How to write a good signature"
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:532
-#: includes/plugin/class-elderward-admin.php:1336
+#: includes/plugin/class-elderward-admin.php:1353
 msgid "(opens in a new tab)"
 msgstr ""
 
@@ -870,7 +870,7 @@ msgstr ""
 #: includes/plugin/class-elderward-admin.php:557
 #: includes/plugin/class-elderward-admin.php:607
 #: includes/plugin/class-elderward-admin.php:686
-#: includes/plugin/class-elderward-admin.php:1295
+#: includes/plugin/class-elderward-admin.php:1312
 msgid "Severity"
 msgstr ""
 
@@ -881,8 +881,8 @@ msgid "Conditions"
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:559
-#: includes/plugin/class-elderward-admin.php:1299
-#: includes/plugin/class-elderward-admin.php:1570
+#: includes/plugin/class-elderward-admin.php:1316
+#: includes/plugin/class-elderward-admin.php:1587
 msgid "Actions"
 msgstr ""
 
@@ -903,7 +903,7 @@ msgid "Enable"
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:576
-#: includes/plugin/class-elderward-admin.php:1591
+#: includes/plugin/class-elderward-admin.php:1608
 msgid "Keep"
 msgstr ""
 
@@ -976,7 +976,7 @@ msgid "Save changes"
 msgstr ""
 
 #: includes/plugin/class-elderward-admin.php:632
-#: includes/plugin/class-elderward-admin.php:1229
+#: includes/plugin/class-elderward-admin.php:1246
 msgid "Cancel"
 msgstr ""
 
@@ -1229,335 +1229,335 @@ msgstr ""
 msgid "loopback request failed"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1119
+#: includes/plugin/class-elderward-admin.php:1136
 msgid "Malware scanner and incident response for WordPress"
 msgstr ""
 
 #. translators: %s: plugin version number
-#: includes/plugin/class-elderward-admin.php:1123
+#: includes/plugin/class-elderward-admin.php:1140
 #, php-format
 msgid "Version %s"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1132
+#: includes/plugin/class-elderward-admin.php:1149
 msgid "Scan"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1205
+#: includes/plugin/class-elderward-admin.php:1222
 msgid "Scan this site"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1207
+#: includes/plugin/class-elderward-admin.php:1224
 msgid "Looks for malware and signs of a break-in. A scan only reports what it finds: nothing on your site is changed."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1209
+#: includes/plugin/class-elderward-admin.php:1226
 msgid "WordPress, plugin and theme files compared with the official copies"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1210
+#: includes/plugin/class-elderward-admin.php:1227
 msgid "Known malware in your files"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1211
+#: includes/plugin/class-elderward-admin.php:1228
 msgid "Suspicious entries in the database and admin accounts"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1212
+#: includes/plugin/class-elderward-admin.php:1229
 msgid "Files with faked dates, and the server crontab"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1216
+#: includes/plugin/class-elderward-admin.php:1233
 msgid "Access logs: not checked (add their location under Settings)"
 msgstr ""
 
 #. translators: %s: access log path
-#: includes/plugin/class-elderward-admin.php:1219
+#: includes/plugin/class-elderward-admin.php:1236
 #, php-format
 msgid "Access logs: %s cannot be read, so they are skipped (see Settings)"
 msgstr ""
 
 #. translators: %s: access log path
-#: includes/plugin/class-elderward-admin.php:1222
+#: includes/plugin/class-elderward-admin.php:1239
 #, php-format
 msgid "Access logs in %s"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1228
+#: includes/plugin/class-elderward-admin.php:1245
 msgid "Start scan"
 msgstr ""
 
 #. translators: 1: status word, 2: start date/time, 3: end date/time or dash
-#: includes/plugin/class-elderward-admin.php:1249
+#: includes/plugin/class-elderward-admin.php:1266
 #, php-format
 msgid "Last automatic scan: %1$s. Started %2$s, finished %3$s."
 msgstr ""
 
 #. translators: 1: status word, 2: start date/time, 3: end date/time or dash
-#: includes/plugin/class-elderward-admin.php:1252
+#: includes/plugin/class-elderward-admin.php:1269
 #, php-format
 msgid "Last scan: %1$s. Started %2$s, finished %3$s."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1271
+#: includes/plugin/class-elderward-admin.php:1288
 msgid "Findings"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1273
+#: includes/plugin/class-elderward-admin.php:1290
 msgid "One finding per line: severity, type, path, detail"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1273
+#: includes/plugin/class-elderward-admin.php:1290
 msgid "Export as text"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1274
+#: includes/plugin/class-elderward-admin.php:1291
 msgid "One JSON object per line (NDJSON), with context and hashes"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1274
+#: includes/plugin/class-elderward-admin.php:1291
 msgid "Export as JSON"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1279
+#: includes/plugin/class-elderward-admin.php:1296
 msgid "HIGH: almost certainly malicious; deal with it first. MEDIUM: suspicious; check it. LOW: worth knowing. INFO: for the record (for example the list of administrators). ERROR: a check could not run, so that area is unknown rather than clean."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1280
+#: includes/plugin/class-elderward-admin.php:1297
 msgid "Timestamp and log findings are leads, not proof: confirm them before acting."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1281
+#: includes/plugin/class-elderward-admin.php:1298
 msgid "If you checked a finding and it is harmless, mark it as a false positive: later scans hide it, but only while the file stays exactly as you reviewed it. Download sample saves a password-protected copy of a flagged file for a malware analyst."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1285
+#: includes/plugin/class-elderward-admin.php:1302
 msgid "All"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1289
+#: includes/plugin/class-elderward-admin.php:1306
 msgid "False positives"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1296
-#: includes/plugin/class-elderward-admin.php:1567
+#: includes/plugin/class-elderward-admin.php:1313
+#: includes/plugin/class-elderward-admin.php:1584
 msgid "Type"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1297
-#: includes/plugin/class-elderward-admin.php:1568
+#: includes/plugin/class-elderward-admin.php:1314
+#: includes/plugin/class-elderward-admin.php:1585
 msgid "Where"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1298
-#: includes/plugin/class-elderward-admin.php:1569
+#: includes/plugin/class-elderward-admin.php:1315
+#: includes/plugin/class-elderward-admin.php:1586
 msgid "Details"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1307
+#: includes/plugin/class-elderward-admin.php:1324
 msgid "No finding in these results is marked as a false positive."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1309
+#: includes/plugin/class-elderward-admin.php:1326
 msgid "Scan in progress…"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1309
+#: includes/plugin/class-elderward-admin.php:1326
 msgid "Nothing found."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1330
+#: includes/plugin/class-elderward-admin.php:1347
 msgid "Context"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1336
+#: includes/plugin/class-elderward-admin.php:1353
 msgid "Look up on VirusTotal"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1339
+#: includes/plugin/class-elderward-admin.php:1356
 msgid "Marked as a false positive before, but the file has changed since it was reviewed, so it is reported again."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1346
+#: includes/plugin/class-elderward-admin.php:1363
 msgid "Not a false positive"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1348
+#: includes/plugin/class-elderward-admin.php:1365
 msgid "Mark as false positive"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1351
+#: includes/plugin/class-elderward-admin.php:1368
 msgid "Download sample"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1374
+#: includes/plugin/class-elderward-admin.php:1391
 msgid "Download sample saves the file in a zip protected with the password \"infected\", plus a note of where it was found and why. Send it to a malware analyst or sandbox yourself: Elderward never uploads anything. The VirusTotal link sends only the file's hash, from your browser."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1376
+#: includes/plugin/class-elderward-admin.php:1393
 msgid "Download sample saves the file in a zip with a note of where it was found and why. This server's PHP cannot password-protect zips, so your antivirus may block the download. Elderward never uploads anything. The VirusTotal link sends only the file's hash, from your browser."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1390
+#: includes/plugin/class-elderward-admin.php:1407
 msgid "This page never changes files. Cleanup and restore run from the command line, where you can take a backup first and preview every change:"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1391
+#: includes/plugin/class-elderward-admin.php:1408
 msgid "# Preview, then remove known malware from infected files"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1395
+#: includes/plugin/class-elderward-admin.php:1412
 msgid "# Preview, then restore modified WordPress, plugin and theme files"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1398
+#: includes/plugin/class-elderward-admin.php:1415
 msgid "No WP-CLI? The same scanners run with php bin/elderward.php from the plugin folder; see the readme."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1422
-#: includes/plugin/class-elderward-admin.php:1425
+#: includes/plugin/class-elderward-admin.php:1439
+#: includes/plugin/class-elderward-admin.php:1442
 msgid "Run scans"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1426
+#: includes/plugin/class-elderward-admin.php:1443
 msgid "In the background (recommended)"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1427
+#: includes/plugin/class-elderward-admin.php:1444
 msgid "The scan keeps going after you leave this page."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1428
+#: includes/plugin/class-elderward-admin.php:1445
 msgid "Only while this page is open"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1429
+#: includes/plugin/class-elderward-admin.php:1446
 msgid "Use this if background scans never finish on your host."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1433
+#: includes/plugin/class-elderward-admin.php:1450
 msgid "Background scans run in short steps through WP-Cron, WordPress's task runner. For that, the site must be able to make a request to its own wp-cron.php; Tools > Site Health reports it as \"loopback requests\". If the page notices that a background scan stopped moving, it carries on from your browser tab."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1434
+#: includes/plugin/class-elderward-admin.php:1451
 msgid "\"Only while this page is open\" runs the same steps from your browser tab instead. Closing the tab pauses the scan; opening the page again resumes it."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1440
+#: includes/plugin/class-elderward-admin.php:1457
 msgid "Automatic scans"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1448
+#: includes/plugin/class-elderward-admin.php:1465
 msgid "at"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1451
+#: includes/plugin/class-elderward-admin.php:1468
 msgid "on"
 msgstr ""
 
 #. translators: %s: the site's timezone, for example UTC+2 or Europe/Lisbon
-#: includes/plugin/class-elderward-admin.php:1462
+#: includes/plugin/class-elderward-admin.php:1479
 #, php-format
 msgid "Scans on a schedule, without you starting them. Times use the site's time zone (%s)."
 msgstr ""
 
 #. translators: %s: date and time of the next automatic scan
-#: includes/plugin/class-elderward-admin.php:1466
+#: includes/plugin/class-elderward-admin.php:1483
 #, php-format
 msgid "Next scan: %s."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1472
+#: includes/plugin/class-elderward-admin.php:1489
 msgid "An automatic scan is the same scan as the Start scan button. It always runs in the background, checks the access logs set below, and is skipped if another scan is still in progress. Its results replace the ones on this page."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1473
+#: includes/plugin/class-elderward-admin.php:1490
 msgid "WP-Cron starts tasks when someone visits the site, so on a quiet site a scan can start a little late. For exact times, have your host call wp-cron.php from a real cron job."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1479
+#: includes/plugin/class-elderward-admin.php:1496
 #: includes/plugin/class-elderward-plugin.php:55
 #: includes/plugin/class-elderward-plugin.php:56
 msgid "Access logs"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1483
+#: includes/plugin/class-elderward-admin.php:1500
 msgid "Optional. A web server log file or folder, checked by every scan."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1485
+#: includes/plugin/class-elderward-admin.php:1502
 msgid "This path does not exist or PHP cannot read it, so scans skip the logs."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1490
+#: includes/plugin/class-elderward-admin.php:1507
 msgid "The logs show requests to web shells, login and upload attacks, and which files the attackers used. Scans read them only; they are never changed or sent anywhere."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1491
+#: includes/plugin/class-elderward-admin.php:1508
 msgid "Common locations are /var/log/apache2, /var/log/nginx or a logs folder next to your site; your host's control panel or support can tell you. A folder includes rotated .log.1 and .gz files. The PHP user must be able to read them. Leave the field empty to skip this check."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1498
+#: includes/plugin/class-elderward-admin.php:1515
 msgid "DISABLE_WP_CRON is set on this site, so WordPress does not start WP-Cron on its own. Background and automatic scans only move forward when your server's cron job calls wp-cron.php (every minute or two is ideal)."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1500
+#: includes/plugin/class-elderward-admin.php:1517
 msgid "Save settings"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1514
+#: includes/plugin/class-elderward-admin.php:1531
 msgid "More about this"
 msgstr ""
 
 #. translators: 1: user display name, 2: date and time
-#: includes/plugin/class-elderward-admin.php:1537
+#: includes/plugin/class-elderward-admin.php:1554
 #, php-format
 msgid "Marked as a false positive by an AI assistant acting as %1$s on %2$s."
 msgstr ""
 
 #. translators: 1: user display name, 2: date and time
-#: includes/plugin/class-elderward-admin.php:1540
+#: includes/plugin/class-elderward-admin.php:1557
 #, php-format
 msgid "Marked as a false positive by %1$s on %2$s."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1559
+#: includes/plugin/class-elderward-admin.php:1576
 msgid "Saved false positives"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1561
+#: includes/plugin/class-elderward-admin.php:1578
 msgid "Each one hides the same finding (same type, location and details) in later scans. For a finding about a file, it only applies while the file is exactly the one that was reviewed."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1563
+#: includes/plugin/class-elderward-admin.php:1580
 msgid "None saved."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1585
+#: includes/plugin/class-elderward-admin.php:1602
 msgid "Changed outside Elderward, so it is ignored. Keep it only if an administrator made this change."
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1593
+#: includes/plugin/class-elderward-admin.php:1610
 msgid "Remove"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1598
+#: includes/plugin/class-elderward-admin.php:1615
 msgid "Forget all false positives"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1608
+#: includes/plugin/class-elderward-admin.php:1625
 msgid "running"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1610
+#: includes/plugin/class-elderward-admin.php:1627
 msgid "complete"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1612
+#: includes/plugin/class-elderward-admin.php:1629
 msgid "failed"
 msgstr ""
 
-#: includes/plugin/class-elderward-admin.php:1614
+#: includes/plugin/class-elderward-admin.php:1631
 msgid "cancelled"
 msgstr ""
 

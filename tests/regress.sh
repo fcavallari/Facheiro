@@ -90,10 +90,11 @@ compare() {
         local extra=()
         [ "$mode" = json ] && extra=(format=json)
         local o_out n_out o_rc n_rc
-        (cd "$WORK" && php "$OLD" "$@" "${extra[@]}" > "$WORK/o.out" 2>/dev/null); o_rc=$?
+        # ${extra[@]+...}: an empty array is "unbound" to bash 3.2 (macOS) under set -u.
+        (cd "$WORK" && php "$OLD" "$@" ${extra[@]+"${extra[@]}"} > "$WORK/o.out" 2>/dev/null); o_rc=$?
         # noselfcheck=1: the old script had no self-check stage (that
         # stage has its own test, tests/checksums.sh).
-        (cd "$WORK" && php "$NEW" "$@" "${extra[@]}" noselfcheck=1 > "$WORK/n.out" 2>/dev/null); n_rc=$?
+        (cd "$WORK" && php "$NEW" "$@" ${extra[@]+"${extra[@]}"} noselfcheck=1 > "$WORK/n.out" 2>/dev/null); n_rc=$?
         o_out="$(sort "$WORK/o.out")"
         n_out="$(sort "$WORK/n.out")"
         if [ "$o_out" == "$n_out" ] && [ "$o_rc" == "$n_rc" ]; then
@@ -189,6 +190,64 @@ else
 fi
 sig_check "custom signature matches empty"  1 'empty' '' dryrun=1 "signatures=$WORK/sigs-bad.json" "scandirectory=$SIGSITE"
 sig_check "custom signature file missing"   1 'sigs-nope' '' dryrun=1 "signatures=$WORK/sigs-nope.json" "scandirectory=$SIGSITE"
+
+###############
+# Restore safety (new rules, no old-script counterpart): a verified package
+# whose subfolder is a symlink to somewhere else must not have a file
+# restored through it, and a version header that is not a plain version
+# string gives the package no reference instead of a file name.
+##############
+RWP="$WORK/restore-wp"
+ROUT="$WORK/restore-outside"
+RSUMS="$WORK/restore-sums"
+mkdir -p "$RWP/wp-includes" "$RWP/wp-content/plugins/hello-dolly" "$RWP/wp-content/plugins/evil" "$ROUT" "$RSUMS"
+printf '<?php\n$wp_version = '"'"'6.5.2'"'"';\n' > "$RWP/wp-includes/version.php"
+printf '<?php\n/*\nPlugin Name: Hello Dolly\nVersion: 1.7.2\n*/\n' > "$RWP/wp-content/plugins/hello-dolly/hello.php"
+printf '<?php\n/*\nPlugin Name: Evil\nVersion: ../../x\n*/\n' > "$RWP/wp-content/plugins/evil/evil.php"
+ln -s "$ROUT" "$RWP/wp-content/plugins/hello-dolly/sub"
+php -r '
+$wp = $argv[1]; $sums = $argv[2];
+$extra = "<?php // pristine extra file";
+$hello = md5_file($wp . "/wp-content/plugins/hello-dolly/hello.php");
+file_put_contents($sums . "/plugin-hello-dolly-1.7.2.json", json_encode(array("files" => array("hello.php" => array("md5" => $hello), "sub/extra.php" => array("md5" => md5($extra))))));
+$zip = new ZipArchive(); $zip->open($sums . "/plugin-hello-dolly-1.7.2.zip", ZipArchive::CREATE); $zip->addFromString("hello-dolly/sub/extra.php", $extra); $zip->close();
+' "$RWP" "$RSUMS"
+sig_check "restore through symlink refused"  2 'RESTORE_FAILED.*resolves outside the package' 'INTEGRITY_RESTORED' scanintegrity=1 restore=1 "checksumdir=$RSUMS" "scandirectory=$RWP"
+if [ -z "$(ls -A "$ROUT")" ]; then
+    PASS=$((PASS+1)); echo "PASS  restore wrote nothing outside the package"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  restore wrote outside the package:"; ls -la "$ROUT"
+fi
+sig_check "traversal version gets no reference" 2 'plugin evil: could not determine the installed version' 'plugin evil \.\.' scanintegrity=1 "checksumdir=$RSUMS" "scandirectory=$RWP"
+
+# Positive control for the same rules: a modified file and a file missing
+# from a folder that does not exist yet are both restored, the original is
+# quarantined into a quarantine folder created on the fly, and a plugins
+# folder that is itself a symlink (Composer/Bedrock layouts) is accepted.
+PWP="$WORK/positive-wp"
+PREAL="$WORK/positive-real-plugins"
+PSUMS="$WORK/positive-sums"
+mkdir -p "$PWP/wp-includes" "$PWP/wp-content" "$PREAL/hello-dolly/inc" "$PSUMS"
+printf '<?php\n$wp_version = '"'"'6.5.2'"'"';\n' > "$PWP/wp-includes/version.php"
+ln -s "$PREAL" "$PWP/wp-content/plugins"
+php -r '
+$real = $argv[1]; $sums = $argv[2];
+$pristine = "<?php /* Plugin Name: Hello Dolly\nVersion: 1.7.2 */ echo 1;";
+$inc = "<?php // pristine inc file";
+$new = "<?php // pristine file in a new folder";
+file_put_contents($real . "/hello-dolly/hello.php", $pristine);
+file_put_contents($real . "/hello-dolly/inc/a.php", $inc . "\n// tampered");
+file_put_contents($sums . "/plugin-hello-dolly-1.7.2.json", json_encode(array("files" => array("hello.php" => array("md5" => md5($pristine)), "inc/a.php" => array("md5" => md5($inc)), "deep/er/new.php" => array("md5" => md5($new))))));
+$zip = new ZipArchive(); $zip->open($sums . "/plugin-hello-dolly-1.7.2.zip", ZipArchive::CREATE);
+$zip->addFromString("hello-dolly/hello.php", $pristine); $zip->addFromString("hello-dolly/inc/a.php", $inc); $zip->addFromString("hello-dolly/deep/er/new.php", $new); $zip->close();
+' "$PREAL" "$PSUMS"
+sig_check "restore modified file (symlinked plugins)" 3 'INTEGRITY_RESTORED.*inc/a\.php' 'RESTORE_FAILED' scanintegrity=1 restore=1 "quarantinedir=$WORK/positive-quarantine" "checksumdir=$PSUMS" "scandirectory=$PWP"
+if [ -f "$WORK/positive-quarantine/plugin-hello-dolly-1.7.2/inc/a.php.quarantine" ] && [ -f "$PREAL/hello-dolly/deep/er/new.php" ]; then
+    PASS=$((PASS+1)); echo "PASS  restore quarantined the original and created the missing file"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  restore left no quarantine copy or no new file"
+fi
+sig_check "rescan after restore is clean"      0 'Integrity scan complete: 0 modified, 0 missing' 'INTEGRITY_M' scanintegrity=1 "checksumdir=$PSUMS" "scandirectory=$PWP"
 
 echo
 echo "passed=$PASS failed=$FAIL skipped=$SKIP  (work dir: $WORK)"
