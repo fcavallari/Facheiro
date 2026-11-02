@@ -39,6 +39,7 @@ use Elderward\Engine\Fatal;
 use Elderward\Engine\JsonReporter;
 use Elderward\Engine\MysqliDb;
 use Elderward\Engine\Runner;
+use Elderward\Engine\Signatures;
 use Elderward\Engine\TextReporter;
 
 //////////////
@@ -98,6 +99,8 @@ if (isset($options['help'])) {
     echo "  scanall=1             Run every scanner (report-only) against the WordPress root\n";
     echo "                        and print one severity-sorted report. Add scanlog=/path to\n";
     echo "                        include log IoCs and correlation.\n";
+    echo "  signatures=/file.json Add custom detection signatures (the format the plugin's\n";
+    echo "                        signature editor exports). Report-only: they never clean.\n";
     echo "  format=json           Machine-readable output: one JSON event per line on stdout\n";
     echo "                        (findings and summaries); progress goes to stderr\n";
     echo "  help=1                Show this help\n";
@@ -115,6 +118,14 @@ $reporter = $json ? new JsonReporter() : new TextReporter();
 $ctx = new Context($options, $reporter, new CurlHttp(), new MysqliDb(), dirname(__DIR__));
 
 try {
+    if ($ctx->has('signatures')) {
+        $signature_file = (string) $ctx->get('signatures');
+        $signature_json = @file_get_contents($signature_file);
+        if (false === $signature_json) {
+            throw new Fatal('cannot read signature file ' . $signature_file);
+        }
+        Signatures::set_custom(Signatures::from_definitions(Signatures::parse_file($signature_json)));
+    }
     $mode = Runner::mode_from_options($ctx);
     Runner::run_mode($ctx, $mode);
 } catch (Fatal $e) {

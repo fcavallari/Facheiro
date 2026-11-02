@@ -219,7 +219,7 @@ Expect: exit 3 and finding types `UPLOADS_PHP`, `HIDDEN_PHP`, `MU_PLUGIN`, `PHP_
 
 **F4. Access control.** Logged in as a Subscriber/Editor, `tools.php?page=elderward` → "You are not allowed"; an `admin-ajax.php` POST with `action=elderward_step` and no nonce → HTTP 403; `admin-post.php?action=elderward_export&format=json` logged out → no finding lines in the response.
 
-**F5. Uninstall.** `wp plugin deactivate elderward && wp plugin uninstall elderward --skip-delete` → the findings table, the `elderward_*` options (job, lock, settings, db version), the `elderward_*` cron events and `wp-content/uploads/elderward/` are gone. Reactivate → the table is recreated.
+**F5. Uninstall.** `wp plugin deactivate elderward && wp plugin uninstall elderward --skip-delete` → the findings table, the `elderward_*` options (job, lock, settings, db version, false positives, signatures), the `elderward_*` cron events and `wp-content/uploads/elderward/` are gone. Reactivate → the table is recreated.
 
 **F6. Large tables.** Pad the database (30k posts with ids 13 apart, a block of 600 consecutive posts that all contain `<iframe`, 20k options with ids 17 apart, `autoload='no'`, a planted injection every 1000 rows; the SQL is in the plugin's git history under "range paging"). Then `wp elderward db --format=json | sort` must equal `php bin/elderward.php scandb=1 format=json | sort` (range paging vs streaming), and an admin scan with the step budget forced down (copy `tests/mu-plugin-test-hooks.php` into `wp-content/mu-plugins/` and `wp option update elderward_test_budget 0.05`) must finish with the same `DB_*` rows in the findings table and show "Scanning database: … past id …" messages while it runs. A step that dies (`wp option update elderward_test_die 1`, then start a scan) must leave the job **failed** with "PHP stopped the request: elderward test fatal" on the next status read, with no `elderward_job_lock` option left behind; a step that exits silently (`elderward_test_exit 1`) must fail the job after three attempts with "cut short 3 times". Remove the mu-plugin afterwards. **PASTE the step counts.**
 
@@ -236,7 +236,28 @@ wp plugin deactivate elderward && wp cron event list | grep elderward; wp plugin
 
 Expect: the WP-CLI-started job reaches `done` on its own, the web server log shows a chain of `POST /wp-cron.php` requests (one per chunk), and no `elderward_run_job` event or `elderward_job_lock` option is left when it ends. `background-ui.js` must report "Settings saved." without a warning, a "Next run" on the chosen weekday and time in the site's timezone (`wp cron event list` shows `elderward_scheduled_scan` with recurrence `1 week`), a background scan that completes while the tab is on the dashboard with **zero** `elderward_step` requests from the tab, and a browser-runner scan that does send them. With the loopback blocked, `--stale` must see the page kick WP-Cron once, take over after about 150 s ("continues from this tab") and finish the scan. The scheduled run creates a job with `origin=schedule` that completes in the background and shows "Last scheduled scan: complete". Deactivation leaves no `elderward_*` cron events and cancels a running job; activation re-creates the recurring event from the saved settings. Nothing in `debug.log`. **PASTE the takeover time and the wp-cron request count.**
 
-**F8. Plugin Check.** With the [Plugin Check](https://wordpress.org/plugins/plugin-check/) plugin installed: `wp plugin check elderward --format=table`. Expect zero errors; **PASTE any warnings** (expected ones: the direct filesystem writes in the engine, `shell_exec` in the crontab scanner, and the `$wpdb` adapter's unprepared fixed SELECTs — each is documented in `readme.txt`).
+**F8. False positives and samples.** After a finished admin scan with the F1 fixtures:
+
+```sh
+node tests/findings-ui.js /tmp/ew/downloads      # mark + undo, sample download, bad nonce -> 403
+7z x -pinfected /tmp/ew/downloads/sample-*.zip    # or PHP ZipArchive::setPassword('infected')
+echo '// x' >> wp-content/.hidden.php             # after marking the HIDDEN_PHP finding, then rescan
+```
+
+Expect: the marked finding leaves "All" and the severity counts and appears under "False positives" with the note and who marked it; undo brings it back. The zip holds `<sha256>.sample` (AES-256, password `infected`), `manifest.json` (relative path, SHA-256 at scan and now, finding) and `README.txt`; the extracted file hashes to the SHA-256 shown on the page. A sample request for `wp-config.php` or a file outside the root is refused. A marked file that changes comes back on the next scan with "Marked as a false positive before, but the file changed since"; a marked database finding stays hidden. The JSON export carries the marked finding with `"false_positive": true`; the text export leaves it out. `node tests/admin-ui.js` still reports "export matches table: yes".
+
+**F9. Signature editor.** Plant `wp-content/plugins/acme/loader.php` containing `acme_loader` and `eval($x)`, then `node tests/signatures-ui.js` and a new scan. Expect: a non-compiling regex is refused with the form kept; the tester matches the fixture by path and a pasted sample, refuses `../../etc/passwd`; disable/enable, JSON import, export and delete work; an anonymous POST is refused. The scan then reports `MEDIUM,SIGNATURE_MATCH,…/acme/loader.php,custom.acme-loader: ACME loader backdoor (custom signature, report only)` in the admin table, `wp elderward scanall` and `wp elderward scan --dryrun`; a real `wp elderward scan` on that folder leaves the file byte-identical. The standalone CLI with `signatures=<exported file>` reports the same line, and `tests/regress.sh` still passes (no output change without `signatures=`).
+
+**F10. AI assistants (WordPress 6.9+).** Install the [MCP Adapter](https://github.com/WordPress/mcp-adapter) (from a git checkout: `COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev` so the Jetpack autoloader is generated) and activate it. `wp mcp-adapter list` shows the default server with 1 prompt. Then, with a user that lacks `manage_options` (not the F1 subscriber, whose role the fixture gave `manage_options`):
+
+```sh
+wp user create ew-author author@example.test --role=author
+node tests/mcp-stdio.js "wp --path=$(wp eval 'echo ABSPATH;')" admin ew-author
+```
+
+Expect "all good": 14 `elderward/*` abilities discovered plus the `elderward-triage` prompt; a scan started with `origin assistant` reaches `done` with **0** `advance-scan` calls while WP-Cron works (get-status must see progress made by other processes); `read-flagged-file` returns the uploads shell with the scan-time hash and refuses a database finding; a candidate signature matches the fixture but not `wp-includes/version.php`, and `/.*/` is refused; mark/unmark round-trips; the author gets "Permission denied". Then connect a real client (Claude Desktop, Claude Code or Antigravity) with the configuration from the **AI assistants** tab, ask it to "use the Elderward triage prompt", and check that it explains the findings without claiming to have cleaned anything. **PASTE the client used and anything it got wrong.**
+
+**F11. Plugin Check.** With the [Plugin Check](https://wordpress.org/plugins/plugin-check/) plugin installed: `wp plugin check elderward --format=table`. Expect zero errors; **PASTE any warnings** (expected ones: the direct filesystem writes in the engine, `shell_exec` in the crontab scanner, and the `$wpdb` adapter's unprepared fixed SELECTs — each is documented in `readme.txt`).
 
 ---
 

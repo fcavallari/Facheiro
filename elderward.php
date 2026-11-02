@@ -36,6 +36,10 @@ require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-wp-db.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-settings.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-cron.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-job.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-false-positives.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-sample.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-signatures.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-abilities.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-store-reporter.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-admin.php';
 

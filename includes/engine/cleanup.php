@@ -214,6 +214,14 @@ class SignatureScanner extends Scanner
             return;
         }
 
+        if (isset($action['report'])) {
+            // Custom signatures: detection only, identical in dry and real
+            // runs.
+            $about = (isset($action['description']) && '' !== $action['description']) ? ': ' . $action['description'] : '';
+            $this->report($action['report'], 'SIGNATURE_MATCH', $file_path, $signature_name . $about . ' (custom signature, report only)');
+            return;
+        }
+
         $this->report('ERROR', 'CLEANUP_FAILED', $file_path, 'unknown action for signature ' . $signature_name);
     }
 }

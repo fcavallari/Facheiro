@@ -28,6 +28,12 @@ Anything that blocks a check - an unreadable file, a failed query, a missing PHP
 
 **Scans run in the background** through WP-Cron, so you can start one and close the tab; the page shows the progress whenever you come back. A setting switches to running the steps from the browser tab instead, for hosts where WP-Cron is unreliable. **Scheduled scans** (daily, twice daily or weekly at a time you choose) run the same report-only scan automatically.
 
+**Review the findings in place.** Mark a finding as a **false positive** with a note and later scans hide it, while still keeping it in the record. For a file, the mark only holds while the file is byte-for-byte the one you reviewed, so an attacker cannot hide behind a file you once cleared. **Download sample** packs a flagged file into a zip encrypted with the password `infected`, with a manifest, for you to send to a malware analyst or sandbox. Elderward never uploads anything itself.
+
+**Write your own signatures** on the Signatures tab: exact text or regular expressions for files, option values or post content. Test them against a pasted sample or a file of the site before saving, and export them as JSON for other sites or the standalone scanner. Custom signatures only detect; they never clean.
+
+**Work with an AI assistant.** On WordPress 6.9 or later, Elderward registers its scan, findings, signature and false-positive tools as WordPress abilities. With the official MCP Adapter plugin, Claude, ChatGPT, Antigravity, Cursor or any other MCP client can run scans, explain the findings, read flagged files, and draft and test signatures with you. Everything scanned is labelled as untrusted data for the assistant, and it has no tool that cleans or changes files. Without MCP, the AI assistants tab gives you a ready-made brief to paste into any chatbot.
+
 **Cleanup and restore run from the command line**, where you can take a backup first and preview with a dry run:
 
 * `wp elderward scan --dryrun` then `wp elderward scan` removes known malware from infected files (atomic write, never truncates the original).
@@ -44,6 +50,7 @@ Development happens at [github.com/fioa8c/elderward](https://github.com/fioa8c/e
 3. Open **Tools > Elderward** (Network Admin > Settings > Elderward on multisite) and click **Start scan**. The scan continues in the background; the page shows its progress and reloads with the findings when it ends.
 4. Under **Settings** on the same page, choose how scans run (background through WP-Cron, or from the browser tab) and, if you want, a schedule.
 5. To act on the findings, use the WP-CLI commands shown under the results, after taking a backup.
+6. Optional: to use an AI assistant, install the MCP Adapter plugin and follow the steps on the **AI assistants** tab.
 
 == Frequently Asked Questions ==
 
@@ -54,6 +61,22 @@ Yes, with the default setting. The scan is a chain of short WP-Cron jobs; the pa
 = Can I schedule scans? =
 
 Yes: daily, twice daily or weekly at a time of day (and weekday) in the site's timezone, from the Settings section of the Elderward page. A scheduled scan runs in the background, uses the access log path saved in the settings, and is skipped when another scan is already running. The results replace the previous report on the page.
+
+= What does marking a false positive do? =
+
+The finding is still recorded by later scans, but it moves out of the counts and the default view into the **False positives** filter and the JSON export, which flags it. The text export leaves it out. For a finding about a file, the mark stores the file's SHA-256. If the file changes, the finding comes back with a note saying it was marked before. Marks can be removed one by one or all at once.
+
+= How do I send a suspicious file for analysis? =
+
+Click **Download sample** next to the finding. You get a zip with the file, named by its SHA-256 and encrypted with the password `infected`, which is the usual convention for sharing malware samples, plus a manifest of where and why it was flagged. Submit it to the analyst or sandbox of your choice. Elderward never uploads files, and never packages `wp-config.php` or files outside the WordPress folder. The **Look up on VirusTotal** link opens VirusTotal in your browser with the file's hash only.
+
+= Can a custom signature break my site? =
+
+No. Custom signatures only report matches, as `SIGNATURE_MATCH` findings for files. They never clean or delete anything, even in a command-line cleanup run. A regular expression that does not compile, or that would match an empty file, is refused when you save it.
+
+= Which AI assistants work, and what can they do? =
+
+Any assistant that can use an MCP server: Claude (Desktop and Code), Antigravity, Cursor, and ChatGPT where your plan allows custom MCP connectors. It needs WordPress 6.9 or later and the MCP Adapter plugin. The assistant acts as the user you connect it with, and only administrators get access. It can start and follow scans, read findings and flagged files, write and test custom signatures, and record false positives. It cannot clean, restore or change files. The **AI assistants** tab shows the exact configuration for this site, and a brief you can paste into any chatbot without MCP. Whatever you share with an assistant goes to its provider, so choose one you trust with your site's file paths and code.
 
 = Does the plugin send data anywhere? =
 
@@ -86,7 +109,9 @@ The admin interface is translatable. The finding details themselves (the technic
 == Screenshots ==
 
 1. Tools > Elderward: start a scan and watch it progress.
-2. The findings table, sorted worst-first, with severity filters and export.
+2. The findings table, sorted worst-first, with severity filters, false-positive marks, sample downloads and export.
+3. The signature editor and tester.
+4. Connecting an AI assistant.
 
 == External services ==
 
@@ -95,9 +120,16 @@ This plugin connects to two WordPress.org services, only while an integrity chec
 * `https://api.wordpress.org/core/checksums/` - the official checksum manifest for the installed WordPress version and locale. Sent: the version number and locale.
 * `https://downloads.wordpress.org/` - the plugin checksum manifests and the official plugin, theme and core packages. Sent: the plugin or theme slug and version.
 
-Both are operated by the WordPress Foundation; see the [WordPress.org privacy policy](https://wordpress.org/about/privacy/). No other hosts are contacted.
+Both are operated by the WordPress Foundation; see the [WordPress.org privacy policy](https://wordpress.org/about/privacy/). No other hosts are contacted by the plugin.
+
+The findings page shows a **Look up on VirusTotal** link next to file findings. It is an ordinary link: only when you click it, your browser opens `https://www.virustotal.com/gui/file/<sha256>` with the file's SHA-256 hash in the address. The site itself makes no request and sends no file. VirusTotal is operated by Google; see its [terms](https://docs.virustotal.com/docs/terms-of-service) and [privacy policy](https://docs.virustotal.com/docs/privacy-policy).
+
+AI assistants connect to your site through the separate MCP Adapter plugin, using your own credentials; Elderward makes no requests to any AI provider.
 
 == Changelog ==
 
 = 1.0.0 =
 * First release as a WordPress plugin: admin page with a report-only scan that runs in the background through WP-Cron (or from the browser tab), scheduled scans, WP-CLI commands, and the standalone CLI.
+* False-positive marks bound to the reviewed file content, and encrypted sample downloads for manual analysis.
+* Signature editor for custom, detection-only signatures, with a tester and JSON import/export (also usable by the standalone CLI through `signatures=`).
+* WordPress abilities for AI assistants over MCP (WordPress 6.9+ with the MCP Adapter plugin), a triage prompt, and a copyable brief for chatbots without MCP.

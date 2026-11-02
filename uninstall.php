@@ -24,6 +24,8 @@ delete_option('elderward_db_version');
 delete_option('elderward_job');
 delete_option('elderward_job_lock');
 delete_option('elderward_settings');
+delete_option('elderward_false_positives');
+delete_option('elderward_signatures');
 if (is_multisite()) {
     delete_site_option('elderward_job');
 }

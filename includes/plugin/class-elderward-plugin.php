@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 
 final class Elderward_Plugin
 {
-    const DB_VERSION = '1';
+    const DB_VERSION = '2';
     const OPTION_DB_VERSION = 'elderward_db_version';
 
     public static function init()
@@ -21,7 +21,11 @@ final class Elderward_Plugin
             // network-wide activations that skipped the hook.
             self::create_table();
         }
+        // Custom signatures from the editor apply to every scan on this site:
+        // admin page, WP-Cron runner and WP-CLI.
+        Elderward_Signatures::install();
         Elderward_Cron::init();
+        Elderward_Abilities::init();
         if (is_admin()) {
             Elderward_Admin::init();
         }
@@ -76,9 +80,13 @@ final class Elderward_Plugin
             path text NOT NULL,
             detail text NOT NULL,
             context longtext NULL,
+            sha256 char(64) NULL,
+            fingerprint char(40) NOT NULL DEFAULT '',
+            fp tinyint(1) NOT NULL DEFAULT 0,
             created datetime NOT NULL,
             PRIMARY KEY  (id),
-            KEY job_severity (job_id, severity)
+            KEY job_severity (job_id, severity),
+            KEY fingerprint (fingerprint)
         ) {$charset_collate};";
         dbDelta($sql);
         update_option(self::OPTION_DB_VERSION, self::DB_VERSION, false);

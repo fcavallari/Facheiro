@@ -54,12 +54,14 @@ const logPath = process.env.ELDERWARD_LOG || '';
 
 	const rows = await page.$$eval('.elderward-table tbody tr', (trs) => trs.map((tr) => {
 		const tds = tr.querySelectorAll('td');
-		return tds.length === 4 ? [tds[0].textContent.trim(), tds[1].textContent.trim(), tds[2].textContent.trim()] : null;
+		return tds.length === 5 ? [tds[0].textContent.trim(), tds[1].textContent.trim(), tds[2].textContent.trim()] : null;
 	}).filter(Boolean));
 	console.log('table rows (first page):', rows.length);
 	rows.slice(0, 40).forEach((r) => console.log('  ', r.join(' | ')));
 
-	// JSON export must list the same (severity,type) multiset as the table.
+	// JSON export must list the same (severity,type) multiset as the table;
+	// findings marked as false positives are in the export (flagged) but not
+	// in the default table view.
 	const [download] = await Promise.all([
 		page.waitForEvent('download'),
 		page.click('a.button[href*="format=json"]'),
@@ -69,7 +71,7 @@ const logPath = process.env.ELDERWARD_LOG || '';
 	console.log('json export findings:', lines.length);
 	const key = (s, t) => s + ',' + t;
 	const tableSet = rows.map((r) => key(r[0], r[1])).sort().join('\n');
-	const exportSet = lines.map((e) => key(e.severity, e.type)).sort().join('\n');
+	const exportSet = lines.filter((e) => !e.false_positive).map((e) => key(e.severity, e.type)).sort().join('\n');
 	console.log('export matches table:', tableSet === exportSet ? 'yes' : 'NO');
 
 	// Security: no nonce, no service.

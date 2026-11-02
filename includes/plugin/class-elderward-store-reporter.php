@@ -27,10 +27,16 @@ class Elderward_Store_Reporter extends Elderward\Engine\BaseReporter
     {
         global $wpdb;
         $this->track($severity);
-        if (!isset($this->counts[$severity])) {
-            $this->counts[$severity] = 0;
+        $sha256 = Elderward_False_Positives::file_hash($type, $path);
+        $fingerprint = Elderward_False_Positives::fingerprint($type, $path, $detail);
+        $fp = Elderward_False_Positives::classify($fingerprint, $sha256);
+        // A finding the administrator already cleared is stored but kept
+        // out of the severity counts.
+        $bucket = (Elderward_False_Positives::MATCHED === $fp) ? 'FALSE_POSITIVE' : $severity;
+        if (!isset($this->counts[$bucket])) {
+            $this->counts[$bucket] = 0;
         }
-        $this->counts[$severity]++;
+        $this->counts[$bucket]++;
 
         // Findings are hostile data from the scanned host: stored raw here
         // (prepared statement) and escaped wherever they are rendered.
@@ -42,10 +48,13 @@ class Elderward_Store_Reporter extends Elderward\Engine\BaseReporter
                 'type'     => substr((string) $type, 0, 40),
                 'path'     => (string) $path,
                 'detail'   => (string) $detail,
-                'context'  => empty($context) ? null : wp_json_encode(array_values((array) $context)),
-                'created'  => gmdate('Y-m-d H:i:s'),
+                'context'     => empty($context) ? null : wp_json_encode(array_values((array) $context)),
+                'sha256'      => $sha256,
+                'fingerprint' => $fingerprint,
+                'fp'          => $fp,
+                'created'     => gmdate('Y-m-d H:i:s'),
             ),
-            array('%s', '%s', '%s', '%s', '%s', '%s', '%s')
+            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s')
         );
     }
 

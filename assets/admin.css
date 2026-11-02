@@ -199,3 +199,30 @@
 	max-width: 900px;
 }
 
+
+/* False positives and samples */
+.elderward-table .elderward-col-actions { width: 11em; }
+.elderward-actions .button { margin: 0 4px 4px 0; }
+.elderward-hash { margin: 6px 0 0; font-size: 12px; color: #50575e; word-break: break-all; }
+.elderward-hash code { font-size: 11px; }
+.elderward-fp-why { margin: 6px 0 0; font-style: italic; color: #50575e; }
+.elderward-row-message { color: #50575e; font-style: italic; }
+.elderward-fp-rules { margin-top: 16px; }
+.elderward-sample-help { margin-top: 8px; }
+
+/* Signature editor */
+.elderward-tabs { margin-bottom: 12px; }
+.elderward-conditions { margin: 0; white-space: pre-wrap; word-break: break-all; font-size: 12px; max-width: 48em; }
+.elderward-inline-form { display: inline; }
+.elderward-disabled td { opacity: 0.6; }
+.elderward-builtin summary { cursor: pointer; }
+.elderward-builtin summary h2 { display: inline; }
+#elderward-test-result ul { margin: 4px 0 0 1.5em; list-style: disc; }
+
+/* AI assistants */
+.elderward-checklist li { padding-left: 1.6em; position: relative; }
+.elderward-checklist li::before { position: absolute; left: 0; font-weight: 700; }
+.elderward-checklist li.is-ok::before { content: "\2713"; color: #00a32a; }
+.elderward-checklist li.is-missing::before { content: "\2715"; color: #d63638; }
+.elderward-examples { list-style: disc; margin-left: 1.5em; }
+.elderward-copy { font-size: 12px; }

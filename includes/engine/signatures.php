@@ -13,6 +13,240 @@ final class Signatures
     // buffer read per file is capped at it).
     const FILESIZE_LIMIT = 2097152;
 
+    // Site-specific signatures added by the operator (plugin signature
+    // editor, or signatures=<file.json> on the standalone CLI). They run
+    // after the built-in ones and are detection-only: file signatures carry
+    // the 'report' action, never remove_regex or delete_file.
+    private static $custom = array('cleanup' => array(), 'db_options' => array(), 'db_posts' => array());
+
+    /**
+     * Install custom signatures (replaces any set before).
+     *
+     * @param array $custom array('cleanup' => name => signature,
+     *                      'db_options' => list, 'db_posts' => list).
+     */
+    public static function set_custom(array $custom)
+    {
+        $clean = array('cleanup' => array(), 'db_options' => array(), 'db_posts' => array());
+        if (isset($custom['cleanup']) && is_array($custom['cleanup'])) {
+            foreach ($custom['cleanup'] as $name => $signature) {
+                // Whatever the source says, a custom file signature only
+                // reports: an operator- or assistant-written regex must not
+                // be able to rewrite or delete files during a cleanup run.
+                $description = '';
+                if (isset($signature['action']['description'])) {
+                    $description = (string) $signature['action']['description'];
+                } elseif (isset($signature['description'])) {
+                    $description = (string) $signature['description'];
+                }
+                $severity = (isset($signature['action']['report']) && in_array($signature['action']['report'], array('HIGH', 'MEDIUM', 'LOW'), true)) ? $signature['action']['report'] : 'HIGH';
+                $clean['cleanup'][(string) $name] = array(
+                    'prefilter'   => isset($signature['prefilter']) ? $signature['prefilter'] : null,
+                    'triggers'    => (isset($signature['triggers']) && is_array($signature['triggers'])) ? array_values($signature['triggers']) : array(),
+                    'action'      => array('report' => $severity, 'description' => $description),
+                );
+            }
+        }
+        foreach (array('db_options', 'db_posts') as $set) {
+            if (isset($custom[$set]) && is_array($custom[$set])) {
+                foreach ($custom[$set] as $signature) {
+                    $clean[$set][] = $signature;
+                }
+            }
+        }
+        self::$custom = $clean;
+    }
+
+    public static function custom()
+    {
+        return self::$custom;
+    }
+
+    ////////////////
+    // Custom signature definitions: the one format shared by the plugin's
+    // signature editor, its export/import, the assistant tools and the CLI's
+    // signatures=<file.json>:
+    //
+    //   {"elderward_signatures": 1, "signatures": [
+    //     {"id": "acme-shell", "target": "file", "severity": "HIGH",
+    //      "description": "...", "enabled": true,
+    //      "match": [{"string": "acme_shell("}, {"regex": "/eval\\s*\\(/"}]},
+    //     {"id": "spam-link", "target": "db_option" | "db_post",
+    //      "severity": "MEDIUM", "description": "...", "pattern": "@casino@i"}
+    //   ]}
+    //
+    // File signatures: every condition must match; the first is the
+    // prefilter, so make it the cheapest (a plain string).
+    //////////////
+    const MAX_CONDITIONS = 10;
+    const MAX_PATTERN = 2000;
+
+    public static function targets()
+    {
+        return array('file', 'db_option', 'db_post');
+    }
+
+    /**
+     * Problem with one definition, or null when it is valid.
+     */
+    public static function validate_definition($def)
+    {
+        if (!is_array($def)) {
+            return 'a signature must be an object';
+        }
+        $id = isset($def['id']) ? $def['id'] : '';
+        if (!is_string($id) || 1 !== preg_match('/^[a-z0-9][a-z0-9._-]{1,62}$/', $id)) {
+            return 'id must be 2-63 characters of a-z, 0-9, dot, dash or underscore';
+        }
+        $target = isset($def['target']) ? $def['target'] : '';
+        if (!in_array($target, self::targets(), true)) {
+            return $id . ': target must be one of ' . implode(', ', self::targets());
+        }
+        $severity = isset($def['severity']) ? $def['severity'] : '';
+        if (!in_array($severity, array('HIGH', 'MEDIUM', 'LOW'), true)) {
+            return $id . ': severity must be HIGH, MEDIUM or LOW';
+        }
+        if (isset($def['description']) && !is_string($def['description'])) {
+            return $id . ': description must be text';
+        }
+        if ('file' === $target) {
+            if (!isset($def['match']) || !is_array($def['match']) || count($def['match']) < 1 || count($def['match']) > self::MAX_CONDITIONS) {
+                return $id . ': match must list 1 to ' . self::MAX_CONDITIONS . ' conditions';
+            }
+            foreach (array_values($def['match']) as $i => $condition) {
+                $problem = self::validate_condition($condition);
+                if (null !== $problem) {
+                    return $id . ': condition ' . ($i + 1) . ': ' . $problem;
+                }
+            }
+            return null;
+        }
+        $pattern = isset($def['pattern']) ? $def['pattern'] : null;
+        $problem = self::validate_condition(array('regex' => $pattern));
+        return (null === $problem) ? null : $id . ': pattern: ' . $problem;
+    }
+
+    private static function validate_condition($condition)
+    {
+        if (!is_array($condition) || 1 !== count($condition)) {
+            return 'must be {"string": ...} or {"regex": ...}';
+        }
+        if (isset($condition['string'])) {
+            if (!is_string($condition['string']) || strlen($condition['string']) < 3 || strlen($condition['string']) > self::MAX_PATTERN) {
+                return 'string must be 3 to ' . self::MAX_PATTERN . ' characters';
+            }
+            return null;
+        }
+        if (isset($condition['regex'])) {
+            $regex = $condition['regex'];
+            if (!is_string($regex) || '' === $regex || strlen($regex) > self::MAX_PATTERN) {
+                return 'regex must be 1 to ' . self::MAX_PATTERN . ' characters';
+            }
+            if (false === @preg_match($regex, '')) {
+                return 'regex does not compile (bring delimiters, e.g. /eval\\(/i)';
+            }
+            // A pattern that matches the empty string would flag every file.
+            if (1 === @preg_match($regex, '')) {
+                return 'regex matches an empty file, so it would flag everything';
+            }
+            return null;
+        }
+        return 'must be {"string": ...} or {"regex": ...}';
+    }
+
+    /**
+     * Turn valid, enabled definitions into the set_custom() structure.
+     * Invalid definitions throw Fatal naming the signature.
+     */
+    public static function from_definitions(array $defs)
+    {
+        $custom = array('cleanup' => array(), 'db_options' => array(), 'db_posts' => array());
+        foreach ($defs as $def) {
+            $problem = self::validate_definition($def);
+            if (null !== $problem) {
+                throw new Fatal('invalid custom signature ' . $problem);
+            }
+            if (isset($def['enabled']) && false === $def['enabled']) {
+                continue;
+            }
+            $name = 'custom.' . $def['id'];
+            $description = isset($def['description']) ? $def['description'] : '';
+            if ('file' === $def['target']) {
+                $match = array_values($def['match']);
+                $custom['cleanup'][$name] = array(
+                    'prefilter'   => $match[0],
+                    'triggers'    => array_slice($match, 1),
+                    'action'      => array('report' => $def['severity'], 'description' => $description),
+                );
+            } else {
+                $set = ('db_option' === $def['target']) ? 'db_options' : 'db_posts';
+                $custom[$set][] = array(
+                    'name'        => $name,
+                    'pattern'     => $def['pattern'],
+                    'severity'    => $def['severity'],
+                    'description' => '' === $description ? 'custom signature' : $description,
+                );
+            }
+        }
+        return $custom;
+    }
+
+    /**
+     * Parse a signature file (JSON text) into definitions.
+     */
+    public static function parse_file($json)
+    {
+        $data = json_decode($json, true);
+        if (!is_array($data) || !isset($data['signatures']) || !is_array($data['signatures'])) {
+            throw new Fatal('signature file must be JSON with a "signatures" list');
+        }
+        return array_values($data['signatures']);
+    }
+
+    /**
+     * Which custom definitions match a piece of text: the editor's and the
+     * assistant tools' "test" button. Returns ids.
+     */
+    public static function test_definitions(array $defs, $text)
+    {
+        $hits = array();
+        foreach ($defs as $def) {
+            if (null !== self::validate_definition($def)) {
+                continue;
+            }
+            if ('file' === $def['target']) {
+                $all = true;
+                foreach ($def['match'] as $condition) {
+                    if (!SignatureScanner::pattern_matches($condition, $text)) {
+                        $all = false;
+                        break;
+                    }
+                }
+                if ($all) {
+                    $hits[] = $def['id'];
+                }
+            } elseif (1 === preg_match($def['pattern'], $text)) {
+                $hits[] = $def['id'];
+            }
+        }
+        return $hits;
+    }
+
+    public static function cleanup()
+    {
+        return array_merge(self::builtin_cleanup(), self::$custom['cleanup']);
+    }
+
+    public static function db_options()
+    {
+        return array_merge(self::builtin_db_options(), self::$custom['db_options']);
+    }
+
+    public static function db_posts()
+    {
+        return array_merge(self::builtin_db_posts(), self::$custom['db_posts']);
+    }
+
     ////////////////
     // Cleanup signatures.
     //
@@ -34,8 +268,10 @@ final class Signatures
     //                                      from the file. Fails (and reports)
     //                                      if nothing was removed.
     //   array('delete_file' => true)       Delete the whole file.
+    //   array('report' => SEVERITY)        Report SIGNATURE_MATCH only, never
+    //                                      modify (custom signatures).
     //////////////
-    public static function cleanup()
+    public static function builtin_cleanup()
     {
         return array(
             'javascript_ndsw' => array(
@@ -174,7 +410,7 @@ final class Signatures
     }
 
     // Patterns matched against option values (first 256KB of each).
-    public static function db_options()
+    public static function builtin_db_options()
     {
         return array(
             array(
@@ -212,7 +448,7 @@ final class Signatures
 
     // Patterns matched against post content (candidates come from a
     // server-side LIKE prefilter).
-    public static function db_posts()
+    public static function builtin_db_posts()
     {
         return array(
             array(
@@ -269,7 +505,7 @@ final class Signatures
     public static function lint()
     {
         foreach (self::cleanup() as $name => $signature) {
-            if (!isset($signature['prefilter'], $signature['triggers'], $signature['action'])) {
+            if (!isset($signature['prefilter'], $signature['triggers'], $signature['action']) || !is_array($signature['prefilter'])) {
                 throw new Fatal('invalid cleanup signature ' . $name . ': prefilter, triggers and action are required');
             }
 
@@ -302,7 +538,7 @@ final class Signatures
         }
 
         foreach (array_merge(self::db_options(), self::db_posts()) as $signature) {
-            if (false === @preg_match($signature['pattern'], '')) {
+            if (!isset($signature['name'], $signature['pattern'], $signature['severity']) || false === @preg_match($signature['pattern'], '')) {
                 throw new Fatal('invalid regex in database signature ' . $signature['name'] . ': ' . $signature['pattern']);
             }
         }

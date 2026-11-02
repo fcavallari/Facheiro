@@ -84,7 +84,7 @@ final class Elderward_Job
      * findings are removed. Returns the job or a WP_Error.
      *
      * @param array     $options    Engine options (scanlog etc.).
-     * @param string    $origin     'manual' (the page) or 'schedule'.
+     * @param string    $origin     'manual' (the page), 'schedule' or 'assistant' (an ability).
      * @param bool|null $background Run through WP-Cron after the page is
      *                              gone; null follows the runner setting.
      */
@@ -135,7 +135,7 @@ final class Elderward_Job
             'counts'      => array(),
             'summaries'   => array(),
             'units_done'  => 0,
-            'origin'      => ('schedule' === $origin) ? 'schedule' : 'manual',
+            'origin'      => in_array($origin, array('schedule', 'assistant'), true) ? $origin : 'manual',
             'background'  => (bool) $background,
             'started'     => time(),
             'finished'    => null,
