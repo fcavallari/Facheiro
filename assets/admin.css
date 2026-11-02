@@ -943,3 +943,8 @@
 .elderward-wrap [data-server-only][hidden] {
 	display: none !important;
 }
+
+.elderward-wrap .elderward-key-reveal[hidden],
+.elderward-wrap .elderward-recovery-form [hidden] {
+	display: none;
+}

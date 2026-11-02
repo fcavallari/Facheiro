@@ -99,7 +99,7 @@ It is inert unless a key exists: without `wp-content/elderward-recovery-key.php`
 {"key":"at-least-24-random-characters-of-your-own"}
 ```
 
-Sign-in sets an HMAC-signed, HttpOnly, SameSite=Strict cookie for one hour, bound to the key (replacing or revoking the key ends every session); actions carry a session-bound token; wrong keys are rate-limited (10 per 15 minutes per client). The page keeps its state in exit-guarded files in the system temp folder (or `wp-content/elderward-recovery/`). Revoke the key when you are done.
+Sign-in sets an HMAC-signed, HttpOnly, SameSite=Strict cookie for one hour, bound to the key (replacing or revoking the key ends every session); actions carry a session-bound token; every wrong key costs a second, and for hand-written keys a client is locked out for 15 minutes after 10 wrong tries (behind a proxy, the forwarded client address counts). Generated keys never lock anyone out, so an attacker cannot block the owner. The state folder must be owned by the PHP user and closed to everyone else (a shared `/tmp` folder created by another account is ignored), and every step rebuilds the scan options, so a tampered state file cannot turn the scan into a cleanup. The page keeps its state in exit-guarded files in the system temp folder (or `wp-content/elderward-recovery/`). Revoke the key when you are done.
 
 ### AI assistants (MCP)
 

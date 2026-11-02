@@ -17,16 +17,12 @@ final class Elderward_Admin_Recovery
     public static function init()
     {
         add_action('admin_post_elderward_recovery', array(__CLASS__, 'action'));
+        add_action('wp_ajax_elderward_recovery_create', array(__CLASS__, 'ajax_create'));
     }
 
     public static function url()
     {
         return add_query_arg('tab', 'recovery', Elderward_Admin::page_url());
-    }
-
-    private static function shown_key_transient()
-    {
-        return 'elderward_recovery_key_' . get_current_user_id();
     }
 
     public static function action()
@@ -37,20 +33,7 @@ final class Elderward_Admin_Recovery
         check_admin_referer(self::NONCE);
         $op = isset($_POST['op']) ? sanitize_key(wp_unslash($_POST['op'])) : '';
         $notices = array();
-        if ('create' === $op) {
-            $expiry = isset($_POST['expiry']) ? sanitize_key(wp_unslash($_POST['expiry'])) : '7';
-            if (!array_key_exists($expiry, Elderward_Recovery_Key::expiries())) {
-                $expiry = '7';
-            }
-            $key = Elderward_Recovery_Key::create($expiry, wp_get_current_user()->user_login);
-            if (is_wp_error($key)) {
-                $notices[] = array('error', $key->get_error_message());
-            } else {
-                // Shown once, on the next page load, to this user only.
-                set_transient(self::shown_key_transient(), $key, 5 * MINUTE_IN_SECONDS);
-                $notices[] = array('success', __('Recovery key created. Copy it now: it is shown only once.', 'elderward'));
-            }
-        } elseif ('revoke' === $op) {
+        if ('revoke' === $op) {
             $notices[] = Elderward_Recovery_Key::revoke()
                 ? array('success', __('Recovery key revoked. The recovery page now answers "not found".', 'elderward'))
                 : array('error', __('The key file could not be deleted. Delete wp-content/elderward-recovery-key.php by hand.', 'elderward'));
@@ -60,15 +43,64 @@ final class Elderward_Admin_Recovery
         exit;
     }
 
+    /**
+     * Create a key and hand it back in this response only: the key itself
+     * is never stored anywhere (not even briefly in a transient), only its
+     * SHA-256 in the key file.
+     */
+    public static function ajax_create()
+    {
+        check_ajax_referer(self::NONCE, 'nonce');
+        if (!Elderward_Plugin::can_manage()) {
+            wp_send_json_error(array('message' => __('You are not allowed to do that.', 'elderward')), 403);
+        }
+        $expiry = isset($_POST['expiry']) ? sanitize_key(wp_unslash($_POST['expiry'])) : '7';
+        if (!array_key_exists($expiry, Elderward_Recovery_Key::expiries())) {
+            $expiry = '7';
+        }
+        $key = Elderward_Recovery_Key::create($expiry, wp_get_current_user()->user_login);
+        if (is_wp_error($key)) {
+            wp_send_json_error(array('message' => $key->get_error_message()), 500);
+        }
+        nocache_headers();
+        wp_send_json_success(array('key' => $key, 'status' => self::status_text(Elderward_Recovery_Key::status())));
+    }
+
+    /**
+     * One line describing the key file.
+     */
+    private static function status_text($status)
+    {
+        $datetime_format = get_option('date_format') . ' ' . get_option('time_format');
+        $relative_file = Elderward_Plugin::relative_path(Elderward_Recovery_Key::path());
+        if (null === $status) {
+            return __('No key yet. Create one while the site works, so recovery mode is ready if it ever breaks.', 'elderward');
+        }
+        if (!$status['valid']) {
+            /* translators: %s: file path */
+            return sprintf(__('%s exists but does not hold a usable key (a key typed by hand must be at least 24 characters). Recovery mode stays off until it is fixed or replaced.', 'elderward'), $relative_file);
+        }
+        if ($status['manual']) {
+            /* translators: %s: file path */
+            return sprintf(__('A key was added by hand in %s. It never expires: revoke it when you no longer need it.', 'elderward'), $relative_file);
+        }
+        $text = sprintf(
+            /* translators: 1: date and time, 2: user name, 3: expiry date and time or "never" */
+            __('Created on %1$s by %2$s. Expires: %3$s.', 'elderward'),
+            wp_date($datetime_format, $status['created']),
+            '' === $status['by'] ? '—' : $status['by'],
+            0 === $status['expires'] ? __('never (until revoked)', 'elderward') : wp_date($datetime_format, $status['expires'])
+        );
+        if (0 !== $status['expires'] && $status['expires'] <= time()) {
+            $text .= ' ' . __('This key has expired.', 'elderward');
+        }
+        return $text;
+    }
+
     public static function render()
     {
         $status = Elderward_Recovery_Key::status();
         $active = Elderward_Recovery_Key::active();
-        $new_key = get_transient(self::shown_key_transient());
-        if (false !== $new_key) {
-            delete_transient(self::shown_key_transient());
-        }
-        $datetime_format = get_option('date_format') . ' ' . get_option('time_format');
         $url = Elderward_Recovery_Key::url();
         $relative_file = Elderward_Plugin::relative_path(Elderward_Recovery_Key::path());
         ?>
@@ -80,40 +112,13 @@ final class Elderward_Admin_Recovery
                 <span class="elderward-check elderward-check-<?php echo $active ? 'protected' : 'unknown'; ?>"><?php echo $active ? esc_html__('Recovery mode is on', 'elderward') : esc_html__('Recovery mode is off', 'elderward'); ?></span>
             </div>
 
-            <?php if (false !== $new_key) : ?>
-                <div class="elderward-key-reveal">
-                    <p><strong><?php esc_html_e('Your recovery key', 'elderward'); ?></strong> — <?php esc_html_e('save it in your password manager now. Elderward keeps only a fingerprint of it and cannot show it again.', 'elderward'); ?></p>
-                    <p class="elderward-key-row"><input type="text" readonly id="elderward-recovery-key" class="large-text code elderward-copy" value="<?php echo esc_attr($new_key); ?>" />
-                        <button type="button" class="button button-primary" data-copy="elderward-recovery-key"><?php esc_html_e('Copy key', 'elderward'); ?></button></p>
-                </div>
-            <?php endif; ?>
+            <div class="elderward-key-reveal" id="elderward-key-reveal" hidden>
+                <p><strong><?php esc_html_e('Your recovery key', 'elderward'); ?></strong> — <?php esc_html_e('save it in your password manager now. Elderward keeps only a fingerprint of it and cannot show it again.', 'elderward'); ?></p>
+                <p class="elderward-key-row"><input type="text" readonly id="elderward-recovery-key" class="large-text code elderward-copy" value="" />
+                    <button type="button" class="button button-primary" data-copy="elderward-recovery-key"><?php esc_html_e('Copy key', 'elderward'); ?></button></p>
+            </div>
 
-            <?php if (null !== $status) : ?>
-                <p>
-                    <?php
-                    if (!$status['valid']) {
-                        /* translators: %s: file path */
-                        printf(esc_html__('%s exists but does not hold a usable key (a key typed by hand must be at least 24 characters). Recovery mode stays off until it is fixed or replaced.', 'elderward'), '<code>' . esc_html($relative_file) . '</code>');
-                    } elseif ($status['manual']) {
-                        /* translators: %s: file path */
-                        printf(esc_html__('A key was added by hand in %s. It never expires: revoke it when you no longer need it.', 'elderward'), '<code>' . esc_html($relative_file) . '</code>');
-                    } else {
-                        printf(
-                            /* translators: 1: date and time, 2: user name, 3: expiry date and time or "never" */
-                            esc_html__('Created on %1$s by %2$s. Expires: %3$s.', 'elderward'),
-                            esc_html(wp_date($datetime_format, $status['created'])),
-                            esc_html('' === $status['by'] ? '—' : $status['by']),
-                            '<strong>' . esc_html(0 === $status['expires'] ? __('never (until revoked)', 'elderward') : wp_date($datetime_format, $status['expires'])) . '</strong>'
-                        );
-                        if (0 !== $status['expires'] && $status['expires'] <= time()) {
-                            echo ' <span class="elderward-error">' . esc_html__('This key has expired.', 'elderward') . '</span>';
-                        }
-                    }
-                    ?>
-                </p>
-            <?php else : ?>
-                <p><?php esc_html_e('No key yet. Create one while the site works, so recovery mode is ready if it ever breaks.', 'elderward'); ?></p>
-            <?php endif; ?>
+            <p id="elderward-recovery-status"><?php echo esc_html(self::status_text($status)); ?></p>
 
             <p class="elderward-field-inline">
                 <strong><?php esc_html_e('Recovery page:', 'elderward'); ?></strong>
@@ -130,10 +135,8 @@ final class Elderward_Admin_Recovery
                         <option value="<?php echo esc_attr($value); ?>" <?php selected('30', $value); ?>><?php echo esc_html($label); ?></option>
                     <?php endforeach; ?>
                 </select>
-                <button type="submit" name="op" value="create" class="button button-primary" <?php echo null !== $status ? 'data-confirm="recovery-replace"' : ''; ?>><?php echo null === $status ? esc_html__('Create recovery key', 'elderward') : esc_html__('Create a new key', 'elderward'); ?></button>
-                <?php if (null !== $status) : ?>
-                    <button type="submit" name="op" value="revoke" class="button" data-confirm="recovery-revoke"><?php esc_html_e('Revoke', 'elderward'); ?></button>
-                <?php endif; ?>
+                <button type="button" id="elderward-recovery-create" class="button button-primary" data-nonce="<?php echo esc_attr(wp_create_nonce(self::NONCE)); ?>" <?php echo null !== $status ? 'data-replace="1"' : ''; ?>><?php echo null === $status ? esc_html__('Create recovery key', 'elderward') : esc_html__('Create a new key', 'elderward'); ?></button>
+                <button type="submit" name="op" value="revoke" class="button" data-confirm="recovery-revoke" <?php echo null === $status ? 'hidden' : ''; ?>><?php esc_html_e('Revoke', 'elderward'); ?></button>
             </form>
             <p class="description"><?php esc_html_e('Creating a new key replaces the old one. Keep the key and the page address together, outside this site: you will need them exactly when this site cannot show them.', 'elderward'); ?></p>
         </div>
@@ -181,7 +184,7 @@ final class Elderward_Admin_Recovery
             </div>
             <ul class="elderward-examples">
                 <li><?php esc_html_e('Without a valid, unexpired key file it answers "not found" and does nothing else.', 'elderward'); ?></li>
-                <li><?php esc_html_e('Only a fingerprint (SHA-256) of a key created here is stored. Keys are 32 random characters, and wrong guesses are slowed down and then blocked for 15 minutes.', 'elderward'); ?></li>
+                <li><?php esc_html_e('Only a fingerprint (SHA-256) of a key created here is stored, and the key is shown to you once without being saved anywhere. Keys are 32 random characters; every wrong guess costs a second. A key typed into the file by hand also gets a 15-minute lockout after 10 wrong tries.', 'elderward'); ?></li>
                 <li><?php esc_html_e('A sign-in lasts one hour, ends when the key is revoked or replaced, and is tied to a cookie the page sets only for itself.', 'elderward'); ?></li>
                 <li><?php esc_html_e('It reads the database settings from wp-config.php without running it, only reads files and the database, and never changes or uploads anything.', 'elderward'); ?></li>
                 <li><?php esc_html_e('Use it over HTTPS: on plain HTTP the key crosses the network unencrypted.', 'elderward'); ?></li>
@@ -195,6 +198,8 @@ final class Elderward_Admin_Recovery
         return array(
             'recoveryReplace' => __('Create a new key? The current one stops working.', 'elderward'),
             'recoveryRevoke'  => __('Revoke the recovery key? The recovery page stops working until a new key is created.', 'elderward'),
+            'recoveryOn'      => __('Recovery mode is on', 'elderward'),
+            'recoveryNew'     => __('Create a new key', 'elderward'),
         );
     }
 }

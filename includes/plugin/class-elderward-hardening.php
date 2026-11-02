@@ -432,7 +432,9 @@ final class Elderward_Hardening
      * no longer wanted), then check the site; on failure put every file
      * back. Returns a report.
      *
-     * @return array{ok:bool, files:array, rolled_back:bool, health:array, message:string}
+     * @return array{ok:bool, files:array, rolled_back:bool, health:array, verified:bool, message:string}
+     *         verified is false when the site could not be reached to check
+     *         it, before or after: then nothing proves it still works.
      */
     public static function apply(array $features)
     {
@@ -440,7 +442,7 @@ final class Elderward_Hardening
         $state = self::state();
         $targets = self::apache_targets();
         $rules = self::apache_rules($features);
-        $report = array('ok' => true, 'files' => array(), 'rolled_back' => false, 'health' => array(), 'message' => '');
+        $report = array('ok' => true, 'files' => array(), 'rolled_back' => false, 'health' => array(), 'verified' => false, 'message' => '');
 
         // Refuse up front if a file that needs writing cannot be written,
         // so nothing is half applied.
@@ -477,6 +479,7 @@ final class Elderward_Hardening
 
         $after = self::health();
         $report['health'] = array('before' => $before, 'after' => $after);
+        $report['verified'] = self::verifiable($before);
         if (!$report['ok'] || self::broke($before, $after)) {
             self::restore($originals);
             $report['ok'] = false;
@@ -566,15 +569,25 @@ final class Elderward_Hardening
 
     /**
      * Status codes of the home page, a login page and an admin request:
-     * the pages a broken .htaccess turns into 500 errors.
+     * the pages a broken .htaccess turns into 500 errors. 0 = no answer.
      */
     private static function health()
     {
         $out = array();
-        foreach (array('home' => home_url('/'), 'login' => wp_login_url(), 'ajax' => admin_url('admin-ajax.php')) as $key => $url) {
-            $out[$key] = self::status($url);
+        foreach (self::fetch_all(array('home' => home_url('/'), 'login' => wp_login_url(), 'ajax' => admin_url('admin-ajax.php'))) as $key => $response) {
+            $out[$key] = $response['code'];
         }
         return $out;
+    }
+
+    /**
+     * Whether health() could see the site at all: on hosts that block
+     * requests from the site to itself every code is 0, and a breakage
+     * would go unnoticed.
+     */
+    private static function verifiable(array $before)
+    {
+        return max(array_map('intval', $before)) > 0;
     }
 
     private static function broke(array $before, array $after)
@@ -592,20 +605,60 @@ final class Elderward_Hardening
         return false;
     }
 
-    private static function request($url)
+    /**
+     * GET several URLs of this site at once (no redirects, short timeouts).
+     * Parallel through the Requests library that ships with WordPress, so a
+     * check costs one timeout, not one per URL; sequential through the HTTP
+     * API if the library is missing. TLS is verified with WordPress's CA
+     * bundle, as wp_remote_get() does.
+     *
+     * @param array $urls key => URL
+     * @return array key => array(code => int (0 = no answer), body => string, headers => array lower-case name => value)
+     */
+    private static function fetch_all(array $urls)
     {
-        return wp_remote_get($url, array(
-            'timeout'     => 10,
-            'redirection' => 0,
-            'user-agent'  => 'Elderward/' . ELDERWARD_VERSION . ' hardening check',
-            'headers'     => array('Cache-Control' => 'no-cache'),
-        ));
-    }
-
-    private static function status($url)
-    {
-        $response = self::request($url);
-        return is_wp_error($response) ? 0 : (int) wp_remote_retrieve_response_code($response);
+        $out = array();
+        $class = class_exists('\WpOrg\Requests\Requests') ? '\WpOrg\Requests\Requests' : (class_exists('\Requests') ? '\Requests' : null);
+        $agent = 'Elderward/' . ELDERWARD_VERSION . ' hardening check';
+        if (null !== $class) {
+            $requests = array();
+            foreach ($urls as $key => $url) {
+                $requests[$key] = array('url' => $url, 'type' => 'GET', 'headers' => array('Cache-Control' => 'no-cache'));
+            }
+            $responses = call_user_func(array($class, 'request_multiple'), $requests, array(
+                'timeout'          => 8,
+                'connect_timeout'  => 5,
+                'follow_redirects' => false,
+                'useragent'        => $agent,
+                'verify'           => ABSPATH . WPINC . '/certificates/ca-bundle.crt',
+            ));
+            foreach ($urls as $key => $url) {
+                $response = isset($responses[$key]) ? $responses[$key] : null;
+                if (!is_object($response) || !isset($response->status_code) || $response instanceof Exception) {
+                    $out[$key] = array('code' => 0, 'body' => '', 'headers' => array());
+                    continue;
+                }
+                $headers = array();
+                foreach (array('x-content-type-options', 'x-frame-options', 'referrer-policy') as $name) {
+                    $headers[$name] = isset($response->headers[$name]) ? (string) $response->headers[$name] : '';
+                }
+                $out[$key] = array('code' => (int) $response->status_code, 'body' => (string) $response->body, 'headers' => $headers);
+            }
+            return $out;
+        }
+        foreach ($urls as $key => $url) {
+            $response = wp_remote_get($url, array('timeout' => 8, 'redirection' => 0, 'user-agent' => $agent, 'headers' => array('Cache-Control' => 'no-cache')));
+            if (is_wp_error($response)) {
+                $out[$key] = array('code' => 0, 'body' => '', 'headers' => array());
+                continue;
+            }
+            $headers = array();
+            foreach (array('x-content-type-options', 'x-frame-options', 'referrer-policy') as $name) {
+                $headers[$name] = (string) wp_remote_retrieve_header($response, $name);
+            }
+            $out[$key] = array('code' => (int) wp_remote_retrieve_response_code($response), 'body' => (string) wp_remote_retrieve_body($response), 'headers' => $headers);
+        }
+        return $out;
     }
 
     ////////////////
@@ -614,27 +667,52 @@ final class Elderward_Hardening
 
     /**
      * Ask the site for things each protection should block. Works the same
-     * for Apache and Nginx, and for rules added by hand.
+     * for Apache and Nginx, and for rules added by hand. Every probe but
+     * xmlrpc.php names a file that does not exist: it reaches WordPress
+     * (404) unless a rule refuses it first (403), and nothing is created.
      *
      * @return array feature id => array(status => protected|exposed|unknown, detail)
      */
     public static function check()
     {
-        $token = strtolower(wp_generate_password(10, false, false));
-        $probe = 'elderward-check-' . $token;
+        $probe = 'elderward-check-' . strtolower(wp_generate_password(10, false, false));
         $uploads = self::uploads();
         $home = trailingslashit(home_url());
+        $r = self::fetch_all(array(
+            'home'           => $home,
+            'uploads'        => $uploads['url'] . '/' . $probe . '.php',
+            'includes'       => includes_url($probe . '.php'),
+            'admin_includes' => admin_url('includes/' . $probe . '.php'),
+            // Starts with "wp-config" like every copy the rule must catch,
+            // with an extension no other protection covers.
+            'config'         => $home . 'wp-config-' . $probe . '.txt',
+            'sql'            => $home . $probe . '.sql',
+            'log'            => $home . $probe . '.log',
+            'dotfile'        => $home . '.' . $probe,
+            'dotdir'         => $home . '.' . $probe . '/config',
+            'xmlrpc'         => $home . 'xmlrpc.php',
+            'themes'         => get_theme_root_uri() . '/' . $probe . '.php',
+            'plugins'        => plugins_url($probe . '.php'),
+            'listing'        => $uploads['url'] . '/',
+        ));
         $results = array();
+        if (0 === $r['home']['code']) {
+            foreach (array_keys(self::features()) as $id) {
+                $results[$id] = array('status' => 'unknown', 'detail' => __('This site could not reach itself over HTTP, so nothing could be checked. Tools > Site Health reports this as a loopback problem.', 'elderward'));
+            }
+            return $results;
+        }
 
-        // A request for a file that does not exist reaches WordPress (404)
-        // unless a rule refuses it first (403): no file is created.
-        $denied = function ($url) {
-            return 403 === self::status($url);
-        };
-        $refused = function ($url, array &$codes) {
-            $code = self::status($url);
-            $codes[] = $code;
-            return in_array($code, array(401, 403, 404, 410), true) ? true : (0 === $code ? null : false);
+        // Refused = 403; null when a probe got no answer at all.
+        $denied = function () use ($r) {
+            $all = true;
+            foreach (func_get_args() as $key) {
+                if (0 === $r[$key]['code']) {
+                    return null;
+                }
+                $all = $all && 403 === $r[$key]['code'];
+            }
+            return $all;
         };
         $verdict = function ($ok, $yes, $no) {
             if (null === $ok) {
@@ -642,47 +720,32 @@ final class Elderward_Hardening
             }
             return $ok ? array('status' => 'protected', 'detail' => $yes) : array('status' => 'exposed', 'detail' => $no);
         };
-        $reachable = 0 !== self::status($home);
-        if (!$reachable) {
-            foreach (array_keys(self::features()) as $id) {
-                $results[$id] = array('status' => 'unknown', 'detail' => __('This site could not reach itself over HTTP, so nothing could be checked. Tools > Site Health reports this as a loopback problem.', 'elderward'));
-            }
-            return $results;
-        }
 
-        $results['uploads_php'] = $verdict($denied($uploads['url'] . '/' . $probe . '.php'), __('PHP requests in uploads are refused.', 'elderward'), __('A PHP file in uploads would run.', 'elderward'));
-        $results['core_includes'] = $verdict($denied(includes_url($probe . '.php')) && $denied(admin_url('includes/' . $probe . '.php')), __('wp-includes and wp-admin/includes refuse direct PHP requests.', 'elderward'), __('PHP files in wp-includes or wp-admin/includes can be requested directly.', 'elderward'));
-        $codes = array();
-        $results['config'] = $verdict($refused($home . 'wp-config.php', $codes), __('wp-config.php cannot be requested.', 'elderward'), __('wp-config.php answers requests (a copy such as wp-config.php.bak would be downloadable).', 'elderward'));
-        $results['sensitive'] = $verdict($denied($home . $probe . '.sql') && $denied($home . $probe . '.log'), __('Backup, dump and log files are refused.', 'elderward'), __('Files such as .sql dumps, .bak copies and logs would be downloadable.', 'elderward'));
-        $results['dotfiles'] = $verdict($denied($home . '.' . $probe) && $denied($home . '.' . $probe . '/config'), __('Hidden files and folders are refused.', 'elderward'), __('Hidden files and folders such as .git or .env would be downloadable.', 'elderward'));
-        $codes = array();
-        $results['xmlrpc'] = $verdict($refused($home . 'xmlrpc.php', $codes), __('xmlrpc.php is refused.', 'elderward'), __('xmlrpc.php answers requests.', 'elderward'));
-        $results['themes_php'] = $verdict($denied(get_theme_root_uri() . '/' . $probe . '.php'), __('Direct PHP requests in themes are refused.', 'elderward'), __('PHP files in themes can be requested directly.', 'elderward'));
-        $results['plugins_php'] = $verdict($denied(plugins_url($probe . '.php')), __('Direct PHP requests in plugins are refused.', 'elderward'), __('PHP files in plugins can be requested directly.', 'elderward'));
+        $results['uploads_php'] = $verdict($denied('uploads'), __('PHP requests in uploads are refused.', 'elderward'), __('A PHP file in uploads would run.', 'elderward'));
+        $results['core_includes'] = $verdict($denied('includes', 'admin_includes'), __('wp-includes and wp-admin/includes refuse direct PHP requests.', 'elderward'), __('PHP files in wp-includes or wp-admin/includes can be requested directly.', 'elderward'));
+        $results['config'] = $verdict($denied('config'), __('wp-config files and their copies are refused.', 'elderward'), __('A copy such as wp-config.php.bak would be downloadable.', 'elderward'));
+        $results['sensitive'] = $verdict($denied('sql', 'log'), __('Backup, dump and log files are refused.', 'elderward'), __('Files such as .sql dumps, .bak copies and logs would be downloadable.', 'elderward'));
+        $results['dotfiles'] = $verdict($denied('dotfile', 'dotdir'), __('Hidden files and folders are refused.', 'elderward'), __('Hidden files and folders such as .git or .env would be downloadable.', 'elderward'));
+        $xmlrpc = $r['xmlrpc']['code'];
+        $results['xmlrpc'] = $verdict(0 === $xmlrpc ? null : in_array($xmlrpc, array(401, 403, 404, 410), true), __('xmlrpc.php is refused.', 'elderward'), __('xmlrpc.php answers requests.', 'elderward'));
+        $results['themes_php'] = $verdict($denied('themes'), __('Direct PHP requests in themes are refused.', 'elderward'), __('PHP files in themes can be requested directly.', 'elderward'));
+        $results['plugins_php'] = $verdict($denied('plugins'), __('Direct PHP requests in plugins are refused.', 'elderward'), __('PHP files in plugins can be requested directly.', 'elderward'));
 
-        $listing = self::request($uploads['url'] . '/');
-        if (is_wp_error($listing)) {
+        if (0 === $r['listing']['code']) {
             $results['indexes'] = $verdict(null, '', '');
         } else {
-            $body = (string) wp_remote_retrieve_body($listing);
-            $listed = 200 === (int) wp_remote_retrieve_response_code($listing) && 1 === preg_match('/<title>\s*Index of|<h1>\s*Index of/i', $body);
+            $listed = 200 === $r['listing']['code'] && 1 === preg_match('/<title>\s*Index of|<h1>\s*Index of/i', $r['listing']['body']);
             $results['indexes'] = $verdict(!$listed, __('The uploads folder is not listed.', 'elderward'), __('The uploads folder lists its files.', 'elderward'));
         }
 
-        $page = self::request($home);
-        if (is_wp_error($page)) {
-            $results['headers'] = $verdict(null, '', '');
-        } else {
-            $missing = array();
-            foreach (array('x-content-type-options', 'x-frame-options', 'referrer-policy') as $header) {
-                if ('' === (string) wp_remote_retrieve_header($page, $header)) {
-                    $missing[] = $header;
-                }
+        $missing = array();
+        foreach ($r['home']['headers'] as $name => $value) {
+            if ('' === $value) {
+                $missing[] = $name;
             }
-            /* translators: %s: list of HTTP header names */
-            $results['headers'] = $verdict(empty($missing), __('All three security headers are sent.', 'elderward'), sprintf(__('Missing: %s.', 'elderward'), implode(', ', $missing)));
         }
+        /* translators: %s: list of HTTP header names */
+        $results['headers'] = $verdict(empty($missing), __('All three security headers are sent.', 'elderward'), sprintf(__('Missing: %s.', 'elderward'), implode(', ', $missing)));
 
         $state = self::state();
         $state['checked'] = array('time' => time(), 'results' => $results);

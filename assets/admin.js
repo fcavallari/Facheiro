@@ -22,6 +22,7 @@
 	scheduleForm();
 	helpToggles();
 	hardening();
+	recoveryKey();
 	confirmButtons();
 	falsePositives();
 	signatureEditor();
@@ -339,6 +340,50 @@
 					document.execCommand('copy');
 					done();
 				}
+			});
+		});
+	}
+
+	// Recovery tab: the key comes back in the ajax response, is shown once
+	// in place, and is never stored by WordPress.
+	function recoveryKey() {
+		var button = document.getElementById('elderward-recovery-create');
+		if (!button) {
+			return;
+		}
+		button.addEventListener('click', function () {
+			if (button.getAttribute('data-replace') && !window.confirm(cfg.i18n.recoveryReplace)) {
+				return;
+			}
+			var body = new FormData();
+			body.append('action', 'elderward_recovery_create');
+			body.append('nonce', button.getAttribute('data-nonce'));
+			body.append('expiry', document.getElementById('elderward-recovery-expiry').value);
+			button.disabled = true;
+			fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body }).then(function (r) { return r.json(); }).then(function (result) {
+				button.disabled = false;
+				if (!result || !result.success) {
+					window.alert((result && result.data && result.data.message) || cfg.i18n.network);
+					return;
+				}
+				document.getElementById('elderward-recovery-key').value = result.data.key;
+				document.getElementById('elderward-key-reveal').hidden = false;
+				document.getElementById('elderward-recovery-status').textContent = result.data.status;
+				var pill = document.querySelector('.elderward-card-head .elderward-check');
+				if (pill) {
+					pill.className = 'elderward-check elderward-check-protected';
+					pill.textContent = cfg.i18n.recoveryOn;
+				}
+				var revoke = document.querySelector('button[value="revoke"]');
+				if (revoke) {
+					revoke.hidden = false;
+				}
+				button.setAttribute('data-replace', '1');
+				button.textContent = cfg.i18n.recoveryNew;
+				document.getElementById('elderward-recovery-key').focus();
+			}).catch(function () {
+				button.disabled = false;
+				window.alert(cfg.i18n.network);
 			});
 		});
 	}

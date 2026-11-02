@@ -89,9 +89,10 @@
 	     escapes every output with its own htmlspecialchars() helper (App::h),
 	     protects every action with an HMAC token bound to the sign-in session,
 	     receives unslashed input (WordPress adds the slashes, and it is not
-	     loaded), hashes the key, realpath()s the one path input, and writes
-	     only its own exit-guarded state files. base64 encodes its signed
-	     session cookie. -->
+	     loaded), hashes the key and realpath()s the one path input. base64
+	     encodes its signed session cookie. Its file reads and writes (its own
+	     exit-guarded state files, the logs it shows) carry a phpcs:ignore
+	     with the reason at each call. -->
 	<rule ref="WordPress.Security.EscapeOutput">
 		<exclude-pattern>includes/recovery/*</exclude-pattern>
 	</rule>
@@ -99,12 +100,6 @@
 		<exclude-pattern>includes/recovery/*</exclude-pattern>
 	</rule>
 	<rule ref="WordPress.Security.ValidatedSanitizedInput">
-		<exclude-pattern>includes/recovery/*</exclude-pattern>
-	</rule>
-	<rule ref="WordPress.WP.AlternativeFunctions">
-		<exclude-pattern>includes/recovery/*</exclude-pattern>
-	</rule>
-	<rule ref="WordPress.PHP.NoSilencedErrors">
 		<exclude-pattern>includes/recovery/*</exclude-pattern>
 	</rule>
 	<rule ref="WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode">

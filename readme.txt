@@ -105,7 +105,7 @@ Before writing anything, Elderward checks that every file it needs can be writte
 
 = Is the recovery page a security risk? =
 
-It does nothing without a recovery key: no valid, unexpired key file means a plain 404. Keys created by Elderward are 32 random characters and only their SHA-256 is stored; wrong guesses are slowed down and then blocked for 15 minutes; a sign-in lasts one hour and ends when the key is revoked or replaced. The page only reads files and the database, never changes anything, and reads `wp-config.php` without executing it. Use it over HTTPS and revoke the key when you are done.
+It does nothing without a recovery key: no valid, unexpired key file means a plain 404. Keys created by Elderward are 32 random characters, impossible to guess, and only their SHA-256 is stored; every wrong key costs a second, and a key you type into the file by hand also locks a client out for 15 minutes after 10 wrong tries (generated keys never lock anyone out, so nobody can block you from recovery mode); a sign-in lasts one hour and ends when the key is revoked or replaced. The page only reads files and the database, never changes anything, and reads `wp-config.php` without executing it. Use it over HTTPS and revoke the key when you are done.
 
 = Can I run it on a site that no longer loads? =
 

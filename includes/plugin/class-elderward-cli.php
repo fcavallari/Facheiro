@@ -322,6 +322,15 @@ class Elderward_CLI
             if (!$report['ok']) {
                 WP_CLI::error('' !== $report['message'] ? $report['message'] : 'The rules could not be written.');
             }
+            if (empty($report['files'])) {
+                WP_CLI::success('Nothing to change.');
+                return;
+            }
+            if (empty($report['verified'])) {
+                WP_CLI::warning('This site cannot reach itself over HTTP, so Elderward could not check that it still works. Open it in a browser now; if it fails, run: wp elderward harden --remove');
+                WP_CLI::success(isset($assoc_args['remove']) ? 'Elderward rules removed (not verified).' : 'Protections written (not verified).');
+                return;
+            }
             WP_CLI::success(isset($assoc_args['remove']) ? 'Elderward rules removed.' : 'Protections applied; the site still answers normally.');
             return;
         }

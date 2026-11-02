@@ -34,6 +34,9 @@ final class App
     const MIN_KEY = 24;
     const SESSION_TTL = 3600;
     const MAX_FAILS = 10;
+    // A unit started this many times without finishing (PHP died while
+    // running it) stops the scan instead of looping forever.
+    const MAX_ATTEMPTS = 3;
     const LOCK_SECONDS = 900;
     const MAX_FINDINGS = 5000;
     const COOKIE = 'elderward_recovery';
@@ -123,7 +126,7 @@ final class App
         if (!is_file($file) || !is_readable($file) || filesize($file) > 4096) {
             return null;
         }
-        $raw = (string) file_get_contents($file);
+        $raw = (string) file_get_contents($file); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- no WordPress here; the key file, at most 4 KB.
         $json = trim(preg_replace('/^\s*<\?php.*?\?>/s', '', $raw, 1));
         $data = json_decode($json, true);
         if (!is_array($data)) {
@@ -153,12 +156,36 @@ final class App
         );
     }
 
+    /**
+     * Who is signing in, for the lockout of hand-written keys. Behind a
+     * proxy or CDN every visitor arrives from the proxy's private address,
+     * so the forwarded client address is used then (it can be spoofed,
+     * which only lets an attacker spread guesses, not lock others out).
+     */
     private static function client_id()
     {
         $ip = isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : 'unknown';
+        $public = false !== filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+        if (!$public) {
+            foreach (array('HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR') as $header) {
+                if (!empty($_SERVER[$header])) {
+                    $first = trim(strtok((string) $_SERVER[$header], ','));
+                    if (false !== filter_var($first, FILTER_VALIDATE_IP)) {
+                        $ip = $first;
+                        break;
+                    }
+                }
+            }
+        }
         return substr(hash('sha256', $ip . '|' . self::$key['secret']), 0, 16);
     }
 
+    /**
+     * A generated key is 32 random characters (~190 bits): guessing it is
+     * hopeless, so a wrong key only costs a second and never locks anyone
+     * out (a lockout would let anyone block the owner). A hand-written key
+     * may be weaker, so it gets a per-client lockout as well.
+     */
     private static function login()
     {
         $attempts = self::read_state('attempts');
@@ -168,7 +195,7 @@ final class App
         if ($now - (int) $mine['since'] > self::LOCK_SECONDS) {
             $mine = array('fails' => 0, 'since' => $now);
         }
-        if ((int) $mine['fails'] >= self::MAX_FAILS) {
+        if (self::$key['manual'] && (int) $mine['fails'] >= self::MAX_FAILS) {
             http_response_code(429);
             self::page_login('Too many wrong keys. Try again in 15 minutes.');
             return;
@@ -180,6 +207,12 @@ final class App
             self::set_cookie(self::sign(array('exp' => $now + self::SESSION_TTL, 'n' => bin2hex(self::random(8)))), $now + self::SESSION_TTL);
             header('Location: ' . self::self_url(), true, 303);
             exit;
+        }
+        if (!self::$key['manual']) {
+            sleep(1);
+            http_response_code(403);
+            self::page_login('That key is not valid.');
+            return;
         }
         $mine['fails'] = (int) $mine['fails'] + 1;
         $attempts[$id] = $mine;
@@ -197,7 +230,7 @@ final class App
 
     private static function sign(array $payload)
     {
-        $data = rtrim(strtr(base64_encode(json_encode($payload)), '+/', '-_'), '=');
+        $data = rtrim(strtr(base64_encode(json_encode($payload)), '+/', '-_'), '='); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here; session payload.
         return $data . '.' . hash_hmac('sha256', $data, self::$key['secret']);
     }
 
@@ -267,9 +300,9 @@ final class App
         );
         foreach ($candidates as $dir) {
             if (!is_dir($dir)) {
-                @mkdir($dir, 0700, true);
+                @mkdir($dir, 0700, true); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- no WordPress here; failure is handled by the checks below.
             }
-            if (is_dir($dir) && is_writable($dir)) {
+            if (self::private_dir($dir)) {
                 if (0 === strpos($dir, self::$content_dir)) {
                     // Inside the web root: deny web access wherever the
                     // server honours it; every state file is exit-guarded.
@@ -281,6 +314,24 @@ final class App
         return null;
     }
 
+    /**
+     * Only a folder this PHP user owns and nobody else can enter: on hosts
+     * that share the system temp folder, another account could otherwise
+     * create it first and plant a job or attempts file.
+     */
+    private static function private_dir($dir)
+    {
+        clearstatcache(true, $dir);
+        if (!is_dir($dir) || is_link($dir) || !is_writable($dir)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- no WordPress here.
+            return false;
+        }
+        $me = function_exists('posix_geteuid') ? posix_geteuid() : getmyuid();
+        if (fileowner($dir) !== $me) {
+            return false;
+        }
+        return 0 === (fileperms($dir) & 0077);
+    }
+
     private static function protect_dir($dir)
     {
         $files = array(
@@ -290,7 +341,7 @@ final class App
         );
         foreach ($files as $name => $content) {
             if (!is_file($dir . '/' . $name)) {
-                @file_put_contents($dir . '/' . $name, $content);
+                @file_put_contents($dir . '/' . $name, $content); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- no WordPress here; deny files for its own state folder, best effort (state files are exit-guarded anyway).
             }
         }
     }
@@ -304,7 +355,7 @@ final class App
         if (!is_file($file)) {
             return array();
         }
-        $raw = (string) @file_get_contents($file);
+        $raw = (string) @file_get_contents($file); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- no WordPress here; its own state file.
         $data = json_decode((string) substr($raw, strlen(self::GUARD) + 1), true);
         return is_array($data) ? $data : array();
     }
@@ -316,10 +367,10 @@ final class App
         }
         $file = self::$state_dir . '/' . $name . '.php';
         $tmp = $file . '.' . bin2hex(self::random(4)) . '.tmp';
-        if (false === @file_put_contents($tmp, self::GUARD . "\n" . json_encode($data), LOCK_EX)) {
+        if (false === @file_put_contents($tmp, self::GUARD . "\n" . json_encode($data), LOCK_EX)) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents, WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here; its own exit-guarded state file, written to a temp name and renamed; failure is returned.
             return false;
         }
-        return @rename($tmp, $file);
+        return @rename($tmp, $file); // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- atomic replace of its own state file.
     }
 
     ////////////////
@@ -341,7 +392,7 @@ final class App
     private static function wp_version()
     {
         $file = self::$root . '/wp-includes/version.php';
-        $content = is_file($file) ? (string) @file_get_contents($file, false, null, 0, 8192) : '';
+        $content = is_file($file) ? (string) @file_get_contents($file, false, null, 0, 8192) : ''; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- no WordPress here; wp-includes/version.php, read (never run), first 8 KB.
         return preg_match('/\$wp_version\s*=\s*[\'"]([^\'"]+)[\'"]/', $content, $m) ? $m[1] : null;
     }
 
@@ -380,14 +431,14 @@ final class App
         $suspects = array();
         foreach (self::error_logs() as $file) {
             $size = (int) filesize($file);
-            $handle = @fopen($file, 'rb');
+            $handle = @fopen($file, 'rb'); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- no WordPress here; reads the tail of a PHP error log.
             if (false === $handle) {
                 continue;
             }
             $read = min($size, 262144);
             fseek($handle, $size - $read);
-            $chunk = (string) fread($handle, $read);
-            fclose($handle);
+            $chunk = (string) fread($handle, $read); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- see above; at most 256 KB.
+            fclose($handle); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- see above.
             foreach (explode("\n", $chunk) as $line) {
                 if (1 === preg_match('/PHP (?:Fatal error|Parse error)|Uncaught |Allowed memory size/i', $line)) {
                     $lines[] = array('file' => $file, 'line' => substr(trim($line), 0, 600), 'mtime' => filemtime($file));
@@ -426,7 +477,7 @@ final class App
         }
         $dir = self::$state_dir . '/work';
         if (!is_dir($dir)) {
-            @mkdir($dir, 0700);
+            @mkdir($dir, 0700); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- no WordPress here; the engine work folder inside its private state folder.
         }
         return $dir;
     }
@@ -434,6 +485,50 @@ final class App
     private static function context(array $options, $reporter)
     {
         return new Context($options, $reporter, new CurlHttp(), new MysqliDb(), self::$plugin_dir, self::work_dir());
+    }
+
+    /**
+     * The options a recovery scan runs with, whatever the state file says:
+     * always the report-only scanall of this site (scanall_context() adds
+     * dryrun and drops restore), plus a log path that still resolves.
+     */
+    private static function scan_options(array $stored)
+    {
+        $options = array('scanall' => 1, 'scandirectory' => self::$root);
+        if (isset($stored['scanlog'])) {
+            $real = realpath((string) $stored['scanlog']);
+            if (false !== $real && is_readable($real)) {
+                $options['scanlog'] = $real;
+            }
+        }
+        return $options;
+    }
+
+    /**
+     * The job lock: steps take it without waiting (another step is
+     * running), start and cancel wait for the running step to finish so it
+     * cannot write its stale copy over theirs.
+     */
+    private static function lock($wait)
+    {
+        if (null === self::$state_dir) {
+            return null;
+        }
+        $handle = @fopen(self::$state_dir . '/job.lock', 'c'); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- no WordPress here; a lock file in the private state folder.
+        if (false === $handle) {
+            return null;
+        }
+        if (!flock($handle, $wait ? LOCK_EX : LOCK_EX | LOCK_NB)) {
+            fclose($handle); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- see above.
+            return null;
+        }
+        return $handle;
+    }
+
+    private static function unlock($handle)
+    {
+        flock($handle, LOCK_UN);
+        fclose($handle); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- see lock().
     }
 
     private static function start()
@@ -458,9 +553,18 @@ final class App
         } catch (Fatal $e) {
             return array('ok' => false, 'message' => $e->getMessage());
         }
+        $lock = self::lock(true);
+        if (null === $lock) {
+            return array('ok' => false, 'message' => 'Could not lock the scan state.');
+        }
+        $current = self::read_state('job');
+        if (!empty($current) && 'running' === $current['status']) {
+            self::unlock($lock);
+            return array('ok' => false, 'message' => 'A scan is already running. Cancel it first.');
+        }
         $job = array(
             'status'      => 'running',
-            'options'     => $ctx->options,
+            'options'     => self::scan_options($ctx->options),
             'stages'      => Runner::scanall_stages($ctx),
             'stage_index' => 0,
             'queue'       => null,
@@ -474,8 +578,10 @@ final class App
             'finished'    => null,
             'message'     => '',
             'error'       => '',
+            'attempt'     => array('key' => '', 'count' => 0),
         );
         self::write_state('job', $job);
+        self::unlock($lock);
         return self::status_payload($job);
     }
 
@@ -495,18 +601,30 @@ final class App
         if (empty($job) || 'running' !== $job['status']) {
             return self::status_payload($job);
         }
-        $lock = @fopen(self::$state_dir . '/job.lock', 'c');
-        if (false === $lock || !flock($lock, LOCK_EX | LOCK_NB)) {
+        $lock = self::lock(false);
+        if (null === $lock) {
             // Another request is running a step.
             return self::status_payload($job);
         }
         $job = self::read_state('job');
+        if (empty($job) || 'running' !== $job['status']) {
+            self::unlock($lock);
+            return self::status_payload($job);
+        }
         self::load_engine();
-        @set_time_limit(60);
+        @set_time_limit(60); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- may be disabled by the host; the step budget stays within the default limit anyway.
         $deadline = microtime(true) + self::budget();
-        $reporter = new CollectReporter($job['counts']);
-        $ctx = self::context($job['options'], $reporter);
+        $reporter = new CollectReporter(isset($job['counts']) ? (array) $job['counts'] : array());
         try {
+            // Never trust the stored options: rebuild them, so a state file
+            // that was tampered with cannot turn the scan into a cleanup.
+            $ctx = Runner::scanall_context(self::context(self::scan_options(isset($job['options']) ? (array) $job['options'] : array()), $reporter));
+            if (!isset($job['stages']) || $job['stages'] !== Runner::scanall_stages($ctx)) {
+                throw new Fatal('the saved scan state does not match this site; start a new scan');
+            }
+            if (!isset($job['attempt']) || !is_array($job['attempt'])) {
+                $job['attempt'] = array('key' => '', 'count' => 0);
+            }
             while (microtime(true) < $deadline) {
                 if ($job['stage_index'] >= count($job['stages'])) {
                     $job['status'] = 'done';
@@ -531,7 +649,21 @@ final class App
                     $job = self::absorb($job, $reporter);
                     continue;
                 }
-                $unit = array_shift($job['queue']);
+                // Record the attempt (with the unit still queued) before
+                // running it: if PHP dies inside, the next step sees it.
+                $unit = $job['queue'][0];
+                $key = md5($stage . '|' . json_encode($unit)); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here.
+                if ($job['attempt']['key'] === $key) {
+                    $job['attempt']['count']++;
+                } else {
+                    $job['attempt'] = array('key' => $key, 'count' => 1);
+                }
+                if ($job['attempt']['count'] > self::MAX_ATTEMPTS) {
+                    throw new Fatal('PHP stopped ' . self::MAX_ATTEMPTS . ' times on the same part of the "' . Runner::stage_label($stage) . '" stage (usually the memory or time limit). Raise memory_limit, or run php bin/elderward.php scanall=1 from a shell.');
+                }
+                $job = self::absorb($job, $reporter);
+                self::write_state('job', $job);
+                array_shift($job['queue']);
                 $next = $scanner->run($unit, $job['state']);
                 if (null !== $next) {
                     $job['queue'] = array_merge(Scanner::as_unit_list($next), $job['queue']);
@@ -547,11 +679,14 @@ final class App
             $job['status'] = 'failed';
             $job['error'] = get_class($e) . ': ' . $e->getMessage();
             $job['finished'] = time();
+        } catch (\Throwable $e) { // phpcs:ignore PHPCompatibility.Classes.NewClasses.throwableFound -- PHP 7+ errors; on PHP 5.6 this clause never matches.
+            $job['status'] = 'failed';
+            $job['error'] = get_class($e) . ': ' . $e->getMessage();
+            $job['finished'] = time();
         }
         $job = self::absorb($job, $reporter);
         self::write_state('job', $job);
-        flock($lock, LOCK_UN);
-        fclose($lock);
+        self::unlock($lock);
         return self::status_payload($job);
     }
 
@@ -573,11 +708,15 @@ final class App
 
     private static function cancel()
     {
+        $lock = self::lock(true);
         $job = self::read_state('job');
         if (!empty($job) && 'running' === $job['status']) {
             $job['status'] = 'cancelled';
             $job['finished'] = time();
             self::write_state('job', $job);
+        }
+        if (null !== $lock) {
+            self::unlock($lock);
         }
         return self::status_payload($job);
     }
@@ -611,7 +750,7 @@ final class App
         header('Content-Type: application/x-ndjson; charset=utf-8');
         header('Content-Disposition: attachment; filename="elderward-recovery-' . gmdate('Ymd-His') . '.json"');
         foreach (isset($job['findings']) ? $job['findings'] : array() as $finding) {
-            echo json_encode(array_merge(array('event' => 'finding'), $finding)) . "\n";
+            echo json_encode(array_merge(array('event' => 'finding'), $finding)) . "\n"; // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here; JSON responses of the recovery page.
         }
         exit;
     }
@@ -642,7 +781,7 @@ final class App
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data);
+        echo json_encode($data); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here; NDJSON export.
         exit;
     }
 

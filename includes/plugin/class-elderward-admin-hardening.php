@@ -106,6 +106,14 @@ final class Elderward_Admin_Hardening
             $notices[] = array('info', 'remove' === $op ? __('There were no Elderward rules to remove.', 'elderward') : __('Nothing to change.', 'elderward'));
             return $notices;
         }
+        if (empty($report['verified'])) {
+            // The site could not be reached from itself: nothing proves it
+            // still works, so say so instead of claiming it does.
+            $notices[] = array('warning', ('remove' === $op
+                ? __('Elderward rules removed, but this site cannot reach itself over HTTP, so Elderward could not check that it still works.', 'elderward')
+                : __('Protections written, but this site cannot reach itself over HTTP, so Elderward could not check that it still works and cannot undo a breakage on its own. Open the site in a new tab now; if it shows an error, click "Remove Elderward rules", or delete the lines between "# BEGIN Elderward" and "# END Elderward" over FTP.', 'elderward')) . ' ' . implode(', ', $changed) . '.');
+            return $notices;
+        }
         $notices[] = array('success', ('remove' === $op
             ? __('Elderward rules removed. The site still answers normally.', 'elderward')
             : __('Protections applied. The site still answers normally.', 'elderward')) . ' ' . implode(', ', $changed) . '.');

@@ -130,22 +130,61 @@ final class Elderward_Recovery_Key
     }
 
     /**
-     * Uninstall: the key file and recovery's own work folder.
+     * The folders recovery.php may have used for its state. It names the
+     * temp one after the WordPress folder as the web server sees it, which
+     * can differ from ABSPATH (symlinks), and uses the system temp folder,
+     * which can differ from get_temp_dir() (WP_TEMP_DIR): try them all.
+     */
+    public static function state_dirs()
+    {
+        $roots = array_unique(array_filter(array(
+            untrailingslashit(ABSPATH),
+            realpath(ABSPATH),
+            dirname(self::dir()),
+            realpath(dirname(self::dir())),
+        )));
+        $temps = array_unique(array_filter(array(rtrim(sys_get_temp_dir(), '/\\'), untrailingslashit(get_temp_dir()))));
+        $dirs = array(self::dir() . '/elderward-recovery');
+        foreach ($temps as $temp) {
+            foreach ($roots as $root) {
+                $dirs[] = $temp . '/elderward-recovery-' . substr(hash('sha256', untrailingslashit((string) $root)), 0, 16);
+            }
+        }
+        return array_values(array_unique($dirs));
+    }
+
+    /**
+     * Uninstall: the key file and recovery's state folders (job with the
+     * findings, sign-in attempts, engine work files).
      */
     public static function uninstall()
     {
         self::revoke();
-        $dirs = array(self::dir() . '/elderward-recovery', trailingslashit(get_temp_dir()) . 'elderward-recovery-' . substr(hash('sha256', untrailingslashit(ABSPATH)), 0, 16));
-        foreach ($dirs as $dir) {
-            if (!is_dir($dir)) {
-                continue;
+        foreach (self::state_dirs() as $dir) {
+            if (is_dir($dir) && !is_link($dir)) {
+                self::delete_tree($dir);
             }
-            foreach ((array) glob($dir . '/{,.}*', GLOB_BRACE) as $entry) {
-                if (is_file($entry)) {
-                    wp_delete_file($entry);
-                }
-            }
-            @rmdir($dir); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- empty work folder, best effort.
         }
+    }
+
+    /**
+     * Delete a folder and everything in it, without following symlinks
+     * (a link is removed, never its target).
+     */
+    private static function delete_tree($dir)
+    {
+        $items = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($items as $item) {
+            $path = $item->getPathname();
+            if ($item->isDir() && !$item->isLink()) {
+                @rmdir($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- uninstall, best effort; an empty folder of recovery's own state.
+            } else {
+                wp_delete_file($path);
+            }
+        }
+        @rmdir($dir); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- see above.
     }
 }

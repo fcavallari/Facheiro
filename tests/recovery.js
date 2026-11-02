@@ -45,7 +45,7 @@ async function adminLogin(page) {
 	console.log('== no key: 404');
 	await adminLogin(page);
 	await page.goto(base + '/wp-admin/admin.php?page=elderward&tab=recovery');
-	if (await page.$('button[value="revoke"]')) {
+	if (await page.$('button[value="revoke"]:not([hidden])')) {
 		await Promise.all([page.waitForURL(/tab=recovery/), page.click('button[value="revoke"]')]);
 	}
 	let res = await context.request.get(recoveryUrl);
@@ -53,12 +53,15 @@ async function adminLogin(page) {
 	if (res.status() !== 404) { fail('recovery page answers without a key'); }
 
 	console.log('== create a key on the Recovery tab');
-	await Promise.all([page.waitForURL(/tab=recovery/), page.click('button[value="create"]')]);
+	await page.click('#elderward-recovery-create');
+	await page.waitForSelector('#elderward-key-reveal:not([hidden])');
 	const key = await page.inputValue('#elderward-recovery-key');
+	const stored = await context.request.get(base + '/wp-admin/options.php');
+	if ((await stored.text()).includes(key)) { fail('the key is stored in an option'); }
 	console.log('key length', key.length, '| status:', (await page.textContent('.elderward-card-head .elderward-check')).trim());
 	if (key.length !== 32) { fail('no 32-character key shown'); }
 	await page.reload();
-	if (await page.$('#elderward-recovery-key')) { fail('key shown a second time'); }
+	if (await page.inputValue('#elderward-recovery-key') !== '') { fail('key shown a second time'); }
 
 	if (broken) {
 		fs.mkdirSync(path.dirname(broken), { recursive: true });
