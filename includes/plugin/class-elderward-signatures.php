@@ -124,43 +124,61 @@ final class Elderward_Signatures
         if (is_wp_error($ok)) {
             return $ok;
         }
-        $defs = self::all();
-        $replaced = false;
-        foreach ($defs as $i => $existing) {
-            if ($existing['id'] === $def['id'] && $def['id'] !== $original_id) {
-                return new WP_Error('elderward_signature', __('Another custom signature already uses that id.', 'elderward'));
+        $saved = self::change(function ($defs) use ($def, $original_id) {
+            $replaced = false;
+            foreach ($defs as $existing) {
+                if (isset($existing['id']) && $existing['id'] === $def['id'] && $def['id'] !== $original_id) {
+                    return new WP_Error('elderward_signature', __('Another custom signature already uses that id.', 'elderward'));
+                }
             }
-        }
-        foreach ($defs as $i => $existing) {
-            if ($existing['id'] === ('' !== $original_id ? $original_id : $def['id'])) {
-                $defs[$i] = $def;
-                $replaced = true;
-                break;
+            foreach ($defs as $i => $existing) {
+                if (isset($existing['id']) && $existing['id'] === ('' !== $original_id ? $original_id : $def['id'])) {
+                    $defs[$i] = $def;
+                    $replaced = true;
+                    break;
+                }
             }
-        }
-        if (!$replaced) {
-            if (count($defs) >= self::MAX) {
-                return new WP_Error('elderward_signature', __('Too many custom signatures.', 'elderward'));
+            if (!$replaced) {
+                if (count($defs) >= self::MAX) {
+                    return new WP_Error('elderward_signature', __('Too many custom signatures.', 'elderward'));
+                }
+                $defs[] = $def;
             }
-            $defs[] = $def;
+            return array_values($defs);
+        });
+        if (is_wp_error($saved)) {
+            return $saved;
         }
-        update_option(self::OPTION, array_values($defs), false);
         return $def;
     }
 
     public static function delete($id)
     {
-        $defs = array();
         $found = false;
-        foreach (self::all() as $def) {
-            if ($def['id'] === $id) {
-                $found = true;
-                continue;
+        self::change(function ($defs) use ($id, &$found) {
+            $kept = array();
+            foreach ($defs as $def) {
+                if (isset($def['id']) && $def['id'] === $id) {
+                    $found = true;
+                    continue;
+                }
+                $kept[] = $def;
             }
-            $defs[] = $def;
-        }
-        update_option(self::OPTION, $defs, false);
+            return $found ? $kept : false;
+        });
         return $found;
+    }
+
+    /**
+     * Change the stored definitions through the tamper seal. $mutate gets
+     * the current list and returns the new one (false or a WP_Error to
+     * change nothing).
+     */
+    private static function change(callable $mutate)
+    {
+        return Elderward_Seal::update('signatures', function ($defs) use ($mutate) {
+            return call_user_func($mutate, is_array($defs) ? array_values($defs) : array());
+        });
     }
 
     public static function set_enabled($id, $enabled)
@@ -195,17 +213,22 @@ final class Elderward_Signatures
             }
             $defs[$def['id']] = $def;
         }
-        $merged = array();
-        foreach (self::all() as $existing) {
-            $merged[$existing['id']] = $existing;
+        $saved = self::change(function ($existing_defs) use ($defs) {
+            $merged = array();
+            foreach ($existing_defs as $i => $existing) {
+                $merged[isset($existing['id']) ? $existing['id'] : '#' . $i] = $existing;
+            }
+            foreach ($defs as $id => $def) {
+                $merged[$id] = $def;
+            }
+            if (count($merged) > self::MAX) {
+                return new WP_Error('elderward_signature', __('Too many custom signatures.', 'elderward'));
+            }
+            return array_values($merged);
+        });
+        if (is_wp_error($saved)) {
+            return $saved;
         }
-        foreach ($defs as $id => $def) {
-            $merged[$id] = $def;
-        }
-        if (count($merged) > self::MAX) {
-            return new WP_Error('elderward_signature', __('Too many custom signatures.', 'elderward'));
-        }
-        update_option(self::OPTION, array_values($merged), false);
         return count($defs);
     }
 

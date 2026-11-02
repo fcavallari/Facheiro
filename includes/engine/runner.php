@@ -5,13 +5,13 @@ namespace Elderward\Engine;
 // Mode dispatch shared by every entry point (standalone CLI, WP-CLI, the
 // admin page): maps a scan mode name to scanners and runs them.
 //
-// Modes: scanall, scancron, scanlog (+correlate), scanintegrity, scantimes,
+// Modes: scanall, selfcheck, scancron, scanlog (+correlate), scanintegrity, scantimes,
 // quickscan, scandb, and the default signature scan ("signatures").
 //////////////
 
 final class Runner
 {
-    const MODES = 'scanall,scancron,scanlog,scanintegrity,scantimes,quickscan,scandb';
+    const MODES = 'scanall,selfcheck,scancron,scanlog,scanintegrity,scantimes,quickscan,scandb';
 
     // Which standalone mode the options ask for ('signatures' when none).
     // Throws Fatal on invalid combinations.
@@ -56,7 +56,15 @@ final class Runner
                     Scanner::run_all(new CorrelateScanner($ctx, $ctx->get('scandirectory'), $log_state['flagged'], $ctx->correlation_window()));
                 }
                 return;
+            case 'selfcheck':
+                Scanner::run_all(new SelfCheckScanner($ctx));
+                return;
             case 'scanintegrity':
+                // Elderward's own folder is verified by the self-check, which
+                // the integrity scan leaves out.
+                if (!$ctx->has('noselfcheck')) {
+                    Scanner::run_all(new SelfCheckScanner($ctx));
+                }
                 Scanner::run_all(new IntegrityScanner($ctx));
                 return;
             case 'scantimes':
@@ -93,7 +101,8 @@ final class Runner
     // Ordered stage keys for scanall, given the options.
     public static function scanall_stages(Context $ctx)
     {
-        $stages = array('quick', 'integrity', 'timestamps', 'crontab', 'database');
+        $stages = $ctx->has('noselfcheck') ? array() : array('self');
+        $stages = array_merge($stages, array('quick', 'integrity', 'timestamps', 'crontab', 'database'));
         if ($ctx->has('scanlog')) {
             $stages[] = 'logs';
             $stages[] = 'correlate';
@@ -105,6 +114,7 @@ final class Runner
     public static function stage_label($stage)
     {
         $labels = array(
+            'self'       => 'Elderward self-check',
             'quick'      => 'Quick checks',
             'integrity'  => 'Integrity',
             'timestamps' => 'Timestamps',
@@ -122,6 +132,8 @@ final class Runner
     public static function make_stage(Context $ctx, $stage, array $states)
     {
         switch ($stage) {
+            case 'self':
+                return (new SelfCheckScanner($ctx));
             case 'quick':
                 return (new QuickScanner($ctx));
             case 'integrity':

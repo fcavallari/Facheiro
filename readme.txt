@@ -111,6 +111,10 @@ It does nothing without a recovery key: no valid, unexpired key file means a pla
 
 Yes: use recovery mode (see the Recovery tab), or, with shell access, `php bin/elderward.php scanall=1 scandirectory=/path/to/wp-root` runs the same scanners without WordPress, reading the database credentials from `wp-config.php` without executing it. Run `php bin/elderward.php help=1` for the options.
 
+= Can malware switch Elderward off or hide from it? =
+
+Malware that runs PHP on your site has the same rights as any plugin, so no plugin can stop it. Elderward makes it visible instead. Every scan starts by checking Elderward's own files against the official checksums (or the list shipped with the plugin), and warns you when they were changed. Saved false positives, custom signatures and scan settings are sealed in a file next to the plugins folder: if someone changes them directly in the database, which is how an attacker would hide a backdoor from the scan, the change is reported, and a false positive added that way is ignored until you review it. An attacker who can write files can still rewrite the seal, so this is detection, not prevention.
+
 = Is a clean scan proof that the site is clean? =
 
 No. The signatures find known malware, the integrity check only covers packages that exist on wordpress.org, and the timestamp and log checks are leads, not proof. Treat the report as a starting point for an investigation.
@@ -152,6 +156,7 @@ AI assistants connect to your site through the separate MCP Adapter plugin, usin
 * Hardening for Apache/LiteSpeed (`.htaccess`, applied with an automatic health check and rollback) and Nginx (downloadable configuration), with Recommended and Strict templates and a live check.
 * Recovery mode: a key-protected page that shows what broke the site and runs the full scan without loading WordPress.
 * Brazilian Portuguese translation of the admin pages and the recovery page.
+* Tamper detection: every scan verifies Elderward's own files first, and saved false positives, custom signatures and scan settings changed outside Elderward (directly in the database) are reported, with tampered false positives ignored until reviewed.
 * A guide to writing custom signatures (docs/writing-signatures.md), with tested examples, linked from the Signatures tab.
 * Custom post-content signatures now see every live post, not only posts containing code-like markers.
 * WordPress abilities for AI assistants over MCP (WordPress 6.9+ with the MCP Adapter plugin), a triage prompt, and a copyable brief for chatbots without MCP.

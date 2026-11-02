@@ -2,7 +2,7 @@
 /**
  * Removes everything Elderward stored: the findings table, its options,
  * the work directory under uploads, its hardening rules in .htaccess files,
- * and the recovery key and recovery state.
+ * the recovery key and recovery state, and the tamper seal.
  *
  * @package Elderward
  */
@@ -21,11 +21,15 @@ $wpdb->query('DROP TABLE IF EXISTS `' . $elderward_table . '`'); // phpcs:ignore
 wp_clear_scheduled_hook('elderward_scheduled_scan');
 wp_clear_scheduled_hook('elderward_run_job');
 
-// Hardening rules and the recovery key live in files, not options.
+// Hardening rules, the recovery key and the tamper seal live in files, not
+// options. The plugin is inactive here, so its classes are loaded by hand.
+require_once __DIR__ . '/includes/plugin/class-elderward-plugin.php';
 require_once __DIR__ . '/includes/plugin/class-elderward-hardening.php';
 require_once __DIR__ . '/includes/plugin/class-elderward-recovery-key.php';
+require_once __DIR__ . '/includes/plugin/class-elderward-seal.php';
 Elderward_Hardening::uninstall();
 Elderward_Recovery_Key::uninstall();
+Elderward_Seal::uninstall();
 delete_option('elderward_hardening');
 
 delete_option('elderward_db_version');

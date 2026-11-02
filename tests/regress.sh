@@ -92,7 +92,9 @@ compare() {
         local o_out n_out o_rc n_rc
         # ${extra[@]+...}: an empty array is "unbound" to bash 3.2 (macOS) under set -u.
         (cd "$WORK" && php "$OLD" "$@" ${extra[@]+"${extra[@]}"} > "$WORK/o.out" 2>/dev/null); o_rc=$?
-        (cd "$WORK" && php "$NEW" "$@" ${extra[@]+"${extra[@]}"} > "$WORK/n.out" 2>/dev/null); n_rc=$?
+        # noselfcheck=1: the old script had no self-check stage (that
+        # stage has its own test, tests/checksums.sh).
+        (cd "$WORK" && php "$NEW" "$@" ${extra[@]+"${extra[@]}"} noselfcheck=1 > "$WORK/n.out" 2>/dev/null); n_rc=$?
         o_out="$(sort "$WORK/o.out")"
         n_out="$(sort "$WORK/n.out")"
         if [ "$o_out" == "$n_out" ] && [ "$o_rc" == "$n_rc" ]; then

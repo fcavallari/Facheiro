@@ -85,7 +85,9 @@ final class Elderward_Settings
     public static function save(array $input)
     {
         $settings = self::sanitize($input);
-        update_option(self::OPTION, $settings, false);
+        Elderward_Seal::update('settings', function () use ($settings) {
+            return $settings;
+        });
         Elderward_Cron::sync_schedule($settings);
         return $settings;
     }

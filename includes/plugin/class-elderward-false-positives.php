@@ -79,13 +79,31 @@ final class Elderward_False_Positives
         return (false === $hash) ? null : $hash;
     }
 
+    /**
+     * The rules scans apply: only those that match the tamper seal. A rule
+     * added or changed outside Elderward (see Elderward_Seal) is ignored,
+     * so the finding it would hide is reported again.
+     */
     public static function rules()
     {
         if (null === self::$cache) {
-            $rules = get_option(self::OPTION, array());
-            self::$cache = is_array($rules) ? $rules : array();
+            self::$cache = array();
+            foreach (self::all_rules() as $fingerprint => $rule) {
+                if (Elderward_Seal::matches('false_positives', $fingerprint, $rule)) {
+                    self::$cache[$fingerprint] = $rule;
+                }
+            }
         }
         return self::$cache;
+    }
+
+    /**
+     * Every stored rule, sealed or not (for the review list).
+     */
+    public static function all_rules()
+    {
+        $rules = get_option(self::OPTION, array());
+        return is_array($rules) ? $rules : array();
     }
 
     public static function reset_cache()
@@ -93,10 +111,29 @@ final class Elderward_False_Positives
         self::$cache = null;
     }
 
-    private static function save_rules(array $rules)
+    /**
+     * Change the stored rules through the seal. $mutate gets the current
+     * rules and returns the new ones (or a WP_Error).
+     */
+    private static function change_rules(callable $mutate)
     {
-        self::$cache = $rules;
-        update_option(self::OPTION, $rules, false);
+        $result = Elderward_Seal::update('false_positives', function ($rules) use ($mutate) {
+            return call_user_func($mutate, is_array($rules) ? $rules : array());
+        });
+        self::$cache = null;
+        return $result;
+    }
+
+    /**
+     * After review on the admin page: trust a rule changed outside
+     * Elderward.
+     */
+    public static function keep($fingerprint)
+    {
+        $ok = Elderward_Seal::accept('false_positives', array((string) $fingerprint));
+        self::$cache = null;
+        self::reflag((string) $fingerprint);
+        return $ok;
     }
 
     /**
@@ -142,11 +179,7 @@ final class Elderward_False_Positives
         if (null === $row) {
             return new WP_Error('elderward_fp_missing', __('That finding is not part of the current results.', 'elderward'));
         }
-        $rules = self::rules();
         $fingerprint = self::fingerprint($row->type, $row->path, $row->detail);
-        if (!isset($rules[$fingerprint]) && count($rules) >= self::MAX_RULES) {
-            return new WP_Error('elderward_fp_full', __('Too many saved false positives. Remove some before adding more.', 'elderward'));
-        }
         // The content the administrator reviewed is the one the scan saw;
         // rows from before hashes were stored fall back to the file now.
         $sha256 = (null !== $row->sha256 && '' !== $row->sha256) ? $row->sha256 : self::file_hash($row->type, $row->path);
@@ -161,8 +194,16 @@ final class Elderward_False_Positives
             'via'      => (self::VIA_ASSISTANT === $via) ? self::VIA_ASSISTANT : self::VIA_ADMIN,
             'time'     => time(),
         );
-        $rules[$fingerprint] = $rule;
-        self::save_rules($rules);
+        $saved = self::change_rules(function ($rules) use ($fingerprint, $rule) {
+            if (!isset($rules[$fingerprint]) && count($rules) >= self::MAX_RULES) {
+                return new WP_Error('elderward_fp_full', __('Too many saved false positives. Remove some before adding more.', 'elderward'));
+            }
+            $rules[$fingerprint] = $rule;
+            return $rules;
+        });
+        if (is_wp_error($saved)) {
+            return $saved;
+        }
         // Rows stored before the fingerprint column existed get it now.
         $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- the plugin's own findings table.
             Elderward_Plugin::findings_table(),
@@ -178,18 +219,22 @@ final class Elderward_False_Positives
     public static function unmark($fingerprint)
     {
         $fingerprint = (string) $fingerprint;
-        $rules = self::rules();
-        if (isset($rules[$fingerprint])) {
+        self::change_rules(function ($rules) use ($fingerprint) {
+            if (!isset($rules[$fingerprint])) {
+                return false;
+            }
             unset($rules[$fingerprint]);
-            self::save_rules($rules);
-        }
+            return $rules;
+        });
         self::reflag($fingerprint);
     }
 
     public static function forget_all()
     {
         global $wpdb;
-        self::save_rules(array());
+        self::change_rules(function () {
+            return array();
+        });
         $table = Elderward_Plugin::findings_table();
         // phpcs:ignore WordPress.DB -- the plugin's own table (name from the base prefix); no values.
         $wpdb->query("UPDATE `{$table}` SET fp = 0 WHERE fp <> 0");

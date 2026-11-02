@@ -63,6 +63,7 @@ return array(
     'PHP stopped %1$d times on the same part of the "%2$s" stage (usually the memory or time limit). Raise memory_limit, or run php bin/elderward.php scanall=1 from a shell.' => 'O PHP parou %1$d vezes na mesma parte da etapa "%2$s" (em geral, pelo limite de memória ou de tempo). Aumente o memory_limit ou rode php bin/elderward.php scanall=1 em um terminal.',
     'The saved scan state does not match this site; start a new scan.' => 'O estado salvo da varredura não corresponde a este site; inicie uma nova varredura.',
 
+    'Elderward self-check'                         => 'Autoverificação do Elderward',
     'Quick checks'                                 => 'Verificações rápidas',
     'Integrity'                                    => 'Integridade',
     'Timestamps'                                   => 'Datas dos arquivos',

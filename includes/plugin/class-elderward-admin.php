@@ -18,6 +18,7 @@ final class Elderward_Admin
     const NONCE_SETTINGS = 'elderward_settings';
     const NONCE_SAMPLE = 'elderward_sample_';
     const NONCE_SIGNATURES = 'elderward_signatures';
+    const NONCE_SEAL = 'elderward_seal';
     const PER_PAGE = 200;
     // Seconds without a saved step after which the page treats the
     // background runner as stalled: it kicks WP-Cron once, then steps from
@@ -50,6 +51,7 @@ final class Elderward_Admin
         add_action('admin_post_elderward_signature', array(__CLASS__, 'signature_action'));
         add_action('admin_post_elderward_signatures_export', array(__CLASS__, 'signatures_export'));
         add_action('wp_ajax_elderward_sig_test', array(__CLASS__, 'ajax_signature_test'));
+        add_action('admin_post_elderward_seal', array(__CLASS__, 'seal_action'));
         add_action('admin_post_elderward_save_settings', array(__CLASS__, 'save_settings'));
         Elderward_Admin_Hardening::init();
         Elderward_Admin_Recovery::init();
@@ -215,6 +217,7 @@ final class Elderward_Admin
                 'fpUndo'     => __('Undo', 'elderward'),
                 'fpRemoved'  => __('No longer a false positive; it shows in the findings again.', 'elderward'),
                 'fpForget'   => __('Remove every saved false positive? The findings they hid show again.', 'elderward'),
+                'fpKeep'     => __('Trust this false positive again? Do this only if you or another administrator made the change.', 'elderward'),
                 'sigNone'    => __('No signature matches.', 'elderward'),
                 /* translators: %d: number of matching signatures */
                 'sigHits'    => __('Matching signatures: %d', 'elderward'),
@@ -331,6 +334,14 @@ final class Elderward_Admin
             Elderward_False_Positives::unmark($fingerprint);
             wp_send_json_success(array());
         }
+        if ('keep' === $op) {
+            $fingerprint = isset($_POST['fingerprint']) ? sanitize_key(wp_unslash($_POST['fingerprint'])) : '';
+            if (1 !== preg_match('/^[0-9a-f]{40}$/', $fingerprint)) {
+                wp_send_json_error(array('message' => __('Unknown false positive.', 'elderward')), 400);
+            }
+            Elderward_False_Positives::keep($fingerprint);
+            wp_send_json_success(array());
+        }
         if ('forget_all' === $op) {
             Elderward_False_Positives::forget_all();
             wp_send_json_success(array());
@@ -442,6 +453,14 @@ final class Elderward_Admin
         } elseif ('enable' === $op || 'disable' === $op) {
             $result = Elderward_Signatures::set_enabled($id, 'enable' === $op);
             self::notify(array(is_wp_error($result) ? array('error', $result->get_error_message()) : array('success', 'enable' === $op ? __('Signature enabled.', 'elderward') : __('Signature disabled.', 'elderward'))));
+        } elseif ('keep' === $op) {
+            Elderward_Seal::accept('signatures', array($id));
+            /* translators: %s: signature id */
+            self::notify(array(array('success', sprintf(__('Signature %s is trusted again.', 'elderward'), $id))));
+        } elseif ('acknowledge' === $op) {
+            $removed = Elderward_Seal::diff('signatures');
+            Elderward_Seal::accept('signatures', $removed['removed']);
+            self::notify(array(array('success', __('Removed signatures acknowledged.', 'elderward'))));
         } elseif ('import' === $op) {
             $json = isset($_POST['json']) ? (string) wp_unslash($_POST['json']) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON signature file, parsed and validated entry by entry; escaped on output.
             $result = Elderward_Signatures::import($json);
@@ -490,6 +509,8 @@ final class Elderward_Admin
     private static function render_signatures_tab()
     {
         $defs = Elderward_Signatures::all();
+        $sig_diff = Elderward_Seal::diff('signatures');
+        $sig_tampered = array_flip(array_merge($sig_diff['added'], $sig_diff['changed']));
         $edit_id = isset($_GET['edit']) ? sanitize_text_field(wp_unslash($_GET['edit'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- selects which row to show in the form.
         $form = array('id' => '', 'target' => 'file', 'severity' => 'HIGH', 'description' => '', 'enabled' => true, 'conditions' => '', 'original_id' => '');
         if ('' !== $edit_id && 'new' !== $edit_id) {
@@ -517,6 +538,15 @@ final class Elderward_Admin
                     <a class="button" href="<?php echo esc_url(self::signatures_url(array('edit' => 'new'))); ?>#elderward-sig-form"><?php esc_html_e('Add signature', 'elderward'); ?></a>
                 </div>
             </div>
+            <?php if (!empty($sig_diff['removed'])) : ?>
+                <div class="notice notice-error inline elderward-tamper"><p><?php
+                    printf(
+                        /* translators: %s: comma-separated signature names */
+                        esc_html__('Removed outside Elderward: %s. Re-import them from an export if they should still exist.', 'elderward'),
+                        '<code>' . esc_html(implode(', ', $sig_diff['removed'])) . '</code>'
+                    );
+                ?></p><p><?php self::signature_button('', 'acknowledge', __('Acknowledge', 'elderward')); ?></p></div>
+            <?php endif; ?>
             <?php if (empty($defs)) : ?>
                 <p class="elderward-empty"><?php esc_html_e('No custom signatures yet. Built-in signatures are listed at the bottom of this page.', 'elderward'); ?></p>
             <?php else : ?>
@@ -531,8 +561,10 @@ final class Elderward_Admin
                     <tbody>
                     <?php foreach ($defs as $def) : ?>
                         <?php $enabled = !isset($def['enabled']) || $def['enabled']; ?>
-                        <tr class="<?php echo $enabled ? '' : 'elderward-disabled'; ?>">
+                        <?php $is_tampered = isset($def['id']) && isset($sig_tampered[(string) $def['id']]); ?>
+                        <tr class="<?php echo $enabled ? '' : 'elderward-disabled'; ?><?php echo $is_tampered ? ' elderward-tampered' : ''; ?>">
                             <td><code><?php echo esc_html($def['id']); ?></code><?php echo $enabled ? '' : ' <em>(' . esc_html__('disabled', 'elderward') . ')</em>'; ?>
+                                <?php if ($is_tampered) : ?><p class="elderward-tamper-badge"><?php esc_html_e('Added or changed outside Elderward. Keep it only if an administrator made this change.', 'elderward'); ?></p><?php endif; ?>
                                 <?php if ('' !== (string) $def['description']) : ?><p class="description"><?php echo esc_html($def['description']); ?></p><?php endif; ?></td>
                             <td><?php echo esc_html(isset($targets[$def['target']]) ? $targets[$def['target']] : $def['target']); ?></td>
                             <td><span class="elderward-sev elderward-sev-<?php echo esc_attr(strtolower($def['severity'])); ?>"><?php echo esc_html($def['severity']); ?></span></td>
@@ -540,6 +572,9 @@ final class Elderward_Admin
                             <td class="elderward-actions">
                                 <a class="button button-small" href="<?php echo esc_url(self::signatures_url(array('edit' => $def['id']))); ?>#elderward-sig-form"><?php esc_html_e('Edit', 'elderward'); ?></a>
                                 <?php self::signature_button($def['id'], $enabled ? 'disable' : 'enable', $enabled ? __('Disable', 'elderward') : __('Enable', 'elderward')); ?>
+                                <?php if ($is_tampered) : ?>
+                                    <?php self::signature_button($def['id'], 'keep', __('Keep', 'elderward')); ?>
+                                <?php endif; ?>
                                 <?php self::signature_button($def['id'], 'delete', __('Delete', 'elderward')); ?>
                             </td>
                         </tr>
@@ -838,6 +873,117 @@ final class Elderward_Admin
     }
 
     /**
+     * Tamper seal: accept the current settings (after the seal went
+     * missing) or the scan settings changed outside Elderward.
+     */
+    public static function seal_action()
+    {
+        if (!Elderward_Plugin::can_manage()) {
+            wp_die(esc_html__('You are not allowed to do that.', 'elderward'), '', array('response' => 403));
+        }
+        check_admin_referer(self::NONCE_SEAL);
+        $op = isset($_POST['op']) ? sanitize_key(wp_unslash($_POST['op'])) : '';
+        if ('accept_all' === $op) {
+            Elderward_Seal::accept();
+            Elderward_False_Positives::reset_cache();
+            self::notify(array(array('success', __('The current saved settings are trusted again.', 'elderward'))));
+        } elseif ('accept_settings' === $op) {
+            Elderward_Seal::accept('settings');
+            self::notify(array(array('success', __('The current scan settings are trusted again.', 'elderward'))));
+        }
+        wp_safe_redirect(self::page_url());
+        exit;
+    }
+
+    private static function seal_button($op, $label)
+    {
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="elderward-inline-form">
+            <input type="hidden" name="action" value="elderward_seal" />
+            <input type="hidden" name="op" value="<?php echo esc_attr($op); ?>" />
+            <?php wp_nonce_field(self::NONCE_SEAL); ?>
+            <button type="submit" class="button button-small"><?php echo esc_html($label); ?></button>
+        </form>
+        <?php
+    }
+
+    /**
+     * Tamper notices shown at the top of every Elderward tab: Elderward's
+     * own files changed (from the last scan's self-check), and saved
+     * settings changed outside Elderward (checked now).
+     */
+    private static function render_tamper_notices($job)
+    {
+        $self = (null !== $job && isset($job['summaries']['self']) && is_array($job['summaries']['self'])) ? $job['summaries']['self'] : array();
+        $changed_files = (isset($self['MODIFIED']) ? (int) $self['MODIFIED'] : 0) + (isset($self['EXTRA']) ? (int) $self['EXTRA'] : 0);
+        if ($changed_files > 0) {
+            ?>
+            <div class="notice notice-error elderward-tamper"><p><strong><?php esc_html_e('Elderward\'s own files were changed, so these results may not be trustworthy.', 'elderward'); ?></strong>
+                <?php esc_html_e('Reinstall Elderward from wordpress.org, or run the standalone command-line tool from a fresh download, then scan again. The Elderward self-check findings list the files.', 'elderward'); ?></p></div>
+            <?php
+        }
+        $status = Elderward_Seal::status();
+        if (!$status['available']) {
+            ?>
+            <div class="notice notice-warning elderward-tamper"><p><?php
+                /* translators: %s: folder path */
+                printf(esc_html__('Tamper detection for the saved settings is off: PHP cannot write the seal file in %s.', 'elderward'), '<code>' . esc_html(Elderward_Plugin::content_dir()) . '</code>');
+            ?></p></div>
+            <?php
+            return;
+        }
+        if ($status['lost'] > 0) {
+            ?>
+            <div class="notice notice-warning elderward-tamper"><p><?php
+                printf(
+                    /* translators: %s: date and time */
+                    esc_html__('The tamper seal for the saved settings was missing on %s and has been recreated from the current settings. Something deleted it, or the site was moved without it. Check the saved false positives and custom signatures, then confirm them.', 'elderward'),
+                    esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $status['lost']))
+                );
+            ?></p><p><?php self::seal_button('accept_all', __('The saved settings are correct', 'elderward')); ?></p></div>
+            <?php
+        }
+        $fp = $status['diff']['false_positives'];
+        $fp_count = count($fp['added']) + count($fp['changed']);
+        $sig = $status['diff']['signatures'];
+        $sig_count = count($sig['added']) + count($sig['changed']) + count($sig['removed']);
+        $set = $status['diff']['settings'];
+        $set_count = count($set['added']) + count($set['changed']) + count($set['removed']);
+        if (0 === $fp_count + $sig_count + $set_count) {
+            return;
+        }
+        ?>
+        <div class="notice notice-error elderward-tamper"><p><strong><?php esc_html_e('Some saved settings were changed outside Elderward, directly in the database.', 'elderward'); ?></strong>
+            <?php esc_html_e('That is how an attacker hides from a scanner. Review each change: keep it only if you or another administrator made it on purpose.', 'elderward'); ?></p>
+            <ul class="elderward-tamper-list">
+                <?php if ($fp_count > 0) : ?>
+                    <li><?php
+                        printf(
+                            /* translators: %d: number of false positives */
+                            esc_html(_n('%d saved false positive is ignored until you review it.', '%d saved false positives are ignored until you review them.', $fp_count, 'elderward')),
+                            (int) $fp_count
+                        );
+                    ?> <a href="<?php echo esc_url(add_query_arg('view', 'fp', self::page_url())); ?>#elderward-fp-rules"><?php esc_html_e('Review false positives', 'elderward'); ?></a></li>
+                <?php endif; ?>
+                <?php if ($sig_count > 0) : ?>
+                    <li><?php
+                        printf(
+                            /* translators: %d: number of signatures */
+                            esc_html(_n('%d custom signature was added, changed or removed.', '%d custom signatures were added, changed or removed.', $sig_count, 'elderward')),
+                            (int) $sig_count
+                        );
+                    ?> <a href="<?php echo esc_url(self::signatures_url()); ?>"><?php esc_html_e('Review signatures', 'elderward'); ?></a></li>
+                <?php endif; ?>
+                <?php if ($set_count > 0) : ?>
+                    <li><?php esc_html_e('The scan settings (how and when scans run, the access log path) were changed. Check them under Settings on the Scan tab.', 'elderward'); ?>
+                        <?php self::seal_button('accept_settings', __('The scan settings are correct', 'elderward')); ?></li>
+                <?php endif; ?>
+            </ul>
+        </div>
+        <?php
+    }
+
+    /**
      * Site Health's loopback test, which is what WP-Cron spawning needs.
      * Returns the problem text or null when the loopback works.
      */
@@ -998,6 +1144,7 @@ final class Elderward_Admin
             <?php foreach (self::take_notices() as $notice) : ?>
                 <div class="notice notice-<?php echo esc_attr($notice[0]); ?> is-dismissible"><p><?php echo esc_html($notice[1]); ?></p></div>
             <?php endforeach; ?>
+            <?php self::render_tamper_notices($job); ?>
             <nav class="nav-tab-wrapper elderward-tabs">
                 <a href="<?php echo esc_url($page_url); ?>" class="nav-tab <?php echo '' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Scan', 'elderward'); ?></a>
                 <a href="<?php echo esc_url(self::signatures_url()); ?>" class="nav-tab <?php echo 'signatures' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Signatures', 'elderward'); ?></a>
@@ -1067,7 +1214,7 @@ final class Elderward_Admin
         $running = null !== $job && 'running' === $job['status'];
         $datetime_format = get_option('date_format') . ' ' . get_option('time_format');
         $next_run = Elderward_Cron::next_run();
-        $fp_rules = Elderward_False_Positives::rules();
+        $fp_rules = Elderward_False_Positives::all_rules();
         $log_real = '' === $settings['log'] ? '' : Elderward_Settings::resolve_log_path($settings['log']);
         ?>
             <div class="elderward-card elderward-run">
@@ -1421,8 +1568,10 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
      */
     private static function render_fp_rules(array $rules, $datetime_format)
     {
+        $diff = Elderward_Seal::diff('false_positives', $rules);
+        $tampered = array_flip(array_merge($diff['added'], $diff['changed']));
         ?>
-        <div class="elderward-card elderward-fp-rules">
+        <div class="elderward-card elderward-fp-rules" id="elderward-fp-rules">
             <div class="elderward-card-head">
                 <h2><?php esc_html_e('Saved false positives', 'elderward'); ?></h2>
             </div>
@@ -1440,15 +1589,25 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
                     <tbody>
                     <?php foreach ($rules as $fingerprint => $rule) : ?>
                         <?php
-                        $path = (string) $rule['path'];
+                        $rule = is_array($rule) ? $rule : array();
+                        $path = isset($rule['path']) ? (string) $rule['path'] : '';
                         $short = Elderward_Plugin::relative_path($path);
                         ?>
-                        <tr data-fingerprint="<?php echo esc_attr($fingerprint); ?>">
-                            <td><span class="elderward-type"><?php echo esc_html($rule['type']); ?></span></td>
+                        <?php $is_tampered = isset($tampered[(string) $fingerprint]); ?>
+                        <tr data-fingerprint="<?php echo esc_attr($fingerprint); ?>" class="<?php echo $is_tampered ? 'elderward-tampered' : ''; ?>">
+                            <td><span class="elderward-type"><?php echo esc_html(isset($rule['type']) ? $rule['type'] : ''); ?></span></td>
                             <td><code class="elderward-path" title="<?php echo esc_attr($path); ?>"><?php echo esc_html($short); ?></code></td>
-                            <td><?php echo esc_html($rule['detail']); ?>
-                                <p class="elderward-fp-why"><?php echo esc_html(self::rule_summary($rule, $datetime_format)); ?></p></td>
-                            <td class="elderward-actions"><button type="button" class="button button-small" data-fp-action="unmark"><?php esc_html_e('Remove', 'elderward'); ?></button></td>
+                            <td><?php echo esc_html(isset($rule['detail']) ? $rule['detail'] : ''); ?>
+                                <?php if ($is_tampered) : ?>
+                                    <p class="elderward-tamper-badge"><?php esc_html_e('Changed outside Elderward, so it is ignored. Keep it only if an administrator made this change.', 'elderward'); ?></p>
+                                <?php else : ?>
+                                    <p class="elderward-fp-why"><?php echo esc_html(self::rule_summary($rule, $datetime_format)); ?></p>
+                                <?php endif; ?></td>
+                            <td class="elderward-actions">
+                                <?php if ($is_tampered) : ?>
+                                    <button type="button" class="button button-small" data-fp-action="keep"><?php esc_html_e('Keep', 'elderward'); ?></button>
+                                <?php endif; ?>
+                                <button type="button" class="button button-small" data-fp-action="unmark"><?php esc_html_e('Remove', 'elderward'); ?></button></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
