@@ -20,6 +20,7 @@
 	var tookOver = false;
 
 	scheduleForm();
+	helpToggles();
 	falsePositives();
 	signatureEditor();
 	copyButtons();
@@ -325,13 +326,32 @@
 					return;
 				}
 				area.select();
-				var done = function () { button.textContent = cfg.i18n.copied; };
+				var label = button.textContent;
+				var done = function () {
+					button.textContent = cfg.i18n.copied;
+					window.setTimeout(function () { button.textContent = label; }, 2000);
+				};
 				if (navigator.clipboard && navigator.clipboard.writeText) {
 					navigator.clipboard.writeText(area.value).then(done, function () { document.execCommand('copy'); done(); });
 				} else {
 					document.execCommand('copy');
 					done();
 				}
+			});
+		});
+	}
+
+	// "?" buttons: show or hide the help text they point at.
+	function helpToggles() {
+		document.querySelectorAll('.elderward-help-toggle').forEach(function (button) {
+			var text = document.getElementById(button.getAttribute('aria-controls'));
+			if (!text) {
+				return;
+			}
+			button.addEventListener('click', function () {
+				var open = button.getAttribute('aria-expanded') !== 'true';
+				button.setAttribute('aria-expanded', open ? 'true' : 'false');
+				text.hidden = !open;
 			});
 		});
 	}

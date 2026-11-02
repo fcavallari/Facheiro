@@ -5,7 +5,7 @@
  *   node tests/background-ui.js [--stale]
  *
  * 1. Saves the settings (background runner, weekly schedule) and checks the
- *    notice and the "Next run" text.
+ *    notice and the "Next scan" text.
  * 2. Starts a scan in background mode, leaves the page at once, comes back
  *    later and expects the scan to have finished without this tab sending
  *    a single elderward_step request.
@@ -102,7 +102,7 @@ async function waitForEnd(page, timeout) {
 	if (notices.some((n) => /notice-warning/.test(n))) { fail('unexpected warning after saving'); }
 	const schedText = await page.textContent('#elderward-schedule + .elderward-schedule-when + .description');
 	console.log('schedule text:', schedText.trim().replace(/\s+/g, ' '));
-	if (!/Next run:/.test(schedText)) { fail('no "Next run" after enabling the schedule'); }
+	if (!/Next scan:/.test(schedText)) { fail('no "Next scan" after enabling the schedule'); }
 	const dayHidden = await page.$eval('.elderward-schedule-day', (el) => el.hidden);
 	if (dayHidden) { fail('weekday field hidden for a weekly schedule'); }
 

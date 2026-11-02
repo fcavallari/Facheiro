@@ -31,9 +31,11 @@ const logPath = process.env.ELDERWARD_LOG || '';
 
 	await page.goto(base + '/wp-admin/tools.php?page=elderward');
 	await page.waitForSelector('#elderward-start');
-	if (logPath) {
-		await page.fill('#elderward-log', logPath);
-	}
+	// The access-log location is a setting used by every scan.
+	await page.fill('#elderward-settings-log', logPath || '');
+	await page.click('.elderward-settings #submit');
+	await page.waitForURL(/page=elderward/);
+	await page.waitForSelector('#elderward-start');
 	await page.click('#elderward-start');
 	await page.waitForSelector('#elderward-progress:not([hidden])');
 

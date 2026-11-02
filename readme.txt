@@ -60,7 +60,7 @@ Yes, with the default setting. The scan is a chain of short WP-Cron jobs; the pa
 
 = Can I schedule scans? =
 
-Yes: daily, twice daily or weekly at a time of day (and weekday) in the site's timezone, from the Settings section of the Elderward page. A scheduled scan runs in the background, uses the access log path saved in the settings, and is skipped when another scan is already running. The results replace the previous report on the page.
+Yes: daily, twice daily or weekly at a time of day (and weekday) in the site's timezone, from the Settings section of the Elderward page. An automatic scan runs in the background, checks the access logs set in the settings, and is skipped when another scan is already running. The results replace the previous report on the page.
 
 = What does marking a false positive do? =
 

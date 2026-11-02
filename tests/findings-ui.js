@@ -86,6 +86,8 @@ async function count(page, label) {
 	if (await page.locator('tr[data-id="' + id + '"]').count() !== 0) { fail('marked finding still listed under All'); }
 
 	await page.click('.elderward-filters a:has-text("False positives")');
+	// The buttons work once admin.js (in the footer) has run.
+	await page.waitForLoadState('load');
 	const fpRow = page.locator('.elderward-table tbody tr[data-id="' + id + '"]');
 	const why = await fpRow.locator('.elderward-fp-why').textContent();
 	console.log('reason shown:', why.trim());

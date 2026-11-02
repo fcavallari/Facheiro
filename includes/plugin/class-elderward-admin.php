@@ -62,6 +62,7 @@ final class Elderward_Admin
             self::PAGE,
             array(__CLASS__, 'render_page')
         );
+        add_action('load-' . self::$hook_suffix, array(__CLASS__, 'add_help'));
     }
 
     public static function register_network_menu()
@@ -73,6 +74,55 @@ final class Elderward_Admin
             'manage_network',
             self::PAGE,
             array(__CLASS__, 'render_page')
+        );
+        add_action('load-' . self::$hook_suffix, array(__CLASS__, 'add_help'));
+    }
+
+    /**
+     * The screen's Help tab (top right): the whole page explained.
+     */
+    public static function add_help()
+    {
+        $screen = get_current_screen();
+        if (!$screen) {
+            return;
+        }
+        $tabs = array(
+            'elderward-overview'   => array(__('Overview', 'elderward'), array(
+                __('Elderward checks this site for malware and signs of a break-in. Scans only report: nothing on the site is changed from this page.', 'elderward'),
+                __('Start a scan on the Scan tab. When it finishes, the findings appear below it, most serious first.', 'elderward'),
+            )),
+            'elderward-findings'   => array(__('Reading findings', 'elderward'), array(
+                __('HIGH: almost certainly malicious; deal with it first. MEDIUM: suspicious; check it. LOW: worth knowing. INFO: for the record. ERROR: a check could not run, so that part of the site is unknown rather than clean.', 'elderward'),
+                __('Timestamp and log findings are leads, not proof. The SHA-256 of a flagged file can be looked up on VirusTotal; only the hash leaves your browser.', 'elderward'),
+                __('Mark as false positive hides a finding you checked from later scans, with an optional note of why. For files, the mark only holds while the file stays exactly as you reviewed it. Download sample saves a password-protected copy (password: infected) for a malware analyst.', 'elderward'),
+            )),
+            'elderward-settings'   => array(__('Settings', 'elderward'), array(
+                __('Run scans: in the background (through WP-Cron, so you can leave the page) or only while the page is open (if background scans never finish on your host).', 'elderward'),
+                __('Automatic scans: run the same scan daily, twice daily or weekly. They always run in the background and are skipped while another scan is in progress.', 'elderward'),
+                __('Access logs: optional location of the web server logs (a file or a folder, such as /var/log/apache2), checked by every scan for attack traffic.', 'elderward'),
+            )),
+            'elderward-signatures' => array(__('Signatures', 'elderward'), array(
+                __('A signature describes something to look for. Built-in signatures ship with Elderward; on the Signatures tab you can add your own for a threat specific to this site, try them on a file or a pasted sample, and import or export them.', 'elderward'),
+                __('Custom signatures only report matches. They never clean or delete anything.', 'elderward'),
+            )),
+            'elderward-assistants' => array(__('AI assistants', 'elderward'), array(
+                __('The AI assistants tab explains how to let an assistant such as Claude run scans and explain the findings, through the MCP Adapter plugin, or how to copy a summary into any chat.', 'elderward'),
+            )),
+            'elderward-cleanup'    => array(__('Cleaning up', 'elderward'), array(
+                __('Cleanup and restore run from WP-CLI (wp elderward scan, wp elderward integrity --restore), where you can take a backup and preview each change with --dryrun first.', 'elderward'),
+            )),
+        );
+        foreach ($tabs as $id => $tab) {
+            $screen->add_help_tab(array(
+                'id'      => $id,
+                'title'   => $tab[0],
+                'content' => '<p>' . implode('</p><p>', array_map('esc_html', $tab[1])) . '</p>',
+            ));
+        }
+        $screen->set_help_sidebar(
+            '<p><strong>' . esc_html__('More help', 'elderward') . '</strong></p>'
+            . '<p><a href="https://github.com/fioa8c/elderward#readme" target="_blank" rel="noopener noreferrer">' . esc_html__('Elderward documentation', 'elderward') . '</a></p>'
         );
     }
 
@@ -102,20 +152,20 @@ final class Elderward_Admin
                 'confirm'    => __('Cancel the running scan?', 'elderward'),
                 /* translators: %d: seconds since the background runner last saved progress */
                 'idle'       => __('last activity %d s ago', 'elderward'),
-                'background' => __('Running in the background through WP-Cron: you can leave this page and come back later.', 'elderward'),
+                'background' => __('Running in the background: you can leave this page and come back later.', 'elderward'),
                 'browser'    => __('Keep this page open: the scan runs in short steps from this tab.', 'elderward'),
-                'fpPrompt'   => __('Mark this finding as a false positive? Optionally say why (kept with the decision):', 'elderward'),
+                'fpPrompt'   => __('Mark this finding as a false positive? Optionally note why; the note is kept with the decision.', 'elderward'),
                 'fpMarked'   => __('Marked as a false positive. Later scans hide it until the file changes.', 'elderward'),
                 'fpUndo'     => __('Undo', 'elderward'),
-                'fpRemoved'  => __('No longer treated as a false positive; it shows again in the findings.', 'elderward'),
-                'fpForget'   => __('Forget every saved false positive? Matching findings show again in the results.', 'elderward'),
+                'fpRemoved'  => __('No longer a false positive; it shows in the findings again.', 'elderward'),
+                'fpForget'   => __('Remove every saved false positive? The findings they hid show again.', 'elderward'),
                 'sigNone'    => __('No signature matches.', 'elderward'),
                 /* translators: %d: number of matching signatures */
-                'sigHits'    => __('%d signature(s) match:', 'elderward'),
+                'sigHits'    => __('Matching signatures: %d', 'elderward'),
                 'disabled'   => __('disabled', 'elderward'),
                 'copied'     => __('Copied.', 'elderward'),
                 'sigDelete'  => __('Delete this custom signature?', 'elderward'),
-                'takeover'   => __('The background runner has not reported progress for a while, so the scan continues from this tab for as long as it stays open. Check that this site can reach its own wp-cron.php (Site Health), or switch the runner setting to this browser tab.', 'elderward'),
+                'takeover'   => __('The background scan stopped making progress, so it continues from this tab for as long as the page stays open. Tools > Site Health shows whether this site can reach its own wp-cron.php; otherwise set Run scans to "Only while this page is open".', 'elderward'),
             ),
         ));
     }
@@ -134,11 +184,21 @@ final class Elderward_Admin
 
         $options = array();
         $log = isset($_POST['log']) ? sanitize_text_field(wp_unslash($_POST['log'])) : '';
-        // The only free-text input: it must name an existing, readable log
-        // file or directory. Nothing else is accepted.
-        $real = Elderward_Settings::resolve_log_path($log);
-        if (is_wp_error($real)) {
-            wp_send_json_error(array('message' => $real->get_error_message()), 400);
+        if ('' === $log) {
+            // The page's Start button: the saved access-log setting, skipped
+            // (as by automatic scans) when it no longer resolves.
+            $settings = Elderward_Settings::get();
+            $real = Elderward_Settings::resolve_log_path($settings['log']);
+            if (is_wp_error($real)) {
+                $real = '';
+            }
+        } else {
+            // An explicit path must name an existing, readable log file or
+            // directory. Nothing else is accepted.
+            $real = Elderward_Settings::resolve_log_path($log);
+            if (is_wp_error($real)) {
+                wp_send_json_error(array('message' => $real->get_error_message()), 400);
+            }
         }
         if ('' !== $real) {
             $options['scanlog'] = $real;
@@ -391,17 +451,22 @@ final class Elderward_Admin
         $targets = array('file' => __('Files', 'elderward'), 'db_option' => __('Database options', 'elderward'), 'db_post' => __('Database posts', 'elderward'));
         $builtin = Elderward_Signatures::builtin_listing();
         ?>
-        <p class="description"><?php esc_html_e('Add signatures for threats specific to this site. Custom signatures only detect: a match is reported as a finding (SIGNATURE_MATCH for files), and nothing is ever cleaned or deleted because of one, not even by the command-line cleanup. Changes apply from the next scan.', 'elderward'); ?></p>
+        <p class="elderward-intro"><?php esc_html_e('A signature describes something to look for. Add your own for a threat specific to this site; they run in every scan from the next one on. Custom signatures only report matches (as SIGNATURE_MATCH for files): nothing is ever cleaned or deleted because of one.', 'elderward'); ?></p>
 
         <div class="elderward-card">
-            <h2><?php esc_html_e('Custom signatures', 'elderward'); ?></h2>
+            <div class="elderward-card-head">
+                <h2><?php esc_html_e('Your signatures', 'elderward'); ?></h2>
+                <div class="elderward-head-actions">
+                    <a class="button" href="<?php echo esc_url(self::signatures_url(array('edit' => 'new'))); ?>#elderward-sig-form"><?php esc_html_e('Add signature', 'elderward'); ?></a>
+                </div>
+            </div>
             <?php if (empty($defs)) : ?>
-                <p><?php esc_html_e('None yet.', 'elderward'); ?></p>
+                <p class="elderward-empty"><?php esc_html_e('No custom signatures yet. Built-in signatures are listed at the bottom of this page.', 'elderward'); ?></p>
             <?php else : ?>
-                <table class="widefat striped elderward-table elderward-sig-table">
+                <div class="elderward-table-scroll"><table class="widefat striped elderward-table elderward-sig-table">
                     <thead><tr>
-                        <th><?php esc_html_e('Id', 'elderward'); ?></th>
-                        <th><?php esc_html_e('Looks at', 'elderward'); ?></th>
+                        <th><?php esc_html_e('Signature', 'elderward'); ?></th>
+                        <th class="elderward-col-target"><?php esc_html_e('Looks in', 'elderward'); ?></th>
                         <th class="elderward-col-sev"><?php esc_html_e('Severity', 'elderward'); ?></th>
                         <th><?php esc_html_e('Conditions', 'elderward'); ?></th>
                         <th class="elderward-col-actions"><?php esc_html_e('Actions', 'elderward'); ?></th>
@@ -423,42 +488,54 @@ final class Elderward_Admin
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
-                </table>
+                </table></div>
             <?php endif; ?>
         </div>
 
         <div class="elderward-card" id="elderward-sig-form">
-            <h2><?php echo '' === $form['original_id'] ? esc_html__('Add a signature', 'elderward') : esc_html__('Edit signature', 'elderward'); ?></h2>
+            <div class="elderward-card-head">
+                <h2><?php echo '' === $form['original_id'] ? esc_html__('Add a signature', 'elderward') : esc_html__('Edit signature', 'elderward'); ?></h2>
+            </div>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                 <input type="hidden" name="action" value="elderward_signature" />
                 <input type="hidden" name="op" value="save" />
                 <input type="hidden" name="original_id" value="<?php echo esc_attr($form['original_id']); ?>" />
                 <?php wp_nonce_field(self::NONCE_SIGNATURES); ?>
                 <table class="form-table" role="presentation">
-                    <tr><th scope="row"><label for="elderward-sig-id"><?php esc_html_e('Id', 'elderward'); ?></label></th>
-                        <td><input type="text" id="elderward-sig-id" name="id" class="regular-text code" value="<?php echo esc_attr($form['id']); ?>" pattern="[a-z0-9][a-z0-9._\-]{1,62}" required />
-                            <p class="description"><?php esc_html_e('Lowercase letters, digits, dot, dash, underscore. Findings name it as custom.<id>.', 'elderward'); ?></p></td></tr>
-                    <tr><th scope="row"><label for="elderward-sig-target"><?php esc_html_e('Looks at', 'elderward'); ?></label></th>
+                    <tr><th scope="row"><label for="elderward-sig-id"><?php esc_html_e('Name', 'elderward'); ?></label></th>
+                        <td><input type="text" id="elderward-sig-id" name="id" class="regular-text code" value="<?php echo esc_attr($form['id']); ?>" placeholder="acme-loader" pattern="[a-z0-9][a-z0-9._\-]{1,62}" required />
+                            <p class="description"><?php esc_html_e('A short name made of lowercase letters, digits, dots, dashes and underscores. Findings show it as custom.<name>.', 'elderward'); ?></p></td></tr>
+                    <tr><th scope="row"><label for="elderward-sig-target"><?php esc_html_e('Looks in', 'elderward'); ?></label></th>
                         <td><select id="elderward-sig-target" name="target">
                             <?php foreach ($targets as $value => $label) : ?>
                                 <option value="<?php echo esc_attr($value); ?>" <?php selected($form['target'], $value); ?>><?php echo esc_html($label); ?></option>
                             <?php endforeach; ?>
-                        </select></td></tr>
+                        </select>
+                            <p class="description"><?php esc_html_e('Files: PHP, JavaScript and other code files under 2 MB. Database options and posts: values in the options table and post content.', 'elderward'); ?></p></td></tr>
                     <tr><th scope="row"><label for="elderward-sig-severity"><?php esc_html_e('Severity', 'elderward'); ?></label></th>
                         <td><select id="elderward-sig-severity" name="severity">
                             <?php foreach (array('HIGH', 'MEDIUM', 'LOW') as $severity) : ?>
                                 <option value="<?php echo esc_attr(strtolower($severity)); ?>" <?php selected(strtoupper($form['severity']), $severity); ?>><?php echo esc_html($severity); ?></option>
                             <?php endforeach; ?>
-                        </select></td></tr>
+                        </select>
+                            <p class="description"><?php esc_html_e('HIGH if a match is certainly malicious, MEDIUM if it needs checking, LOW if it is only worth knowing.', 'elderward'); ?></p></td></tr>
                     <tr><th scope="row"><label for="elderward-sig-description"><?php esc_html_e('Description', 'elderward'); ?></label></th>
-                        <td><input type="text" id="elderward-sig-description" name="description" class="large-text" value="<?php echo esc_attr($form['description']); ?>" maxlength="300" /></td></tr>
-                    <tr><th scope="row"><label for="elderward-sig-conditions"><?php esc_html_e('Conditions', 'elderward'); ?></label></th>
-                        <td><textarea id="elderward-sig-conditions" name="conditions" class="large-text code" rows="5" required><?php echo esc_textarea($form['conditions']); ?></textarea>
-                            <p class="description"><?php esc_html_e('One per line, starting with "text:" (exact text) or "regex:" (a PCRE pattern with delimiters, such as /eval\s*\(/i). For files every line must match, and the first is checked first, so make it a short text. Only files with the usual risky extensions and under 2 MB are scanned. Database signatures take a single regex line.', 'elderward'); ?></p></td></tr>
+                        <td><input type="text" id="elderward-sig-description" name="description" class="large-text" value="<?php echo esc_attr($form['description']); ?>" placeholder="<?php esc_attr_e('ACME loader backdoor', 'elderward'); ?>" maxlength="300" />
+                            <p class="description"><?php esc_html_e('Shown with every match.', 'elderward'); ?></p></td></tr>
+                    <tr><th scope="row"><label for="elderward-sig-conditions"><?php esc_html_e('Conditions', 'elderward'); ?></label> <?php self::help_button('elderward-help-conditions'); ?></th>
+                        <td><textarea id="elderward-sig-conditions" name="conditions" class="large-text code" rows="5" placeholder="text: acme_loader&#10;regex: /eval\s*\(\s*\$_POST/i" required><?php echo esc_textarea($form['conditions']); ?></textarea>
+                            <p class="description"><?php esc_html_e('One per line, each starting with text: (exact text) or regex: (a pattern). A file matches when every line matches.', 'elderward'); ?></p>
+                            <?php
+                            self::help_text('elderward-help-conditions', array(
+                                __('text: matches the exact characters that follow, including case. regex: takes a PHP (PCRE) regular expression with delimiters, such as /eval\s*\(/i. A regex that would match an empty file is refused, because it would flag everything.', 'elderward'),
+                                __('For files, up to 10 lines, all of which must match. The first line is checked first on every file, so make it a short, distinctive text: it keeps scans fast. Database signatures take a single regex line.', 'elderward'),
+                                __('Before saving, try the signature below on the malicious file (it must match) and on a clean file of the same kind (it must not).', 'elderward'),
+                            ));
+                            ?></td></tr>
                     <tr><th scope="row"><?php esc_html_e('Status', 'elderward'); ?></th>
-                        <td><label><input type="checkbox" name="enabled" value="1" <?php checked(!empty($form['enabled'])); ?> /> <?php esc_html_e('Enabled', 'elderward'); ?></label></td></tr>
+                        <td><label><input type="checkbox" name="enabled" value="1" <?php checked(!empty($form['enabled'])); ?> /> <?php esc_html_e('Use in scans', 'elderward'); ?></label></td></tr>
                 </table>
-                <?php submit_button('' === $form['original_id'] ? __('Add signature', 'elderward') : __('Save signature', 'elderward'), 'primary', 'submit', false); ?>
+                <?php submit_button('' === $form['original_id'] ? __('Add signature', 'elderward') : __('Save changes', 'elderward'), 'primary', 'submit', false); ?>
                 <?php if ('' !== $form['original_id']) : ?>
                     <a class="button" href="<?php echo esc_url(self::signatures_url()); ?>"><?php esc_html_e('Cancel', 'elderward'); ?></a>
                 <?php endif; ?>
@@ -466,26 +543,40 @@ final class Elderward_Admin
         </div>
 
         <div class="elderward-card" id="elderward-sig-test">
-            <h2><?php esc_html_e('Test signatures', 'elderward'); ?></h2>
-            <p class="description"><?php esc_html_e('Paste a sample, or give a file of this site, and see which built-in and custom signatures match. Nothing is saved; only the names of matching signatures come back.', 'elderward'); ?></p>
-            <p><label for="elderward-test-path"><?php esc_html_e('File on this site (path inside the WordPress folder)', 'elderward'); ?></label><br />
-                <input type="text" id="elderward-test-path" class="large-text code" placeholder="wp-content/uploads/2026/shell.php" autocomplete="off" /></p>
-            <p><label for="elderward-test-text"><?php esc_html_e('Or paste text', 'elderward'); ?></label><br />
-                <textarea id="elderward-test-text" class="large-text code" rows="6"></textarea></p>
-            <p><button type="button" class="button" id="elderward-test-run"><?php esc_html_e('Test', 'elderward'); ?></button></p>
-            <div id="elderward-test-result" aria-live="polite"></div>
+            <div class="elderward-card-head">
+                <h2><?php esc_html_e('Try signatures', 'elderward'); ?></h2>
+            </div>
+            <p class="description"><?php esc_html_e('See which built-in and custom signatures match a file of this site or a pasted sample. Nothing is saved, and only the names of the matching signatures are shown.', 'elderward'); ?></p>
+            <div class="elderward-field">
+                <label for="elderward-test-path"><?php esc_html_e('File on this site', 'elderward'); ?></label>
+                <input type="text" id="elderward-test-path" class="large-text code" placeholder="wp-content/uploads/2026/shell.php" autocomplete="off" />
+                <p class="description"><?php esc_html_e('Path from the WordPress folder. wp-config.php cannot be used.', 'elderward'); ?></p>
+            </div>
+            <div class="elderward-field">
+                <label for="elderward-test-text"><?php esc_html_e('Or paste a sample', 'elderward'); ?></label>
+                <textarea id="elderward-test-text" class="large-text code" rows="6"></textarea>
+            </div>
+            <p><button type="button" class="button button-primary" id="elderward-test-run"><?php esc_html_e('Try', 'elderward'); ?></button></p>
+            <div id="elderward-test-result" class="elderward-test-result" aria-live="polite"></div>
         </div>
 
         <div class="elderward-card">
-            <h2><?php esc_html_e('Import and export', 'elderward'); ?></h2>
-            <p><a class="button" href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=elderward_signatures_export'), self::NONCE_SIGNATURES)); ?>"><?php esc_html_e('Export custom signatures (JSON)', 'elderward'); ?></a></p>
-            <p class="description"><?php esc_html_e('The same file works with the standalone scanner: php bin/elderward.php scanall=1 signatures=signatures.json', 'elderward'); ?></p>
+            <div class="elderward-card-head">
+                <h2><?php esc_html_e('Import and export', 'elderward'); ?></h2>
+                <div class="elderward-head-actions">
+                    <a class="button" href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=elderward_signatures_export'), self::NONCE_SIGNATURES)); ?>"><?php esc_html_e('Export custom signatures', 'elderward'); ?></a>
+                </div>
+            </div>
+            <p class="description"><?php esc_html_e('The export is a JSON file. It also works with the standalone scanner: php bin/elderward.php scanall=1 signatures=signatures.json', 'elderward'); ?></p>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                 <input type="hidden" name="action" value="elderward_signature" />
                 <input type="hidden" name="op" value="import" />
                 <?php wp_nonce_field(self::NONCE_SIGNATURES); ?>
-                <p><label for="elderward-sig-import"><?php esc_html_e('Import: paste a signature file. Signatures with the same id are replaced; one invalid entry rejects the whole file.', 'elderward'); ?></label></p>
-                <textarea id="elderward-sig-import" name="json" class="large-text code" rows="6" placeholder='{"elderward_signatures": 1, "signatures": [ ... ]}' required></textarea>
+                <div class="elderward-field">
+                    <label for="elderward-sig-import"><?php esc_html_e('Import', 'elderward'); ?></label>
+                    <textarea id="elderward-sig-import" name="json" class="large-text code" rows="6" placeholder='{"elderward_signatures": 1, "signatures": [ ... ]}' required></textarea>
+                    <p class="description"><?php esc_html_e('Paste the contents of a signature file. Signatures with the same name are replaced. If any entry is invalid, nothing is imported.', 'elderward'); ?></p>
+                </div>
                 <?php submit_button(__('Import', 'elderward'), 'secondary', 'submit', false); ?>
             </form>
         </div>
@@ -495,11 +586,11 @@ final class Elderward_Admin
                 /* translators: %d: number of built-in signatures */
                 printf(esc_html__('Built-in signatures (%d)', 'elderward'), count($builtin));
             ?></h2></summary>
-            <p class="description"><?php esc_html_e('Shipped with Elderward and read-only. Access log and crontab patterns are not listed here.', 'elderward'); ?></p>
-            <table class="widefat striped elderward-table">
+            <p class="description"><?php esc_html_e('Shipped with Elderward; they cannot be changed here. Access log and crontab patterns are not listed.', 'elderward'); ?></p>
+            <div class="elderward-table-scroll"><table class="widefat striped elderward-table">
                 <thead><tr>
-                    <th><?php esc_html_e('Name', 'elderward'); ?></th>
-                    <th><?php esc_html_e('Looks at', 'elderward'); ?></th>
+                    <th><?php esc_html_e('Signature', 'elderward'); ?></th>
+                    <th class="elderward-col-target"><?php esc_html_e('Looks in', 'elderward'); ?></th>
                     <th class="elderward-col-sev"><?php esc_html_e('Severity', 'elderward'); ?></th>
                     <th><?php esc_html_e('Conditions', 'elderward'); ?></th>
                 </tr></thead>
@@ -513,7 +604,7 @@ final class Elderward_Admin
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
-            </table>
+            </table></div>
         </details>
         <?php
     }
@@ -537,12 +628,14 @@ final class Elderward_Admin
             ),
         ))), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         ?>
-        <p class="description"><?php esc_html_e('Connect Claude, ChatGPT, Antigravity, Cursor or any other assistant that speaks the Model Context Protocol (MCP), and it can run scans, explain the findings, read flagged files, draft and test signatures, and record false positives, as you, from the chat.', 'elderward'); ?></p>
+        <p class="elderward-intro"><?php esc_html_e('Connect an AI assistant such as Claude, ChatGPT, Antigravity or Cursor through the Model Context Protocol (MCP). It can then run scans, explain the findings, read flagged files, draft and try signatures, and record false positives, acting as you.', 'elderward'); ?></p>
 
         <div class="elderward-card">
-            <h2><?php esc_html_e('1. Requirements', 'elderward'); ?></h2>
+            <div class="elderward-card-head">
+                <h2><span class="elderward-step">1</span> <?php esc_html_e('Check the requirements', 'elderward'); ?></h2>
+            </div>
             <ul class="elderward-checklist">
-                <li class="<?php echo $abilities ? 'is-ok' : 'is-missing'; ?>"><?php echo $abilities ? esc_html__('WordPress 6.9 or later: Elderward\'s abilities are registered.', 'elderward') : esc_html__('WordPress 6.9 or later is needed (it adds the Abilities API). Update WordPress, or use the brief at the bottom of this page.', 'elderward'); ?></li>
+                <li class="<?php echo $abilities ? 'is-ok' : 'is-missing'; ?>"><?php echo $abilities ? esc_html__('WordPress 6.9 or later: Elderward\'s tools are available to assistants.', 'elderward') : esc_html__('WordPress 6.9 or later is needed (it adds the Abilities API). Update WordPress, or use the summary at the bottom of this page.', 'elderward'); ?></li>
                 <li class="<?php echo $adapter ? 'is-ok' : 'is-missing'; ?>">
                     <?php if ($adapter) : ?>
                         <?php esc_html_e('The MCP Adapter plugin is active.', 'elderward'); ?>
@@ -555,36 +648,54 @@ final class Elderward_Admin
         </div>
 
         <div class="elderward-card">
-            <h2><?php esc_html_e('2. Add the server to your assistant', 'elderward'); ?></h2>
-            <p><?php esc_html_e('Paste one of these into your assistant\'s MCP server settings (Claude Desktop: Settings, Developer, Edit Config; Claude Code: claude mcp add-json elderward with the inner object; Antigravity, Cursor and others: their MCP config file).', 'elderward'); ?></p>
-            <h3><?php esc_html_e('The assistant runs on a machine with WP-CLI access to this site', 'elderward'); ?></h3>
-            <p class="description"><?php esc_html_e('For example Claude Code on the server, or a local copy of the site. Nothing goes over the network.', 'elderward'); ?></p>
-            <textarea class="large-text code elderward-copy" rows="11" readonly><?php echo esc_textarea($stdio); ?></textarea>
-            <h3><?php esc_html_e('The assistant runs on your computer, the site is elsewhere', 'elderward'); ?></h3>
-            <p class="description">
-                <?php esc_html_e('Needs Node.js on your computer. Create an application password for your user and paste it in place of the placeholder; revoke it when the investigation is over.', 'elderward'); ?>
-                <a href="<?php echo esc_url(admin_url('profile.php#application-passwords-section')); ?>"><?php esc_html_e('Create an application password', 'elderward'); ?></a>
-            </p>
-            <textarea class="large-text code elderward-copy" rows="14" readonly><?php echo esc_textarea($remote); ?></textarea>
-            <p class="description"><?php esc_html_e('ChatGPT connects to MCP servers on the internet itself instead of running a local command, and only where your plan and its connector settings allow custom servers. If yours does not, use the brief below.', 'elderward'); ?></p>
+            <div class="elderward-card-head">
+                <h2><span class="elderward-step">2</span> <?php esc_html_e('Add Elderward to your assistant', 'elderward'); ?> <?php self::help_button('elderward-help-mcp'); ?></h2>
+            </div>
+            <p><?php esc_html_e('Copy the configuration that fits your setup into your assistant\'s MCP settings.', 'elderward'); ?></p>
+            <?php
+            self::help_text('elderward-help-mcp', array(
+                __('Claude Desktop: Settings > Developer > Edit Config, and add the "elderward" entry under "mcpServers". Claude Code: run claude mcp add-json elderward followed by the inner object (the part after "elderward":). Antigravity, Cursor and others: add it to their MCP configuration file.', 'elderward'),
+                __('Restart the assistant afterwards. It should then list Elderward\'s tools and the "elderward-triage" prompt.', 'elderward'),
+            ));
+            ?>
+            <div class="elderward-config">
+                <h3><?php esc_html_e('The assistant runs where WP-CLI can reach this site', 'elderward'); ?></h3>
+                <p class="description"><?php esc_html_e('For example Claude Code on the server, or on a computer with a copy of the site. Nothing goes over the network.', 'elderward'); ?></p>
+                <textarea id="elderward-config-stdio" class="large-text code elderward-copy" rows="14" readonly><?php echo esc_textarea($stdio); ?></textarea>
+                <p><button type="button" class="button" data-copy="elderward-config-stdio"><?php esc_html_e('Copy', 'elderward'); ?></button></p>
+            </div>
+            <div class="elderward-config">
+                <h3><?php esc_html_e('The assistant runs on your computer and the site is online', 'elderward'); ?></h3>
+                <p class="description">
+                    <?php esc_html_e('Needs Node.js on your computer. Create an application password, paste it in place of the placeholder, and revoke it when you are done.', 'elderward'); ?>
+                    <a href="<?php echo esc_url(admin_url('profile.php#application-passwords-section')); ?>"><?php esc_html_e('Create an application password', 'elderward'); ?></a>
+                </p>
+                <textarea id="elderward-config-remote" class="large-text code elderward-copy" rows="17" readonly><?php echo esc_textarea($remote); ?></textarea>
+                <p><button type="button" class="button" data-copy="elderward-config-remote"><?php esc_html_e('Copy', 'elderward'); ?></button></p>
+            </div>
+            <p class="description"><?php esc_html_e('ChatGPT connects to MCP servers over the internet rather than running a command, and only where your plan allows custom connectors. If yours does not, use the summary at the bottom of this page.', 'elderward'); ?></p>
         </div>
 
         <div class="elderward-card">
-            <h2><?php esc_html_e('3. Ask', 'elderward'); ?></h2>
+            <div class="elderward-card-head">
+                <h2><span class="elderward-step">3</span> <?php esc_html_e('Ask', 'elderward'); ?></h2>
+            </div>
             <ul class="elderward-examples">
-                <li><?php esc_html_e('"Use the Elderward triage prompt." (it is listed among the server\'s prompts)', 'elderward'); ?></li>
+                <li><?php esc_html_e('"Use the Elderward triage prompt." (listed among the server\'s prompts)', 'elderward'); ?></li>
                 <li><?php esc_html_e('"Scan my site with Elderward and tell me whether it is hacked."', 'elderward'); ?></li>
                 <li><?php esc_html_e('"Explain the HIGH findings and what I should do about each."', 'elderward'); ?></li>
-                <li><?php esc_html_e('"There is a backdoor Elderward missed in wp-content/plugins/acme/loader.php: write a signature for it, test it against that file and a clean plugin, then save it."', 'elderward'); ?></li>
+                <li><?php esc_html_e('"Elderward missed a backdoor in wp-content/plugins/acme/loader.php: write a signature for it, try it on that file and on a clean plugin, then save it."', 'elderward'); ?></li>
             </ul>
-            <p class="elderward-note"><?php esc_html_e('The assistant acts with your account but has no tool to clean, restore or change site files: cleanup stays a command you run yourself. Everything a scan reads from the site may have been written by the attacker, and Elderward labels it as untrusted data for the assistant. Still, do not let an assistant mark findings as false positives without checking its reasoning.', 'elderward'); ?></p>
+            <p class="elderward-note"><?php esc_html_e('The assistant acts with your account but cannot clean, restore or change files: cleanup stays a command you run yourself. Anything a scan reads from the site may have been written by the attacker, and Elderward labels it as untrusted for the assistant. Still, check its reasoning before letting it mark a finding as a false positive.', 'elderward'); ?></p>
         </div>
 
         <div class="elderward-card">
-            <h2><?php esc_html_e('No MCP? Copy a brief for any chatbot', 'elderward'); ?></h2>
-            <p class="description"><?php esc_html_e('The triage instructions and up to 100 of the most severe findings of the last scan, ready to paste into any chat. It contains file paths and snippets from this site; share it only with a service you trust with them.', 'elderward'); ?></p>
+            <div class="elderward-card-head">
+                <h2><?php esc_html_e('No MCP? Copy a summary into any chat', 'elderward'); ?></h2>
+            </div>
+            <p class="description"><?php esc_html_e('Instructions for the chatbot plus up to 100 of the most serious findings from the last scan. It includes file paths and snippets from this site, so share it only with a service you trust with them.', 'elderward'); ?></p>
             <textarea id="elderward-brief" class="large-text code elderward-copy" rows="14" readonly><?php echo esc_textarea(Elderward_Abilities::brief()); ?></textarea>
-            <p><button type="button" class="button" data-copy="elderward-brief"><?php esc_html_e('Copy brief', 'elderward'); ?></button></p>
+            <p><button type="button" class="button button-primary" data-copy="elderward-brief"><?php esc_html_e('Copy summary', 'elderward'); ?></button></p>
         </div>
         <?php
     }
@@ -647,18 +758,18 @@ final class Elderward_Admin
         if ('' !== $settings['log']) {
             $real = Elderward_Settings::resolve_log_path($settings['log']);
             if (is_wp_error($real)) {
-                $notices[] = array('warning', __('The access log path for scheduled scans does not exist or is not readable by PHP; scheduled scans will skip the log check until it is.', 'elderward'));
+                $notices[] = array('warning', __('The access log path does not exist or PHP cannot read it. Scans skip the logs until it can be read.', 'elderward'));
             }
         }
         if ('background' === $settings['runner'] || 'off' !== $settings['schedule']) {
             if (Elderward_Cron::trigger_disabled()) {
-                $notices[] = array('warning', __('DISABLE_WP_CRON is set on this site, so WordPress does not trigger WP-Cron on its own. Background and scheduled scans only advance when your server\'s cron job calls wp-cron.php.', 'elderward'));
+                $notices[] = array('warning', __('DISABLE_WP_CRON is set on this site, so WordPress does not start WP-Cron on its own. Background and automatic scans only move forward when your server\'s cron job calls wp-cron.php.', 'elderward'));
             } else {
                 $loopback = self::loopback_problem();
                 if (null !== $loopback) {
                     $notices[] = array('warning', sprintf(
                         /* translators: %s: the Site Health loopback error */
-                        __('This site could not reach its own wp-cron.php (%s). Background scans will only advance while the Elderward page is open, and scheduled scans may never start. Fix the loopback problem shown in Site Health, or switch the runner to the browser tab.', 'elderward'),
+                        __('This site could not reach its own wp-cron.php (%s). Background scans will only move forward while the Elderward page is open, and automatic scans may never start. Fix the loopback problem shown in Tools > Site Health, or set Run scans to "Only while this page is open".', 'elderward'),
                         $loopback
                     ));
                 }
@@ -804,7 +915,10 @@ final class Elderward_Admin
                     <img class="elderward-brand-word" src="<?php echo esc_url(ELDERWARD_URL . 'assets/img/elderward-wordmark.svg'); ?>" alt="<?php esc_attr_e('Elderward', 'elderward'); ?>" width="124" height="34" />
                     <p class="elderward-brand-tag"><?php esc_html_e('Malware scanner and incident response for WordPress', 'elderward'); ?></p>
                 </div>
-                <span class="elderward-brand-version"><?php echo esc_html('v' . ELDERWARD_VERSION); ?></span>
+                <span class="elderward-brand-version"><?php
+                    /* translators: %s: plugin version number */
+                    printf(esc_html__('Version %s', 'elderward'), esc_html(ELDERWARD_VERSION));
+                ?></span>
             </header>
             <hr class="wp-header-end" />
             <?php foreach (self::take_notices() as $notice) : ?>
@@ -874,21 +988,36 @@ final class Elderward_Admin
         $datetime_format = get_option('date_format') . ' ' . get_option('time_format');
         $next_run = Elderward_Cron::next_run();
         $fp_rules = Elderward_False_Positives::rules();
+        $log_real = '' === $settings['log'] ? '' : Elderward_Settings::resolve_log_path($settings['log']);
         ?>
-            <p class="description">
-                <?php esc_html_e('A report-only look at this install: quick checks, core/plugin/theme integrity, timestamps, crontab, database and (optionally) access logs, then the malware signatures in dry-run mode. Nothing is modified.', 'elderward'); ?>
-            </p>
-
-            <div class="elderward-card">
-                <form id="elderward-start-form" onsubmit="return false;">
-                    <label for="elderward-log"><?php esc_html_e('Access log file or directory (optional)', 'elderward'); ?></label>
-                    <input type="text" id="elderward-log" class="regular-text code" placeholder="/var/log/apache2" autocomplete="off" value="<?php echo esc_attr($settings['log']); ?>" />
-                    <p class="description"><?php esc_html_e('Must be readable by the PHP user. Rotated .log.N and .gz files in a directory are included.', 'elderward'); ?></p>
-                    <p>
-                        <button type="button" class="button button-primary" id="elderward-start" <?php disabled($running); ?>><?php esc_html_e('Start scan', 'elderward'); ?></button>
-                        <button type="button" class="button" id="elderward-cancel" <?php disabled(!$running); ?>><?php esc_html_e('Cancel', 'elderward'); ?></button>
-                    </p>
-                </form>
+            <div class="elderward-card elderward-run">
+                <div class="elderward-card-head">
+                    <h2><?php esc_html_e('Scan this site', 'elderward'); ?></h2>
+                </div>
+                <p class="elderward-lead"><?php esc_html_e('Looks for malware and signs of a break-in. A scan only reports what it finds: nothing on your site is changed.', 'elderward'); ?></p>
+                <ul class="elderward-scope">
+                    <li><?php esc_html_e('WordPress, plugin and theme files compared with the official copies', 'elderward'); ?></li>
+                    <li><?php esc_html_e('Known malware in your files', 'elderward'); ?></li>
+                    <li><?php esc_html_e('Suspicious entries in the database and admin accounts', 'elderward'); ?></li>
+                    <li><?php esc_html_e('Files with faked dates, and the server crontab', 'elderward'); ?></li>
+                    <li>
+                        <?php
+                        if ('' === $settings['log']) {
+                            esc_html_e('Access logs: not checked (add their location under Settings)', 'elderward');
+                        } elseif (is_wp_error($log_real)) {
+                            /* translators: %s: access log path */
+                            printf(esc_html__('Access logs: %s cannot be read, so they are skipped (see Settings)', 'elderward'), '<code>' . esc_html($settings['log']) . '</code>');
+                        } else {
+                            /* translators: %s: access log path */
+                            printf(esc_html__('Access logs in %s', 'elderward'), '<code>' . esc_html($settings['log']) . '</code>');
+                        }
+                        ?>
+                    </li>
+                </ul>
+                <p class="elderward-buttons">
+                    <button type="button" class="button button-primary button-hero" id="elderward-start" <?php disabled($running); ?>><?php esc_html_e('Start scan', 'elderward'); ?></button>
+                    <button type="button" class="button button-hero" id="elderward-cancel" <?php disabled(!$running); ?>><?php esc_html_e('Cancel', 'elderward'); ?></button>
+                </p>
                 <div id="elderward-progress" class="elderward-progress" <?php echo $running ? '' : 'hidden'; ?>>
                     <div class="elderward-bar"><div class="elderward-bar-fill" style="width: <?php echo null === $job ? 0 : (int) Elderward_Job::percent($job); ?>%"></div></div>
                     <p id="elderward-status-text"><?php echo null === $job ? '' : esc_html($job['message']); ?></p>
@@ -896,7 +1025,7 @@ final class Elderward_Admin
                         <?php
                         if ($running) {
                             echo !empty($job['background'])
-                                ? esc_html__('Running in the background through WP-Cron: you can leave this page and come back later.', 'elderward')
+                                ? esc_html__('Running in the background: you can leave this page and come back later.', 'elderward')
                                 : esc_html__('Keep this page open: the scan runs in short steps from this tab.', 'elderward');
                         }
                         ?>
@@ -907,7 +1036,7 @@ final class Elderward_Admin
                         <?php
                         if (isset($job['origin']) && 'schedule' === $job['origin']) {
                             /* translators: 1: status word, 2: start date/time, 3: end date/time or dash */
-                            $template = __('Last scheduled scan: %1$s. Started %2$s, finished %3$s.', 'elderward');
+                            $template = __('Last automatic scan: %1$s. Started %2$s, finished %3$s.', 'elderward');
                         } else {
                             /* translators: 1: status word, 2: start date/time, 3: end date/time or dash */
                             $template = __('Last scan: %1$s. Started %2$s, finished %3$s.', 'elderward');
@@ -926,191 +1055,263 @@ final class Elderward_Admin
                 <?php endif; ?>
             </div>
 
-            <div class="elderward-card elderward-settings">
-                <h2><?php esc_html_e('Settings', 'elderward'); ?></h2>
-                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                    <input type="hidden" name="action" value="elderward_save_settings" />
-                    <?php wp_nonce_field(self::NONCE_SETTINGS); ?>
-                    <table class="form-table" role="presentation">
-                        <tr>
-                            <th scope="row"><?php esc_html_e('How scans run', 'elderward'); ?></th>
-                            <td>
-                                <fieldset>
-                                    <legend class="screen-reader-text"><?php esc_html_e('How scans run', 'elderward'); ?></legend>
-                                    <label><input type="radio" name="elderward[runner]" value="background" <?php checked($settings['runner'], 'background'); ?> /> <?php esc_html_e('In the background (WP-Cron)', 'elderward'); ?></label>
-                                    <p class="description"><?php esc_html_e('The scan keeps going after you leave the page. WordPress drives it through WP-Cron, so the site must be able to request its own wp-cron.php, or a server cron job must call it.', 'elderward'); ?></p>
-                                    <label><input type="radio" name="elderward[runner]" value="browser" <?php checked($settings['runner'], 'browser'); ?> /> <?php esc_html_e('In this browser tab', 'elderward'); ?></label>
-                                    <p class="description"><?php esc_html_e('Steps run only while the Elderward page is open; a reload resumes. Use it when WP-Cron is unreliable on your host.', 'elderward'); ?></p>
-                                </fieldset>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="elderward-schedule"><?php esc_html_e('Scheduled scan', 'elderward'); ?></label></th>
-                            <td>
-                                <select id="elderward-schedule" name="elderward[schedule]">
-                                    <?php foreach (Elderward_Settings::schedules() as $value => $label) : ?>
-                                        <option value="<?php echo esc_attr($value); ?>" <?php selected($settings['schedule'], $value); ?>><?php echo esc_html($label); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <span class="elderward-schedule-when" <?php echo 'off' === $settings['schedule'] ? 'hidden' : ''; ?>>
-                                    <label for="elderward-time"><?php esc_html_e('at', 'elderward'); ?></label>
-                                    <input type="time" id="elderward-time" name="elderward[time]" value="<?php echo esc_attr($settings['time']); ?>" required />
-                                    <span class="elderward-schedule-day" <?php echo 'weekly' === $settings['schedule'] ? '' : 'hidden'; ?>>
-                                        <label for="elderward-day"><?php esc_html_e('on', 'elderward'); ?></label>
-                                        <select id="elderward-day" name="elderward[day]">
-                                            <?php for ($day = 0; $day < 7; $day++) : ?>
-                                                <option value="<?php echo (int) $day; ?>" <?php selected((int) $settings['day'], $day); ?>><?php echo esc_html($GLOBALS['wp_locale']->get_weekday($day)); ?></option>
-                                            <?php endfor; ?>
-                                        </select>
-                                    </span>
-                                </span>
-                                <p class="description">
-                                    <?php
-                                    /* translators: %s: the site's timezone, for example UTC+2 or Europe/Lisbon */
-                                    printf(esc_html__('Site time (%s). A scheduled scan always runs in the background, uses the access log below, and is skipped while another scan is in progress.', 'elderward'), esc_html(wp_timezone_string()));
-                                    if (null !== $next_run) {
-                                        echo ' ';
-                                        /* translators: %s: date and time of the next scheduled scan */
-                                        printf(esc_html__('Next run: %s.', 'elderward'), '<strong>' . esc_html(wp_date($datetime_format, $next_run)) . '</strong>');
-                                    }
-                                    ?>
-                                </p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="elderward-settings-log"><?php esc_html_e('Access log for scheduled scans', 'elderward'); ?></label></th>
-                            <td>
-                                <input type="text" id="elderward-settings-log" name="elderward[log]" class="regular-text code" placeholder="/var/log/apache2" value="<?php echo esc_attr($settings['log']); ?>" />
-                                <p class="description"><?php esc_html_e('Optional. Also pre-fills the field above.', 'elderward'); ?></p>
-                            </td>
-                        </tr>
-                    </table>
-                    <?php if (Elderward_Cron::trigger_disabled()) : ?>
-                        <p class="elderward-note"><?php esc_html_e('DISABLE_WP_CRON is set on this site, so WordPress does not trigger WP-Cron on its own. Background and scheduled scans only advance when your server\'s cron job calls wp-cron.php (every minute or two is ideal).', 'elderward'); ?></p>
-                    <?php endif; ?>
-                    <?php submit_button(__('Save settings', 'elderward'), 'secondary', 'submit', false); ?>
-                </form>
-            </div>
-
             <?php if (null !== $job) : ?>
-            <h2><?php esc_html_e('Findings', 'elderward'); ?></h2>
-            <ul class="subsubsub elderward-filters">
-                <li><a href="<?php echo esc_url($page_url); ?>" class="<?php echo ('' === $filter && !$fp_view) ? 'current' : ''; ?>"><?php esc_html_e('All', 'elderward'); ?> <span class="count">(<?php echo (int) $total; ?>)</span></a></li>
-                <?php foreach ($severities as $severity) : ?>
-                    <li>| <a href="<?php echo esc_url(add_query_arg('severity', strtolower($severity), $page_url)); ?>" class="<?php echo $filter === $severity ? 'current' : ''; ?>"><?php echo esc_html($severity); ?> <span class="count">(<?php echo (int) $counts[$severity]; ?>)</span></a></li>
-                <?php endforeach; ?>
-                <li>| <a href="<?php echo esc_url(add_query_arg('view', 'fp', $page_url)); ?>" class="<?php echo $fp_view ? 'current' : ''; ?>"><?php esc_html_e('False positives', 'elderward'); ?> <span class="count">(<?php echo (int) $fp_total; ?>)</span></a></li>
-            </ul>
-            <p class="elderward-export">
-                <a class="button" href="<?php echo esc_url(add_query_arg('format', 'txt', $export_base)); ?>"><?php esc_html_e('Export text (CSV lines)', 'elderward'); ?></a>
-                <a class="button" href="<?php echo esc_url(add_query_arg('format', 'json', $export_base)); ?>"><?php esc_html_e('Export JSON (NDJSON)', 'elderward'); ?></a>
-            </p>
-
-            <table class="widefat striped elderward-table">
-                <thead>
-                    <tr>
-                        <th class="elderward-col-sev"><?php esc_html_e('Severity', 'elderward'); ?></th>
-                        <th class="elderward-col-type"><?php esc_html_e('Type', 'elderward'); ?></th>
-                        <th><?php esc_html_e('Path', 'elderward'); ?></th>
-                        <th><?php esc_html_e('Detail', 'elderward'); ?></th>
-                        <th class="elderward-col-actions"><?php esc_html_e('Actions', 'elderward'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php if (empty($findings)) : ?>
-                    <tr><td colspan="5">
-                        <?php
-                        if ($fp_view) {
-                            esc_html_e('No finding in these results is marked as a false positive.', 'elderward');
-                        } else {
-                            echo 'running' === $job['status'] ? esc_html__('Scan in progress…', 'elderward') : esc_html__('No findings.', 'elderward');
-                        }
-                        ?>
-                    </td></tr>
-                <?php else : ?>
-                    <?php foreach ($findings as $finding) : ?>
-                        <?php
-                        $path = (string) $finding->path;
-                        $short = Elderward_Plugin::relative_path($path);
-                        $context = self::decode_context($finding->context);
-                        $fp = (int) $finding->fp;
-                        $fingerprint = '' !== (string) $finding->fingerprint ? $finding->fingerprint : Elderward_False_Positives::fingerprint($finding->type, $finding->path, $finding->detail);
-                        $sha256 = (null === $finding->sha256 || '' === $finding->sha256) ? '' : $finding->sha256;
-                        ?>
-                        <tr data-id="<?php echo (int) $finding->id; ?>" data-fingerprint="<?php echo esc_attr($fingerprint); ?>">
-                            <td><span class="elderward-sev elderward-sev-<?php echo esc_attr(strtolower($finding->severity)); ?>"><?php echo esc_html($finding->severity); ?></span></td>
-                            <td><code><?php echo esc_html($finding->type); ?></code></td>
-                            <td><code title="<?php echo esc_attr($path); ?>"><?php echo esc_html($short); ?></code></td>
-                            <td>
-                                <?php echo esc_html($finding->detail); ?>
-                                <?php if (!empty($context)) : ?>
-                                    <details><summary><?php esc_html_e('Context', 'elderward'); ?></summary>
-                                        <pre><?php echo esc_html(implode("\n", $context)); ?></pre>
-                                    </details>
-                                <?php endif; ?>
-                                <?php if ('' !== $sha256) : ?>
-                                    <p class="elderward-hash">SHA-256 <code><?php echo esc_html($sha256); ?></code>
-                                        <a href="<?php echo esc_url('https://www.virustotal.com/gui/file/' . $sha256); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Look up on VirusTotal', 'elderward'); ?></a></p>
-                                <?php endif; ?>
-                                <?php if (Elderward_False_Positives::CHANGED === $fp) : ?>
-                                    <p class="elderward-note"><?php esc_html_e('Marked as a false positive before, but the file changed since it was reviewed, so it is reported again.', 'elderward'); ?></p>
-                                <?php elseif (Elderward_False_Positives::MATCHED === $fp && isset($fp_rules[$fingerprint])) : ?>
-                                    <p class="elderward-fp-why"><?php echo esc_html(self::rule_summary($fp_rules[$fingerprint], $datetime_format)); ?></p>
-                                <?php endif; ?>
-                            </td>
-                            <td class="elderward-actions">
-                                <?php if (Elderward_False_Positives::MATCHED === $fp) : ?>
-                                    <button type="button" class="button button-small" data-fp-action="unmark"><?php esc_html_e('Not a false positive', 'elderward'); ?></button>
-                                <?php else : ?>
-                                    <button type="button" class="button button-small" data-fp-action="mark"><?php esc_html_e('False positive', 'elderward'); ?></button>
-                                <?php endif; ?>
-                                <?php if ('' !== $sha256 && 1 !== preg_match('/^wp-config/i', basename($path))) : ?>
-                                    <a class="button button-small" href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=elderward_sample&id=' . (int) $finding->id), self::NONCE_SAMPLE . (int) $finding->id)); ?>"><?php esc_html_e('Download sample', 'elderward'); ?></a>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
+            <div class="elderward-card elderward-findings">
+                <div class="elderward-card-head">
+                    <h2><?php esc_html_e('Findings', 'elderward'); ?> <?php self::help_button('elderward-help-findings'); ?></h2>
+                    <div class="elderward-head-actions">
+                        <a class="button" href="<?php echo esc_url(add_query_arg('format', 'txt', $export_base)); ?>" title="<?php esc_attr_e('One finding per line: severity, type, path, detail', 'elderward'); ?>"><?php esc_html_e('Export as text', 'elderward'); ?></a>
+                        <a class="button" href="<?php echo esc_url(add_query_arg('format', 'json', $export_base)); ?>" title="<?php esc_attr_e('One JSON object per line (NDJSON), with context and hashes', 'elderward'); ?>"><?php esc_html_e('Export as JSON', 'elderward'); ?></a>
+                    </div>
+                </div>
+                <?php
+                self::help_text('elderward-help-findings', array(
+                    __('HIGH: almost certainly malicious; deal with it first. MEDIUM: suspicious; check it. LOW: worth knowing. INFO: for the record (for example the list of administrators). ERROR: a check could not run, so that area is unknown rather than clean.', 'elderward'),
+                    __('Timestamp and log findings are leads, not proof: confirm them before acting.', 'elderward'),
+                    __('If you checked a finding and it is harmless, mark it as a false positive: later scans hide it, but only while the file stays exactly as you reviewed it. Download sample saves a password-protected copy of a flagged file for a malware analyst.', 'elderward'),
+                ));
+                ?>
+                <ul class="elderward-filters">
+                    <li><a href="<?php echo esc_url($page_url); ?>" class="<?php echo ('' === $filter && !$fp_view) ? 'current' : ''; ?>"><?php esc_html_e('All', 'elderward'); ?> <span class="count">(<?php echo (int) $total; ?>)</span></a></li>
+                    <?php foreach ($severities as $severity) : ?>
+                        <li><a href="<?php echo esc_url(add_query_arg('severity', strtolower($severity), $page_url)); ?>" class="<?php echo $filter === $severity ? 'current' : ''; ?>"><?php echo esc_html($severity); ?> <span class="count">(<?php echo (int) $counts[$severity]; ?>)</span></a></li>
                     <?php endforeach; ?>
+                    <li><a href="<?php echo esc_url(add_query_arg('view', 'fp', $page_url)); ?>" class="<?php echo $fp_view ? 'current' : ''; ?>"><?php esc_html_e('False positives', 'elderward'); ?> <span class="count">(<?php echo (int) $fp_total; ?>)</span></a></li>
+                </ul>
+
+                <div class="elderward-table-scroll"><table class="widefat striped elderward-table">
+                    <thead>
+                        <tr>
+                            <th class="elderward-col-sev"><?php esc_html_e('Severity', 'elderward'); ?></th>
+                            <th class="elderward-col-type"><?php esc_html_e('Type', 'elderward'); ?></th>
+                            <th class="elderward-col-path"><?php esc_html_e('Where', 'elderward'); ?></th>
+                            <th><?php esc_html_e('Details', 'elderward'); ?></th>
+                            <th class="elderward-col-actions"><?php esc_html_e('Actions', 'elderward'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (empty($findings)) : ?>
+                        <tr><td colspan="5">
+                            <?php
+                            if ($fp_view) {
+                                esc_html_e('No finding in these results is marked as a false positive.', 'elderward');
+                            } else {
+                                echo 'running' === $job['status'] ? esc_html__('Scan in progress…', 'elderward') : esc_html__('Nothing found.', 'elderward');
+                            }
+                            ?>
+                        </td></tr>
+                    <?php else : ?>
+                        <?php foreach ($findings as $finding) : ?>
+                            <?php
+                            $path = (string) $finding->path;
+                            $short = Elderward_Plugin::relative_path($path);
+                            $context = self::decode_context($finding->context);
+                            $fp = (int) $finding->fp;
+                            $fingerprint = '' !== (string) $finding->fingerprint ? $finding->fingerprint : Elderward_False_Positives::fingerprint($finding->type, $finding->path, $finding->detail);
+                            $sha256 = (null === $finding->sha256 || '' === $finding->sha256) ? '' : $finding->sha256;
+                            ?>
+                            <tr data-id="<?php echo (int) $finding->id; ?>" data-fingerprint="<?php echo esc_attr($fingerprint); ?>">
+                                <td><span class="elderward-sev elderward-sev-<?php echo esc_attr(strtolower($finding->severity)); ?>"><?php echo esc_html($finding->severity); ?></span></td>
+                                <td><span class="elderward-type"><?php echo esc_html($finding->type); ?></span></td>
+                                <td><code class="elderward-path" title="<?php echo esc_attr($path); ?>"><?php echo esc_html($short); ?></code></td>
+                                <td>
+                                    <?php echo esc_html($finding->detail); ?>
+                                    <?php if (!empty($context)) : ?>
+                                        <details><summary><?php esc_html_e('Context', 'elderward'); ?></summary>
+                                            <pre><?php echo esc_html(implode("\n", $context)); ?></pre>
+                                        </details>
+                                    <?php endif; ?>
+                                    <?php if ('' !== $sha256) : ?>
+                                        <p class="elderward-hash"><span>SHA-256</span> <code><?php echo esc_html($sha256); ?></code>
+                                            <a href="<?php echo esc_url('https://www.virustotal.com/gui/file/' . $sha256); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Look up on VirusTotal', 'elderward'); ?><span class="screen-reader-text"> <?php esc_html_e('(opens in a new tab)', 'elderward'); ?></span></a></p>
+                                    <?php endif; ?>
+                                    <?php if (Elderward_False_Positives::CHANGED === $fp) : ?>
+                                        <p class="elderward-note"><?php esc_html_e('Marked as a false positive before, but the file has changed since it was reviewed, so it is reported again.', 'elderward'); ?></p>
+                                    <?php elseif (Elderward_False_Positives::MATCHED === $fp && isset($fp_rules[$fingerprint])) : ?>
+                                        <p class="elderward-fp-why"><?php echo esc_html(self::rule_summary($fp_rules[$fingerprint], $datetime_format)); ?></p>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="elderward-actions">
+                                    <?php if (Elderward_False_Positives::MATCHED === $fp) : ?>
+                                        <button type="button" class="button button-small" data-fp-action="unmark"><?php esc_html_e('Not a false positive', 'elderward'); ?></button>
+                                    <?php else : ?>
+                                        <button type="button" class="button button-small" data-fp-action="mark"><?php esc_html_e('Mark as false positive', 'elderward'); ?></button>
+                                    <?php endif; ?>
+                                    <?php if ('' !== $sha256 && 1 !== preg_match('/^wp-config/i', basename($path))) : ?>
+                                        <a class="button button-small" href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=elderward_sample&id=' . (int) $finding->id), self::NONCE_SAMPLE . (int) $finding->id)); ?>"><?php esc_html_e('Download sample', 'elderward'); ?></a>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    </tbody>
+                </table></div>
+                <?php if ($pages > 1) : ?>
+                    <div class="tablenav bottom"><div class="tablenav-pages">
+                        <?php
+                        echo wp_kses_post(paginate_links(array(
+                            'base'    => add_query_arg(array('paged' => '%#%', 'severity' => '' === $filter ? false : strtolower($filter), 'view' => $fp_view ? 'fp' : false), $page_url),
+                            'format'  => '',
+                            'current' => $paged,
+                            'total'   => $pages,
+                        )));
+                        ?>
+                    </div></div>
                 <?php endif; ?>
-                </tbody>
-            </table>
-            <?php if ($pages > 1) : ?>
-                <div class="tablenav"><div class="tablenav-pages">
+                <p class="description elderward-sample-help">
                     <?php
-                    echo wp_kses_post(paginate_links(array(
-                        'base'    => add_query_arg(array('paged' => '%#%', 'severity' => '' === $filter ? false : strtolower($filter), 'view' => $fp_view ? 'fp' : false), $page_url),
-                        'format'  => '',
-                        'current' => $paged,
-                        'total'   => $pages,
-                    )));
+                    if (Elderward_Sample::can_encrypt()) {
+                        esc_html_e('Download sample saves the file in a zip protected with the password "infected", plus a note of where it was found and why. Send it to a malware analyst or sandbox yourself: Elderward never uploads anything. The VirusTotal link sends only the file\'s hash, from your browser.', 'elderward');
+                    } else {
+                        esc_html_e('Download sample saves the file in a zip with a note of where it was found and why. This server\'s PHP cannot password-protect zips, so your antivirus may block the download. Elderward never uploads anything. The VirusTotal link sends only the file\'s hash, from your browser.', 'elderward');
+                    }
                     ?>
-                </div></div>
-            <?php endif; ?>
+                </p>
+            </div>
 
             <?php if ($fp_view) : ?>
                 <?php self::render_fp_rules($fp_rules, $datetime_format); ?>
             <?php endif; ?>
-            <p class="description elderward-sample-help">
-                <?php
-                if (Elderward_Sample::can_encrypt()) {
-                    esc_html_e('Download sample packs the file into a zip encrypted with the password "infected", with a manifest of where it was found and why. Send it to your malware analyst or sandbox yourself: Elderward never uploads anything. The VirusTotal link only sends the file\'s hash, from your browser.', 'elderward');
-                } else {
-                    esc_html_e('Download sample packs the file into a zip with a manifest. This PHP cannot encrypt zips, so the sample is not password-protected and your antivirus may block the download. Elderward never uploads anything. The VirusTotal link only sends the file\'s hash, from your browser.', 'elderward');
-                }
-                ?>
-            </p>
 
-            <h2><?php esc_html_e('Acting on the results', 'elderward'); ?></h2>
-            <p><?php esc_html_e('This page never changes files. Cleanup and restore run from the command line, where you can take a backup first and preview with a dry run:', 'elderward'); ?></p>
-            <pre class="elderward-cli">wp elderward scan --dryrun          <?php esc_html_e('# preview the signature cleanup', 'elderward'); ?>
+            <div class="elderward-card">
+                <div class="elderward-card-head">
+                    <h2><?php esc_html_e('Cleaning up', 'elderward'); ?></h2>
+                </div>
+                <p><?php esc_html_e('This page never changes files. Cleanup and restore run from the command line, where you can take a backup first and preview every change:', 'elderward'); ?></p>
+                <pre class="elderward-cli"><span class="elderward-cli-comment"><?php esc_html_e('# Preview, then remove known malware from infected files', 'elderward'); ?></span>
+wp elderward scan --dryrun
+wp elderward scan
 
-wp elderward scan                   <?php esc_html_e('# remove known malware from infected files', 'elderward'); ?>
-
+<span class="elderward-cli-comment"><?php esc_html_e('# Preview, then restore modified WordPress, plugin and theme files', 'elderward'); ?></span>
 wp elderward integrity --restore --dryrun
 wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
-            <p class="description"><?php esc_html_e('Without WP-CLI, the same scanners run from php bin/elderward.php inside the plugin folder; see the readme.', 'elderward'); ?></p>
+                <p class="description"><?php esc_html_e('No WP-CLI? The same scanners run with php bin/elderward.php from the plugin folder; see the readme.', 'elderward'); ?></p>
+            </div>
             <?php endif; ?>
+
+            <?php self::render_settings($settings, $datetime_format, $next_run, $log_real); ?>
         </div>
         <?php
+    }
+
+    /**
+     * The settings card: how scans run, automatic scans, access logs.
+     */
+    private static function render_settings(array $settings, $datetime_format, $next_run, $log_real)
+    {
+        ?>
+        <div class="elderward-card elderward-settings" id="elderward-settings">
+            <div class="elderward-card-head">
+                <h2><?php esc_html_e('Settings', 'elderward'); ?></h2>
+            </div>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <input type="hidden" name="action" value="elderward_save_settings" />
+                <?php wp_nonce_field(self::NONCE_SETTINGS); ?>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Run scans', 'elderward'); ?> <?php self::help_button('elderward-help-runner'); ?></th>
+                        <td>
+                            <fieldset>
+                                <legend class="screen-reader-text"><?php esc_html_e('Run scans', 'elderward'); ?></legend>
+                                <label><input type="radio" name="elderward[runner]" value="background" <?php checked($settings['runner'], 'background'); ?> /> <?php esc_html_e('In the background (recommended)', 'elderward'); ?></label>
+                                <p class="description"><?php esc_html_e('The scan keeps going after you leave this page.', 'elderward'); ?></p>
+                                <label><input type="radio" name="elderward[runner]" value="browser" <?php checked($settings['runner'], 'browser'); ?> /> <?php esc_html_e('Only while this page is open', 'elderward'); ?></label>
+                                <p class="description"><?php esc_html_e('Use this if background scans never finish on your host.', 'elderward'); ?></p>
+                            </fieldset>
+                            <?php
+                            self::help_text('elderward-help-runner', array(
+                                __('Background scans run in short steps through WP-Cron, WordPress\'s task runner. For that, the site must be able to make a request to its own wp-cron.php; Tools > Site Health reports it as "loopback requests". If the page notices that a background scan stopped moving, it carries on from your browser tab.', 'elderward'),
+                                __('"Only while this page is open" runs the same steps from your browser tab instead. Closing the tab pauses the scan; opening the page again resumes it.', 'elderward'),
+                            ));
+                            ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="elderward-schedule"><?php esc_html_e('Automatic scans', 'elderward'); ?></label> <?php self::help_button('elderward-help-schedule'); ?></th>
+                        <td>
+                            <select id="elderward-schedule" name="elderward[schedule]">
+                                <?php foreach (Elderward_Settings::schedules() as $value => $label) : ?>
+                                    <option value="<?php echo esc_attr($value); ?>" <?php selected($settings['schedule'], $value); ?>><?php echo esc_html($label); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <span class="elderward-schedule-when" <?php echo 'off' === $settings['schedule'] ? 'hidden' : ''; ?>>
+                                <label for="elderward-time"><?php esc_html_e('at', 'elderward'); ?></label>
+                                <input type="time" id="elderward-time" name="elderward[time]" value="<?php echo esc_attr($settings['time']); ?>" required />
+                                <span class="elderward-schedule-day" <?php echo 'weekly' === $settings['schedule'] ? '' : 'hidden'; ?>>
+                                    <label for="elderward-day"><?php esc_html_e('on', 'elderward'); ?></label>
+                                    <select id="elderward-day" name="elderward[day]">
+                                        <?php for ($day = 0; $day < 7; $day++) : ?>
+                                            <option value="<?php echo (int) $day; ?>" <?php selected((int) $settings['day'], $day); ?>><?php echo esc_html($GLOBALS['wp_locale']->get_weekday($day)); ?></option>
+                                        <?php endfor; ?>
+                                    </select>
+                                </span>
+                            </span>
+                            <p class="description">
+                                <?php
+                                /* translators: %s: the site's timezone, for example UTC+2 or Europe/Lisbon */
+                                printf(esc_html__('Scans on a schedule, without you starting them. Times use the site\'s time zone (%s).', 'elderward'), esc_html(wp_timezone_string()));
+                                if (null !== $next_run) {
+                                    echo ' ';
+                                    /* translators: %s: date and time of the next automatic scan */
+                                    printf(esc_html__('Next scan: %s.', 'elderward'), '<strong>' . esc_html(wp_date($datetime_format, $next_run)) . '</strong>');
+                                }
+                                ?>
+                            </p>
+                            <?php
+                            self::help_text('elderward-help-schedule', array(
+                                __('An automatic scan is the same scan as the Start scan button. It always runs in the background, checks the access logs set below, and is skipped if another scan is still in progress. Its results replace the ones on this page.', 'elderward'),
+                                __('WP-Cron starts tasks when someone visits the site, so on a quiet site a scan can start a little late. For exact times, have your host call wp-cron.php from a real cron job.', 'elderward'),
+                            ));
+                            ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="elderward-settings-log"><?php esc_html_e('Access logs', 'elderward'); ?></label> <?php self::help_button('elderward-help-log'); ?></th>
+                        <td>
+                            <input type="text" id="elderward-settings-log" name="elderward[log]" class="regular-text code" placeholder="/var/log/apache2" autocomplete="off" value="<?php echo esc_attr($settings['log']); ?>" />
+                            <p class="description">
+                                <?php esc_html_e('Optional. A web server log file or folder, checked by every scan.', 'elderward'); ?>
+                                <?php if (is_wp_error($log_real)) : ?>
+                                    <span class="elderward-error"><?php esc_html_e('This path does not exist or PHP cannot read it, so scans skip the logs.', 'elderward'); ?></span>
+                                <?php endif; ?>
+                            </p>
+                            <?php
+                            self::help_text('elderward-help-log', array(
+                                __('The logs show requests to web shells, login and upload attacks, and which files the attackers used. Scans read them only; they are never changed or sent anywhere.', 'elderward'),
+                                __('Common locations are /var/log/apache2, /var/log/nginx or a logs folder next to your site; your host\'s control panel or support can tell you. A folder includes rotated .log.1 and .gz files. The PHP user must be able to read them. Leave the field empty to skip this check.', 'elderward'),
+                            ));
+                            ?>
+                        </td>
+                    </tr>
+                </table>
+                <?php if (Elderward_Cron::trigger_disabled()) : ?>
+                    <p class="elderward-note"><?php esc_html_e('DISABLE_WP_CRON is set on this site, so WordPress does not start WP-Cron on its own. Background and automatic scans only move forward when your server\'s cron job calls wp-cron.php (every minute or two is ideal).', 'elderward'); ?></p>
+                <?php endif; ?>
+                <?php submit_button(__('Save settings', 'elderward'), 'primary', 'submit', false); ?>
+            </form>
+        </div>
+        <?php
+    }
+
+    /**
+     * A "?" button that shows or hides the help text with the same id.
+     */
+    private static function help_button($id)
+    {
+        printf(
+            '<button type="button" class="elderward-help-toggle" aria-expanded="false" aria-controls="%1$s" title="%2$s"><span aria-hidden="true">?</span><span class="screen-reader-text">%2$s</span></button>',
+            esc_attr($id),
+            esc_attr__('More about this', 'elderward')
+        );
+    }
+
+    private static function help_text($id, array $paragraphs)
+    {
+        echo '<div class="elderward-help-text" id="' . esc_attr($id) . '" hidden>';
+        foreach ($paragraphs as $paragraph) {
+            echo '<p>' . esc_html($paragraph) . '</p>';
+        }
+        echo '</div>';
     }
 
     /**
@@ -1142,16 +1343,18 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
     {
         ?>
         <div class="elderward-card elderward-fp-rules">
-            <h2><?php esc_html_e('Saved false positives', 'elderward'); ?></h2>
-            <p class="description"><?php esc_html_e('A saved false positive hides the same finding (type, path and detail) in later scans. For a finding about a file it only applies while the file is byte-for-byte the one that was reviewed.', 'elderward'); ?></p>
+            <div class="elderward-card-head">
+                <h2><?php esc_html_e('Saved false positives', 'elderward'); ?></h2>
+            </div>
+            <p class="description"><?php esc_html_e('Each one hides the same finding (same type, location and details) in later scans. For a finding about a file, it only applies while the file is exactly the one that was reviewed.', 'elderward'); ?></p>
             <?php if (empty($rules)) : ?>
                 <p><?php esc_html_e('None saved.', 'elderward'); ?></p>
             <?php else : ?>
-                <table class="widefat striped elderward-table">
+                <div class="elderward-table-scroll"><table class="widefat striped elderward-table">
                     <thead><tr>
                         <th class="elderward-col-type"><?php esc_html_e('Type', 'elderward'); ?></th>
-                        <th><?php esc_html_e('Path', 'elderward'); ?></th>
-                        <th><?php esc_html_e('Detail', 'elderward'); ?></th>
+                        <th class="elderward-col-path"><?php esc_html_e('Where', 'elderward'); ?></th>
+                        <th><?php esc_html_e('Details', 'elderward'); ?></th>
                         <th class="elderward-col-actions"><?php esc_html_e('Actions', 'elderward'); ?></th>
                     </tr></thead>
                     <tbody>
@@ -1161,15 +1364,15 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
                         $short = Elderward_Plugin::relative_path($path);
                         ?>
                         <tr data-fingerprint="<?php echo esc_attr($fingerprint); ?>">
-                            <td><code><?php echo esc_html($rule['type']); ?></code></td>
-                            <td><code title="<?php echo esc_attr($path); ?>"><?php echo esc_html($short); ?></code></td>
+                            <td><span class="elderward-type"><?php echo esc_html($rule['type']); ?></span></td>
+                            <td><code class="elderward-path" title="<?php echo esc_attr($path); ?>"><?php echo esc_html($short); ?></code></td>
                             <td><?php echo esc_html($rule['detail']); ?>
                                 <p class="elderward-fp-why"><?php echo esc_html(self::rule_summary($rule, $datetime_format)); ?></p></td>
                             <td class="elderward-actions"><button type="button" class="button button-small" data-fp-action="unmark"><?php esc_html_e('Remove', 'elderward'); ?></button></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
-                </table>
+                </table></div>
                 <p><button type="button" class="button" data-fp-action="forget_all"><?php esc_html_e('Forget all false positives', 'elderward'); ?></button></p>
             <?php endif; ?>
         </div>
