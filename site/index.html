@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Elderward</title>
-<meta name="description" content="Elderward is a free, single-file PHP malware scanner for compromised WordPress sites. It removes known malware, verifies core, plugins and themes, checks the database, and reads access logs to show how the attacker got in.">
+<meta name="description" content="Elderward is a free malware scanner and incident-response plugin for WordPress. One report-only scan from the admin checks files, core, plugins, themes, the database and access logs, with hardening, a recovery mode and AI assistant tools.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#061614">
 <meta property="og:title" content="Elderward">
-<meta property="og:description" content="A single PHP file that finds what crept into a WordPress site, and shows you how it got in.">
+<meta property="og:description" content="Malware scanner and incident response for WordPress: find what got into the site, and how.">
 <link rel="alternate" hreflang="en" href="https://elderward.space.fast/">
 <link rel="alternate" hreflang="pt-BR" href="https://elderward.space.fast/pt-br/">
 <link rel="alternate" hreflang="x-default" href="https://elderward.space.fast/">
@@ -498,6 +498,150 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   .term .cursor { animation: none; }
 }
+/* ---------- plugin page additions ---------- */
+
+.note {
+  margin: .9em 0 0;
+  color: var(--bone-dim);
+  font-size: .95rem;
+}
+
+.hint {
+  color: var(--bone-dim);
+  max-width: var(--measure);
+  margin: .8em 0 1em;
+}
+
+.get h3:not(:first-child) { margin-top: 1.6em; }
+
+.cli-cols { margin: 2.6em 0 3.2em; }
+
+.mode dt { font-size: .95rem; }
+
+.steps {
+  margin: 0;
+  padding-left: 1.5em;
+}
+.steps li { margin-bottom: .7em; max-width: var(--measure); }
+.steps li::marker { color: var(--sigil); font-weight: 700; }
+
+/* a still of the plugin's admin page: WordPress admin colors under the
+   brand banner, the way the plugin itself renders */
+.shot {
+  margin: 0;
+  border: 1px solid var(--kelp);
+  background: #030c0b;
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .9);
+}
+
+.shot-bar {
+  padding: .5em 1em;
+  border-bottom: 1px solid var(--kelp);
+  color: var(--verdigris-dim);
+  font-size: .85rem;
+}
+
+.shot figcaption {
+  padding: .8em 1em;
+  border-top: 1px solid var(--kelp);
+  color: var(--bone-dim);
+  font-size: .95rem;
+}
+
+.wp {
+  background: #f0f0f1;
+  color: #1d2327;
+  padding: clamp(12px, 2.4vw, 24px);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.wp code {
+  font-family: Menlo, Consolas, Monaco, monospace;
+  font-size: 12px;
+  color: #1d2327;
+  background: #f0f0f1;
+  padding: 1px 4px;
+  overflow-wrap: anywhere;
+}
+
+.wp-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  color: var(--bone);
+  background:
+    radial-gradient(ellipse 60% 120% at 85% 50%, rgba(23, 61, 55, .8), transparent 70%),
+    radial-gradient(ellipse 70% 100% at 5% 100%, rgba(14, 43, 39, .9), transparent 70%),
+    var(--abyss);
+  border: 1px solid var(--kelp);
+  border-radius: 6px;
+}
+.wp-brand svg { flex: none; width: 48px; height: 48px; filter: drop-shadow(0 0 8px rgba(217, 174, 85, .25)); }
+.wp-brand b { display: block; font-family: var(--serif); font-weight: 400; font-size: 1.8rem; line-height: 1; }
+.wp-brand div span { display: block; margin-top: 4px; color: var(--bone-dim); font-size: 13px; }
+
+.wp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 16px 0 0;
+  border-bottom: 1px solid #c3c4c7;
+}
+.wp-tabs span { padding: 8px 14px; color: #50575e; font-weight: 600; }
+.wp-tabs .on { color: #1d2327; box-shadow: inset 0 -3px 0 #a67d2a; }
+
+.wp-card {
+  margin-top: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #c3c4c7;
+}
+.wp-card h4 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+
+.wp-checks { list-style: none; margin: 0 0 14px; padding: 0; }
+.wp-checks li { padding-left: 1.4em; position: relative; margin-bottom: 2px; }
+.wp-checks li::before { content: "\2713"; position: absolute; left: 0; color: #00a32a; font-weight: 700; }
+
+.wp-btn, .wp-btn2 {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 4px 12px;
+  font-size: 13px;
+  line-height: 2;
+  white-space: nowrap;
+}
+.wp-btn { background: #2271b1; color: #fff; border: 1px solid #2271b1; }
+.wp-btn2 { background: #f6f7f7; color: #2271b1; border: 1px solid #2271b1; }
+
+.wp-desc { margin: 10px 0 0; color: #50575e; font-size: 13px; }
+
+.wp-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.wp-head h4 { margin: 0; }
+
+.wp-filters { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 10px 0; font-size: 13px; color: #2271b1; }
+.wp-filters .on { color: #1d2327; font-weight: 600; }
+
+.wp-table { overflow-x: auto; scrollbar-width: thin; }
+.wp table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
+.wp td:nth-child(3) { width: 26%; }
+.wp td:nth-child(3) code { overflow-wrap: normal; word-break: normal; }
+.wp th { text-align: left; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #c3c4c7; }
+.wp td { vertical-align: top; padding: 9px 10px; border-top: 1px solid #f0f0f1; }
+.wp tbody tr:nth-child(odd) td { background: #f6f7f7; }
+.wp .act { color: #2271b1; white-space: nowrap; }
+
+.sev { display: inline-block; padding: 0 6px; border-radius: 2px; font-size: 12px; font-weight: 600; }
+.s-high { background: #d63638; color: #fff; }
+.s-medium { background: #dba617; color: #1d2327; }
+.s-low { background: #dcdcde; color: #1d2327; }
 </style>
 </head>
 <body>
@@ -510,17 +654,19 @@ footer {
     <header class="hero">
       <div class="hero-text">
         <h1>Elderward</h1>
-        <p class="lede">A single PHP file that finds what crept into a WordPress site, cuts out the malware it knows, and reads the access logs to show you how it got in.</p>
+        <p class="lede">Malware scanner and incident response for WordPress. Install the plugin, start one scan from the admin, and see what got into the site and how it got in, without changing a thing.</p>
 
         <div class="cmd">
-          <pre id="cmd-hero"><span class="p">$ </span>curl -O https://raw.githubusercontent.com/fioa8c/elderward/main/elderward.php
-<span class="p">$ </span>php elderward.php scanall=1 scandirectory=/path/to/wp-root</pre>
+          <pre id="cmd-hero"><span class="p">$ </span>cd wp-content/plugins
+<span class="p">$ </span>git clone https://github.com/fioa8c/elderward.git elderward
+<span class="p">$ </span>wp plugin activate elderward</pre>
           <button class="copy" type="button" data-copy="cmd-hero">Copy</button>
         </div>
+        <p class="note">Free and GPL. Not on WordPress.org yet.</p>
 
         <p class="links">
+          <a href="#install">How to install</a>
           <a href="https://github.com/fioa8c/elderward">Read the source on GitHub</a>
-          <a href="https://raw.githubusercontent.com/fioa8c/elderward/main/elderward.php">View elderward.php source</a>
         </p>
       </div>
 
@@ -529,9 +675,170 @@ footer {
       </div>
     </header>
 
-    <section aria-labelledby="h-first-look">
-      <h2 id="h-first-look">A first look at a compromised host</h2>
-      <p class="sub"><code>scanall=1</code> runs every scanner without changing anything and prints one list, worst first. The exit code tells cron and CI how bad it is.</p>
+    <section aria-labelledby="h-admin">
+      <h2 id="h-admin">One scan, from the admin</h2>
+      <p class="sub">Open Elderward in the admin menu and click Start scan. It runs in the background through WP-Cron, so you can close the tab, and it changes nothing on the site.</p>
+
+      <figure class="shot">
+        <div class="shot-bar"><span>wp-admin › Elderward</span></div>
+        <div class="wp">
+          <div class="wp-brand">
+            <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="37.4" fill="none" stroke="#dcd3b0" stroke-width="1.4"/><path d="M50 13.28 L71.58 79.71 L15.08 38.65 L84.92 38.65 L28.42 79.71 Z" fill="none" stroke="#d9ae55" stroke-width="2.4" stroke-linejoin="round"/><path d="M39.8 51.02 Q50 40.82 60.2 51.02 Q50 61.22 39.8 51.02 Z" fill="none" stroke="#d9ae55" stroke-width="2.4" stroke-linejoin="round"/><circle cx="50" cy="51.02" r="4.33" fill="#d9ae55"/><path d="M50 45.16 C46.43 40.82 53.06 38.1 50 32.32" fill="none" stroke="#d9ae55" stroke-width="2" stroke-linecap="round"/></svg>
+            <div><b>Elderward</b><span>Malware scanner and incident response for WordPress</span></div>
+          </div>
+          <div class="wp-tabs"><span class="on">Scan</span><span>Signatures</span><span>Hardening</span><span>Recovery</span><span>AI assistants</span></div>
+
+          <div class="wp-card">
+            <h4>Scan this site</h4>
+            <ul class="wp-checks">
+              <li>WordPress, plugin and theme files compared with the official copies</li>
+              <li>Known malware in your files</li>
+              <li>Suspicious entries in the database and admin accounts</li>
+              <li>Files with faked dates, and the server crontab</li>
+              <li>Access logs in /var/log/apache2</li>
+            </ul>
+            <span class="wp-btn">Start scan</span>
+            <p class="wp-desc">Last scan: complete. Started 2 Nov 2026 14:02, finished 14:09.</p>
+          </div>
+
+          <div class="wp-card">
+            <div class="wp-head">
+              <h4>Findings</h4>
+              <span><span class="wp-btn2">Export as text</span> <span class="wp-btn2">Export as JSON</span></span>
+            </div>
+            <div class="wp-filters"><span class="on">All</span><span>HIGH</span><span>MEDIUM</span><span>LOW</span><span>INFO</span><span>False positives</span></div>
+            <div class="wp-table">
+              <table>
+                <thead><tr><th>Severity</th><th>Type</th><th>Where</th><th>Details</th><th>Actions</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="sev s-high">HIGH</span></td><td>UPLOADS_PHP</td><td><code>wp-content/uploads/2024/03/cache.php</code></td><td>executable PHP inside wp-content/uploads - usually a webshell dropped through an upload form</td><td class="act">Mark as false positive<br>Download sample<br>Look up on VirusTotal</td></tr>
+                  <tr><td><span class="sev s-high">HIGH</span></td><td>DB_OPTION_IOC</td><td><code>db:wp_options:widget_text</code></td><td>db.option.hidden-iframe: Hidden iframe inside an option value - a classic drive-by injection</td><td class="act">Mark as false positive</td></tr>
+                  <tr><td><span class="sev s-medium">MEDIUM</span></td><td>DB_NEW_ADMIN</td><td><code>db:wp_users:ID=7</code></td><td>administrator "wp-sync" &lt;wp-sync@example.com&gt; registered 2024-03-12 03:16:40 - created within the last 30 days, the classic takeover artifact; verify who created it</td><td class="act">Mark as false positive</td></tr>
+                  <tr><td><span class="sev s-low">LOW</span></td><td>INTEGRITY_MISSING</td><td><code>wp-admin/css/about.min.css</code></td><td>core 6.6.2: file from the official package is missing</td><td class="act">Mark as false positive</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <figcaption>The Elderward page in wp-admin: start a scan, then read the findings worst first.</figcaption>
+      </figure>
+    </section>
+
+    <section aria-labelledby="h-checks">
+      <h2 id="h-checks">What one scan looks at</h2>
+      <p class="sub">Seven checks in one report. Anything that blocks a check, like an unreadable file or a missing PHP extension, is reported as an error instead of skipped.</p>
+
+      <dl class="modes">
+        <div class="mode">
+          <dt><span class="name">Quick checks</span>UPLOADS_PHP, PHP_PREPEND, MU_PLUGIN, HIDDEN_PHP</dt>
+          <dd>The cheap places attackers hide: executable PHP in <code>wp-content/uploads</code>, <code>auto_prepend_file</code> hooks in <code>.user.ini</code>, <code>php.ini</code> and <code>.htaccess</code>, mu-plugins that load with no activation step, and hidden dotfile PHP.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Integrity</span>INTEGRITY_MODIFIED, INTEGRITY_MISSING, INTEGRITY_EXTRA</dt>
+          <dd>Core, every plugin and every theme compared with the official wordpress.org package for the installed version. Extra PHP inside core or a plugin is the classic dropped webshell. Premium plugins and child themes that can't be checked are reported as such, so a clean report never quietly means unchecked.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Database</span>DB_NEW_ADMIN, DB_ROLE_CAPS, DB_OPTION_IOC, DB_POST_IOC</dt>
+          <dd>Read-only. Every administrator listed, with recent ones highlighted, non-admin roles granted takeover powers, PHP, hidden iframes or obfuscated JavaScript in options and posts, a hijacked <code>siteurl</code> or <code>home</code>, and tampered <code>active_plugins</code>.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Access logs</span>LOG_IOC, LOG_FILE_CORRELATION</dt>
+          <dd>Optional: give it a log file or folder in Settings, rotated and <code>.gz</code> files included. Webshell requests, exploit attempts on known-vulnerable plugins, <code>.env</code> probes, code injection and brute-force floods, plus the files modified within minutes of that traffic.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Malware signatures</span>MALWARE_FOUND, SIGNATURE_MATCH</dt>
+          <dd>Known injections such as the <code>ndsw</code>/<code>ndsx</code> and <code>wqpq</code> JavaScript campaigns, plus any signatures you write. From the admin this runs as a dry run. Cleanup happens from the command line.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Timestamps</span>TIMESTAMP_OUTLIER, TIMESTAMP_TIMESTOMP</dt>
+          <dd>Files changed after the rest of their package, and PHP whose modified time was pushed back with <code>touch</code>. These are leads, not proof.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Crontab</span>CRONTAB_IOC</dt>
+          <dd>The crontab of the user PHP runs as, checked for piped base64 decoders, pastebin downloads and droppers in tmp directories.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="h-tools">
+      <h2 id="h-tools">Beyond the scan</h2>
+      <p class="sub">The rest of the Elderward page, tab by tab.</p>
+
+      <dl class="modes">
+        <div class="mode">
+          <dt><span class="name">Review findings</span>Scan tab</dt>
+          <dd>Mark a finding as a false positive with a note. On a file, the mark holds only while the file is byte for byte the one you reviewed. Download sample packs a flagged file into a zip encrypted with the password <code>infected</code>, and file findings link to a VirusTotal lookup by hash. Export the report as text or NDJSON.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Scheduled scans</span>Scan tab, Settings</dt>
+          <dd>Daily, twice daily or weekly, in the site's timezone. If WP-Cron is unreliable on your host, run scans only while the page is open.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Custom signatures</span>Signatures tab</dt>
+          <dd>Exact text or regular expressions for files, option values or post content. Test one against a pasted sample or a file of the site, then share it as JSON with other sites and the command line. Custom signatures only detect.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Hardening</span>Hardening tab</dt>
+          <dd>Server rules that refuse PHP in uploads, copies of <code>wp-config.php</code>, hidden files, backups and logs, WordPress internals and folder listings. Start from the Recommended or Strict template, or pick each protection. On Apache and LiteSpeed it writes <code>.htaccess</code> and rolls back if the site stops responding. On Nginx you download a file to include. Check now tests what the live server actually refuses.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Recovery mode</span>Recovery tab</dt>
+          <dd>A key-protected page that works when WordPress doesn't, after a white screen or a critical error. It shows the PHP errors that broke the site and the plugin or theme they point at, and runs the full scan. Without a key it answers 404.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">AI assistants</span>AI assistants tab</dt>
+          <dd>On WordPress 6.9 or newer with the MCP Adapter plugin, Claude, ChatGPT, Antigravity or Cursor can run scans, explain findings, read flagged files and draft signatures with you. They can't clean or change files. No MCP? Copy a summary into any chat.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="h-wards">
+      <h2 id="h-wards">Wards it will not break</h2>
+      <p class="sub">It runs on sites that are already compromised, so it treats every filename, log line and API response as hostile.</p>
+
+      <ul class="wards">
+        <li>
+          <strong>Scans change nothing</strong>
+          <p>Admin scans only report. The only files the admin ever writes are the <code>.htaccess</code> rules you apply and the recovery key you create.</p>
+        </li>
+        <li>
+          <strong>Nothing leaves the server</strong>
+          <p>No account and no telemetry. The only outbound requests go to wordpress.org, for checksums and official packages.</p>
+        </li>
+        <li>
+          <strong>TLS verification stays on</strong>
+          <p>An "all clean" answer must never come from an attacker sitting between the site and wordpress.org.</p>
+        </li>
+        <li>
+          <strong>The database is only read</strong>
+          <p>SELECT queries only, <code>wp-config.php</code> is read without being executed, and stored values are never unserialized, which could trigger PHP object injection.</p>
+        </li>
+        <li>
+          <strong>Blocked checks are loud</strong>
+          <p>A missing extension, an unreachable database or an unreadable log is an ERROR finding, never a silent skip. A clean report means every scanner actually looked.</p>
+        </li>
+        <li>
+          <strong>A false positive can't hide a changed file</strong>
+          <p>A mark on a file stores its SHA-256. If the file changes, the finding comes back.</p>
+        </li>
+        <li>
+          <strong>Assistants look, never touch</strong>
+          <p>No AI tool cleans, restores or writes files. Everything scanned is labelled as untrusted data, so a planted file can't give the assistant orders.</p>
+        </li>
+        <li>
+          <strong>Restores are verified first</strong>
+          <p>Each file from the official zip is checked byte for byte against the reference checksums before it's written. A tampered package is refused, and extra files are never deleted.</p>
+        </li>
+        <li>
+          <strong>Hardening undoes itself</strong>
+          <p>After writing rules, Elderward loads the home page, the login and an admin request. If any of them breaks, every file goes back exactly as it was.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="h-cli">
+      <h2 id="h-cli">Cleanup happens in a shell</h2>
+      <p class="sub">Cleaning and restoring write files, so they run from WP-CLI, where you take a backup and preview first. Every scanner is a <code>wp elderward</code> command too, with output you can pipe.</p>
 
       <div class="term">
         <div class="term-bar">
@@ -540,101 +847,51 @@ footer {
         </div>
         <pre id="term" aria-label="Example elderward output"></pre>
       </div>
-    </section>
 
-    <section aria-labelledby="h-modes">
-      <h2 id="h-modes">Eight ways to look</h2>
-      <p class="sub">Each scan mode is one flag, and each run takes one mode. The exception is <code>scanall</code>, which runs them all and can pull in your logs too.</p>
-
-      <dl class="modes">
-        <div class="mode">
-          <dt><span class="name">Signature cleanup</span>php elderward.php</dt>
-          <dd>The default mode, so it changes files: it walks the tree, matches known injections such as the <code>ndsw</code>/<code>ndsx</code> and <code>wqpq</code> JavaScript campaigns, and removes them. Add <code>dryrun=1</code> to see what would change first, and <code>allfiles=1</code> to scan every file instead of just risky extensions (it used to be <code>scan_all=1</code>).</dd>
+      <div class="get cli-cols">
+        <div>
+          <h3>Clean and restore</h3>
+          <div class="cmd">
+            <pre id="cmd-dry"><span class="p">$ </span>wp elderward scan --dryrun</pre>
+            <button class="copy" type="button" data-copy="cmd-dry">Copy</button>
+          </div>
+          <div class="cmd">
+            <pre id="cmd-clean"><span class="p">$ </span>wp elderward scan</pre>
+            <button class="copy" type="button" data-copy="cmd-clean">Copy</button>
+          </div>
+          <div class="cmd">
+            <pre id="cmd-restore-dry"><span class="p">$ </span>wp elderward integrity --restore --dryrun</pre>
+            <button class="copy" type="button" data-copy="cmd-restore-dry">Copy</button>
+          </div>
+          <div class="cmd">
+            <pre id="cmd-restore"><span class="p">$ </span>wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
+            <button class="copy" type="button" data-copy="cmd-restore">Copy</button>
+          </div>
+          <p class="hint">Cleaned files are written to a temp file and renamed into place, so a failed write can't truncate the original. <code>--quarantine-dir</code> keeps each original as evidence.</p>
         </div>
-        <div class="mode">
-          <dt><span class="name">Everything, report-only</span>scanall=1</dt>
-          <dd>Quick checks, integrity, timestamps, crontab, database and, with <code>scanlog=</code>, access logs, then the signature scan. It only reports, so nothing on disk changes. Read the report, then fix things with the specific modes, one run each.</dd>
+        <div>
+          <h3>When WordPress won't load</h3>
+          <p class="hint">Open recovery mode, or run the same scanners from the plugin folder with the standalone CLI. It needs PHP 5.6 and no working WordPress.</p>
+          <div class="cmd">
+            <pre id="cmd-standalone"><span class="p">$ </span>php bin/elderward.php scanall=1 scandirectory=/path/to/wp-root</pre>
+            <button class="copy" type="button" data-copy="cmd-standalone">Copy</button>
+          </div>
+          <div class="cmd">
+            <pre id="cmd-help"><span class="p">$ </span>php bin/elderward.php help=1</pre>
+            <button class="copy" type="button" data-copy="cmd-help">Copy</button>
+          </div>
         </div>
-        <div class="mode">
-          <dt><span class="name">Integrity</span>scanintegrity=1</dt>
-          <dd>Checks WordPress core, every plugin and every theme against the official wordpress.org package for the installed version. Reports modified, missing and extra files. Extra PHP inside core or a plugin is the classic dropped webshell. Works offline with <code>checksumdir=</code>. For a non-English core, pass your locale, such as <code>locale=pt_BR</code>, or translated files show as modified.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Access logs</span>scanlog=/var/log/apache2</dt>
-          <dd>Reads every access log in a directory, <code>.gz</code> included, for webshell requests, PHP served from uploads, wp-file-manager, Slider Revolution and TimThumb exploits, <code>.env</code> probes, traversal, and xmlrpc or wp-login floods. Add <code>correlate=1</code> to find files modified within minutes of flagged traffic.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Quick checks</span>quickscan=1</dt>
-          <dd>The cheap places attackers hide: executable PHP in <code>wp-content/uploads</code>, <code>auto_prepend_file</code> hooks in <code>.user.ini</code> and <code>.htaccess</code>, mu-plugins that load with no activation step, and hidden dotfile PHP.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Database</span>scandb=1</dt>
-          <dd>Reads the database with the credentials in <code>wp-config.php</code>, using SELECT queries only. Lists every administrator and flags those created in the last 30 days, non-admin roles granted powers like <code>manage_options</code>, injected code in options and posts, a hijacked <code>siteurl</code> or <code>home</code>, and tampered <code>active_plugins</code>.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Timestamps</span>scantimes=1</dt>
-          <dd>Files changed after the rest of their package, and PHP whose modified time was pushed back with <code>touch</code> while the inode change time stayed put. These are leads, not proof.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Crontab</span>scancron=1</dt>
-          <dd>Runs <code>crontab -l</code> as the user PHP runs as and checks it for persistence: piped base64 decoders, pastebin downloads and droppers in tmp directories. Other users' crontabs and <code>/etc/cron.*</code> aren't covered.</dd>
-        </div>
-      </dl>
-    </section>
-
-    <section aria-labelledby="h-wards">
-      <h2 id="h-wards">Wards it will not break</h2>
-      <p class="sub">It runs on hosts that are already compromised, so it treats every filename, log line and API response as hostile.</p>
-
-      <ul class="wards">
-        <li>
-          <strong>A dry run stays dry</strong>
-          <p><code>dryrun=1</code> covers every write, delete and restore. It reports what it would do and leaves the disk alone.</p>
-        </li>
-        <li>
-          <strong>Restores are verified first</strong>
-          <p>Each file from the official zip is checked byte for byte against the reference checksums before it's written. A tampered package is refused.</p>
-        </li>
-        <li>
-          <strong>Unknown files are never deleted</strong>
-          <p>Extra files are reported, and deleting them is your call. Set <code>quarantinedir=</code> to keep each original aside as evidence before it's overwritten.</p>
-        </li>
-        <li>
-          <strong>Writes can't truncate</strong>
-          <p>Cleaned files go to a temp file and are renamed into place, so a failed write leaves the original intact.</p>
-        </li>
-        <li>
-          <strong>TLS verification stays on</strong>
-          <p>An "all clean" answer must never come from an attacker sitting between the host and wordpress.org.</p>
-        </li>
-        <li>
-          <strong>Hunches never touch disk</strong>
-          <p>Timestamp and log-correlation findings are leads for you to follow. They never trigger a cleanup or a restore.</p>
-        </li>
-        <li>
-          <strong>Blocked checks are loud</strong>
-          <p>A missing extension, an unreachable database or an unreadable log is an ERROR finding, never a silent skip. A clean report means every scanner actually looked.</p>
-        </li>
-        <li>
-          <strong>The database is only read</strong>
-          <p><code>scandb</code> runs SELECT queries only, reads <code>wp-config.php</code> without executing it, and never unserializes stored values, which could trigger PHP object injection.</p>
-        </li>
-      </ul>
-    </section>
-
-    <section aria-labelledby="h-output">
-      <h2 id="h-output">Output you can pipe</h2>
-      <p class="sub">One line per finding, the same shape from every scanner, ready for grep, jq and tickets.</p>
+      </div>
 
       <div class="formats">
         <div>
           <h3>Text</h3>
-          <p>The first three fields never contain commas. Paths and log content come from the compromised host, so control characters and commas in paths are percent-encoded. A crafted filename can't forge a finding line.</p>
+          <p>One line per finding, the same shape from every scanner. Paths and log content come from the compromised host, so control characters and commas in paths are percent-encoded. A crafted filename can't forge a finding line.</p>
           <pre>SEVERITY,TYPE,path,detail</pre>
         </div>
         <div>
           <h3>JSON</h3>
-          <p><code>format=json</code> prints one event per line on stdout and moves progress to stderr, so stdout stays machine-readable. Even a fatal error arrives as an <code>error</code> event.</p>
+          <p><code>--format=json</code> prints one event per line on stdout and sends progress to stderr. The admin's JSON export uses the same events.</p>
           <pre>{"event":"finding","severity":"HIGH",
  "type":"LOG_IOC","path":"...","detail":"..."}</pre>
         </div>
@@ -649,45 +906,42 @@ footer {
       </ol>
     </section>
 
-    <section aria-labelledby="h-get">
-      <h2 id="h-get">Bring it to the host</h2>
-      <p class="sub">No dependencies and no build step. Copy one file and run it.</p>
+    <section aria-labelledby="h-get" id="install">
+      <h2 id="h-get">Install it</h2>
+      <p class="sub">Elderward isn't on WordPress.org yet, so install it from GitHub.</p>
 
       <div class="get">
         <div>
-          <ul>
-            <li>PHP 5.6 or newer. The signature scan, quick checks and timestamps need nothing else.</li>
-            <li>The other scanners use extensions some hosts lack: zlib for <code>.gz</code> logs, curl or <code>allow_url_fopen</code> for online integrity checks, zip for themes and every restore, mysqli for <code>scandb</code>, and <code>shell_exec</code> for <code>scancron</code>. A missing one is reported as an ERROR.</li>
-            <li>Shell access, or the ability to upload a PHP file and reach it over HTTP.</li>
-            <li>Point <code>scandirectory=</code> at the WordPress root, the directory holding <code>wp-includes/</code>. <code>scanall</code>, <code>scanintegrity</code>, <code>scandb</code>, <code>quickscan</code> and <code>scantimes</code> need it.</li>
-            <li>Arguments are read like a URL query string: quote paths that contain spaces or <code>&amp;</code>, and write <code>+</code> as <code>%2B</code>.</li>
-            <li>No shell? Set a long random <code>WEB_ACCESS_TOKEN</code> at the top of the file, pass it as <code>?token=</code>, and delete the file when you're done.</li>
-          </ul>
-          <div class="warning">
-            <p>Take a backup before cleaning. Preview with <code>dryrun=1</code>.</p>
-            <p>It finds known malware. A clean scan is not proof of a clean site, and log hits include plenty of attempts that failed.</p>
+          <h3>Get the plugin</h3>
+          <div class="cmd">
+            <pre id="cmd-install"><span class="p">$ </span>cd wp-content/plugins
+<span class="p">$ </span>git clone https://github.com/fioa8c/elderward.git elderward
+<span class="p">$ </span>wp plugin activate elderward</pre>
+            <button class="copy" type="button" data-copy="cmd-install">Copy</button>
           </div>
+          <p class="hint">Or download the repository as a zip and unpack it as <code>wp-content/plugins/elderward/</code>. The folder has to be named <code>elderward</code>.</p>
+
+          <h3>After activating</h3>
+          <ol class="steps">
+            <li>Open Elderward in the admin menu, or the Network Admin on multisite, and click Start scan.</li>
+            <li>Under Settings, add the location of the access logs and, if you want, automatic scans.</li>
+            <li>Apply the Recommended template on the Hardening tab.</li>
+            <li>Create a recovery key on the Recovery tab, so recovery mode is ready if the site ever breaks.</li>
+            <li>Take a backup, then clean up with the WP-CLI commands shown under the results.</li>
+          </ol>
         </div>
         <div>
-          <div class="cmd">
-            <pre id="cmd-dry"><span class="p">$ </span>php elderward.php dryrun=1 scandirectory=/path/to/site</pre>
-            <button class="copy" type="button" data-copy="cmd-dry">Copy</button>
-          </div>
-          <div class="cmd">
-            <pre id="cmd-db"><span class="p">$ </span>php elderward.php scandb=1 scandirectory=/path/to/wp-root</pre>
-            <button class="copy" type="button" data-copy="cmd-db">Copy</button>
-          </div>
-          <div class="cmd">
-            <pre id="cmd-logs"><span class="p">$ </span>php elderward.php scanlog=/var/log/apache2 correlate=1 scandirectory=/path/to/wp-root</pre>
-            <button class="copy" type="button" data-copy="cmd-logs">Copy</button>
-          </div>
-          <div class="cmd">
-            <pre id="cmd-restore"><span class="p">$ </span>php elderward.php scanintegrity=1 restore=1 quarantinedir=/safe/place scandirectory=/path/to/wp-root</pre>
-            <button class="copy" type="button" data-copy="cmd-restore">Copy</button>
-          </div>
-          <div class="cmd">
-            <pre id="cmd-help"><span class="p">$ </span>php elderward.php help=1</pre>
-            <button class="copy" type="button" data-copy="cmd-help">Copy</button>
+          <h3>Requirements</h3>
+          <ul>
+            <li>WordPress 6.0 or newer and PHP 7.2 or newer. The standalone CLI and recovery mode run on PHP 5.6.</li>
+            <li>Shell access only to clean or restore files. The admin pages need none.</li>
+            <li>WordPress 6.9 and the MCP Adapter plugin for AI assistants.</li>
+            <li>Apache or LiteSpeed with <code>AllowOverride</code> for the hardening rules Elderward writes. On Nginx, someone with server access includes the generated file.</li>
+            <li>Some checks use PHP extensions that locked-down hosts lack: zlib for <code>.gz</code> logs, zip for themes and every restore, <code>shell_exec</code> for the crontab. A missing one is reported as an ERROR.</li>
+          </ul>
+          <div class="warning">
+            <p>Take a backup before cleaning. Preview with <code>--dryrun</code>.</p>
+            <p>It finds known malware. A clean scan is not proof of a clean site, and log hits include plenty of attempts that failed.</p>
           </div>
         </div>
       </div>
@@ -701,15 +955,16 @@ footer {
         <div>
           <h3>Put this in the issue</h3>
           <ul>
-            <li>The file, zipped with the password <code>infected</code> so antivirus and GitHub don't strip it. GitHub won't take a bare <code>.php</code> attachment.</li>
+            <li>The sample. Download sample on the finding gives you a zip encrypted with the password <code>infected</code>, with a manifest of where and why it was flagged. GitHub won't take a bare <code>.php</code> attachment.</li>
             <li>Its SHA-256 hash, and the path where you found it.</li>
             <li>How it was loaded: an include in <code>functions.php</code>, an mu-plugin, a cron entry, <code>auto_prepend_file</code>, or something else.</li>
             <li>The WordPress, plugin and theme versions, if you have them.</li>
             <li>For attack traffic, the matching access log lines.</li>
+            <li>If you wrote a signature that catches it, export it from the Signatures tab and attach the JSON.</li>
           </ul>
         </div>
         <div>
-          <h3>Package the sample</h3>
+          <h3>Package it from a shell</h3>
           <div class="cmd">
             <pre id="cmd-hash"><span class="p">$ </span>shasum -a 256 suspicious.php</pre>
             <button class="copy" type="button" data-copy="cmd-hash">Copy</button>
@@ -737,7 +992,7 @@ footer {
     <p class="epigraph">That is not dead which can eternal lie.</p>
     <p class="epigraph-note">H. P. Lovecraft wrote it about the Old Ones. It holds for a backdoor in an mu-plugin, too.</p>
     <div class="foot">
-      <span>Elderward is free, and a variation of the Jetpack Cleanup Util.</span>
+      <span>Elderward is free, GPLv2 or later, and started as a variation of the Jetpack Cleanup Util.</span>
       <a href="https://github.com/fioa8c/elderward">github.com/fioa8c/elderward</a>
     </div>
   </div>
@@ -1035,7 +1290,7 @@ footer {
   // The terminal: a scanall run, typed once when it scrolls into view
   //////////////
   var LINES = [
-    { cmd: "php elderward.php scanall=1 scanlog=/var/log/apache2 scandirectory=/var/www/html" },
+    { cmd: "wp elderward scanall --log=/var/log/apache2" },
     { sev: "HIGH", rest: ",UPLOADS_PHP,/var/www/html/wp-content/uploads/2024/03/cache.php,executable PHP inside wp-content/uploads - usually a webshell dropped through an upload form" },
     { sev: "HIGH", rest: ",INTEGRITY_EXTRA,/var/www/html/wp-includes/class-wp-locale-switch.php,core 6.6.2: file is not part of the official package" },
     { sev: "HIGH", rest: ",INTEGRITY_MODIFIED,/var/www/html/wp-content/plugins/akismet/akismet.php,plugin akismet 5.3.3: checksum does not match the official package" },
