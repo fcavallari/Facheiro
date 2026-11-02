@@ -219,6 +219,11 @@
 				fields = { op: 'mark', id: row.getAttribute('data-id'), note: note };
 			} else if (action === 'unmark') {
 				fields = { op: 'unmark', fingerprint: row.getAttribute('data-fingerprint') };
+			} else if (action === 'keep') {
+				if (!window.confirm(cfg.i18n.fpKeep)) {
+					return;
+				}
+				fields = { op: 'keep', fingerprint: row.getAttribute('data-fingerprint') };
 			} else if (action === 'forget_all') {
 				if (!window.confirm(cfg.i18n.fpForget)) {
 					return;
@@ -234,7 +239,7 @@
 					window.alert((result && result.data && result.data.message) || cfg.i18n.network);
 					return;
 				}
-				if (action === 'forget_all') {
+				if (action === 'forget_all' || action === 'keep') {
 					window.location.reload();
 					return;
 				}

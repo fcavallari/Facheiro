@@ -32,6 +32,9 @@ class Context
     // microtime(true) after which scanners should yield between units;
     // null means run to completion (CLI).
     public $deadline = null;
+    // Checks the entry layer adds, run once per scan by the self-check
+    // stage: callables taking the Reporter (the plugin's sealed settings).
+    public $preflight = array();
 
     // $http and $db are untyped so a null default stays valid on PHP 5.6 and
     // PHP 8.4 alike (implicit nullable types are deprecated there).

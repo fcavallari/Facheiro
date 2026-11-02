@@ -27,7 +27,7 @@ final class Elderward_Recovery_Key
      */
     public static function dir()
     {
-        return dirname(untrailingslashit(WP_PLUGIN_DIR));
+        return Elderward_Plugin::content_dir();
     }
 
     public static function path()

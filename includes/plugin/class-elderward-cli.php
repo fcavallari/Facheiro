@@ -405,6 +405,92 @@ class Elderward_CLI
         WP_CLI::line('Page:     ' . Elderward_Recovery_Key::url());
     }
 
+    /**
+     * Verify Elderward's own files, then the saved settings against the tamper seal. Report-only.
+     *
+     * Files are checked against the wordpress.org checksums for this version
+     * when they exist, otherwise against the checksums.json shipped with the
+     * plugin. scanall and integrity run this check first.
+     *
+     * ## OPTIONS
+     *
+     * [--checksum-dir=<path>]
+     * : Read plugin-elderward-<version>.json from here instead of the network.
+     *
+     * [--format=<format>]
+     * : text (default) or json.
+     *
+     * @when after_wp_load
+     */
+    public function selfcheck($args, $assoc_args)
+    {
+        $options = array('selfcheck' => 1);
+        $this->copy_option($assoc_args, 'checksum-dir', $options, 'checksumdir');
+        $this->run($options, 'selfcheck', $assoc_args);
+    }
+
+    /**
+     * Tamper seal of the saved settings (false positives, custom signatures, scan settings).
+     *
+     * The seal file records a hash of every entry Elderward saved, so changes
+     * made directly in the database are reported and tampered false positives
+     * are ignored.
+     *
+     * ## OPTIONS
+     *
+     * <action>
+     * : status, or accept (trust the current settings after you reviewed them).
+     *
+     * [--collection=<name>]
+     * : For accept: false_positives, signatures or settings. Default: all of them.
+     *
+     * ## EXAMPLES
+     *
+     *     wp elderward seal status
+     *     wp elderward seal accept --collection=signatures
+     *
+     * @when after_wp_load
+     */
+    public function seal($args, $assoc_args)
+    {
+        $action = isset($args[0]) ? $args[0] : 'status';
+        if ('accept' === $action) {
+            $collection = isset($assoc_args['collection']) ? (string) $assoc_args['collection'] : null;
+            if (null !== $collection && !in_array($collection, Elderward_Seal::collections(), true)) {
+                WP_CLI::error('Collection must be one of: ' . implode(', ', Elderward_Seal::collections()) . '.');
+            }
+            if (!Elderward_Seal::accept($collection)) {
+                WP_CLI::error('Could not write the seal file ' . Elderward_Seal::path());
+            }
+            WP_CLI::success(null === $collection ? 'The current saved settings are trusted again.' : 'The current ' . $collection . ' are trusted again.');
+            return;
+        }
+        if ('status' !== $action) {
+            WP_CLI::error('Action must be status or accept.');
+        }
+        $status = Elderward_Seal::status();
+        if (!$status['available']) {
+            WP_CLI::warning('Tamper detection is off: PHP cannot write ' . Elderward_Seal::path());
+            return;
+        }
+        WP_CLI::line('Seal file: ' . $status['path']);
+        if ($status['lost'] > 0) {
+            WP_CLI::warning('The seal was missing on ' . gmdate('Y-m-d H:i', $status['lost']) . ' UTC and was recreated from the current settings.');
+        }
+        foreach ($status['diff'] as $collection => $diff) {
+            $parts = array();
+            foreach (array('added', 'changed', 'removed') as $kind) {
+                if (!empty($diff[$kind])) {
+                    $parts[] = $kind . ': ' . implode(', ', $diff[$kind]);
+                }
+            }
+            WP_CLI::line(str_pad($collection, 16) . (empty($parts) ? 'matches the seal' : 'CHANGED OUTSIDE ELDERWARD (' . implode('; ', $parts) . ')'));
+        }
+        if (Elderward_Seal::tampered_count($status) > 0) {
+            WP_CLI::halt(3);
+        }
+    }
+
     private function run(array $options, $mode, array $assoc_args)
     {
         $json = isset($assoc_args['format']) && 'json' === strtolower($assoc_args['format']);

@@ -46,6 +46,7 @@ final class Elderward_Plugin
     public static function stage_label($stage)
     {
         $labels = array(
+            'self'       => __('Elderward self-check', 'elderward'),
             'quick'      => __('Quick checks', 'elderward'),
             'integrity'  => __('Integrity', 'elderward'),
             'timestamps' => __('Timestamps', 'elderward'),
@@ -82,6 +83,16 @@ final class Elderward_Plugin
             return false;
         }
         return true;
+    }
+
+    /**
+     * The folder that holds the plugins folder (wp-content on almost every
+     * site): where the recovery key and the tamper seal live, outside the
+     * database and outside the plugin folder an update replaces.
+     */
+    public static function content_dir()
+    {
+        return dirname(untrailingslashit(WP_PLUGIN_DIR));
     }
 
     /**
@@ -149,7 +160,7 @@ final class Elderward_Plugin
         if (!isset($options['scandirectory'])) {
             $options['scandirectory'] = untrailingslashit(ABSPATH);
         }
-        return new Elderward\Engine\Context(
+        $ctx = new Elderward\Engine\Context(
             $options,
             $reporter,
             new Elderward_WP_Http(),
@@ -157,5 +168,8 @@ final class Elderward_Plugin
             ELDERWARD_DIR,
             null === $work_dir ? get_temp_dir() : $work_dir
         );
+        // Run once per scan by the engine's self-check stage.
+        $ctx->preflight[] = array('Elderward_Seal', 'report');
+        return $ctx;
     }
 }

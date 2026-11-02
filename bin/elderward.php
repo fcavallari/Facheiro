@@ -75,6 +75,9 @@ if (isset($options['help'])) {
     echo "  scanintegrity=1       Verify core, plugin and theme files against the official\n";
     echo "                        wordpress.org packages (themes need the PHP zip extension).\n";
     echo "                        scandirectory must be the WordPress root (default: current dir)\n";
+    echo "  selfcheck=1           Verify Elderward's own files (against wordpress.org, else the\n";
+    echo "                        checksums.json it ships with). scanall and scanintegrity\n";
+    echo "                        run it first; noselfcheck=1 skips it there\n";
     echo "  checksumdir=/path     Use pre-downloaded manifests and packages instead of the network\n";
     echo "                        (core-{version}.json, plugin-{slug}-{version}.json,\n";
     echo "                        theme-{slug}-{version}.zip; *.zip of core/plugins for restore)\n";

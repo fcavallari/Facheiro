@@ -948,3 +948,24 @@
 .elderward-wrap .elderward-recovery-form [hidden] {
 	display: none;
 }
+
+/* Tamper detection */
+.elderward-wrap .elderward-tamper-list {
+	margin: 0 0 8px 1.5em;
+	list-style: disc;
+}
+
+.elderward-wrap .elderward-tamper-list .elderward-inline-form {
+	display: inline-block;
+	margin-left: 6px;
+}
+
+.elderward-wrap tr.elderward-tampered td:first-child {
+	box-shadow: inset 4px 0 0 #d63638;
+}
+
+.elderward-wrap .elderward-tamper-badge {
+	margin: 6px 0 0;
+	color: #b32d2e;
+	font-weight: 600;
+}

@@ -126,6 +126,15 @@ It is inert unless a key exists: without `wp-content/elderward-recovery-key.php`
 
 Sign-in sets an HMAC-signed, HttpOnly, SameSite=Strict cookie for one hour, bound to the key (replacing or revoking the key ends every session); actions carry a session-bound token; every wrong key costs a second, and for hand-written keys a client is locked out for 15 minutes after 10 wrong tries (behind a proxy, the forwarded client address counts). Generated keys never lock anyone out, so an attacker cannot block the owner. The state folder must be owned by the PHP user and closed to everyone else (a shared `/tmp` folder created by another account is ignored), and every step rebuilds the scan options, so a tampered state file cannot turn the scan into a cleanup. The page keeps its state in exit-guarded files in the system temp folder (or `wp-content/elderward-recovery/`). Revoke the key when you are done.
 
+### Tamper detection
+
+Malware that runs PHP on a site has the same rights as Elderward, so no plugin can stop it from changing Elderward. Elderward makes the change visible instead, in two ways, and reports both in every scan (admin page, WP-Cron, WP-CLI, assistants and the recovery page):
+
+- **Self-check.** Every other check skips Elderward's own folder (its signatures would match themselves), so the scan starts with the *Elderward self-check* stage: each file of the plugin is compared with the wordpress.org checksums for this version, or, when wordpress.org has none (or cannot be reached), with the `checksums.json` the plugin ships with. Modified or added PHP files are HIGH, and the admin pages then warn that the results may not be trustworthy. The shipped list catches mass injectors and dropped files, but an attacker who can write files can rewrite it too; only the wordpress.org reference (or a fresh download, run as the standalone CLI) covers that. `selfcheck=1` / `wp elderward selfcheck` runs it alone; `noselfcheck=1` skips it.
+- **Sealed settings.** Saved false positives, custom signatures and the scan settings live in the database, where SQL injection alone could add a false positive for a backdoor or delete the signature that catches it. Every change made through Elderward also writes the SHA-256 of each entry to `wp-content/elderward-seal.php` (guarded like the recovery key file), which a database-only attacker cannot rewrite. A false positive that does not match the seal is ignored, so its finding comes back (`TAMPER_FALSE_POSITIVE`); custom signatures and settings changed outside Elderward are reported (`TAMPER_SIGNATURE`, `TAMPER_SETTINGS`), and a deleted or garbled seal is recreated and reported (`TAMPER_SEAL_MISSING`). The admin pages list each change with **Keep** (after review) or **Remove**; `wp elderward seal status` and `wp elderward seal accept [--collection=<name>]` do the same from the command line. After restoring the database from a backup or moving the site without the seal file, review and accept.
+
+This is detection, not prevention: an attacker who can write files can rewrite the seal and the shipped checksum list as well.
+
 ### AI assistants (MCP)
 
 On WordPress 6.9+ Elderward registers WordPress abilities (category `elderward`) that the official [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin exposes to any MCP client: Claude Desktop and Claude Code, Antigravity, Cursor, and ChatGPT where custom MCP connectors are available. The **AI assistants** tab shows the client configuration for the site, either STDIO through WP-CLI (`wp mcp-adapter serve --user=<admin>`) or HTTP through `@automattic/mcp-wordpress-remote` with an application password.
@@ -140,7 +149,7 @@ On WordPress 6.9+ Elderward registers WordPress abilities (category `elderward`)
 
 Only administrators (`Elderward_Plugin::can_manage()`) can call them. There is no ability that cleans, restores or writes site files. Every output that carries scanned data has an `untrusted_data_notice`, and the triage prompt tells the assistant to treat file names, paths, details and file contents as attacker-controlled data, never as instructions. Without MCP, the tab offers a brief (instructions plus the top 100 findings as JSON lines between untrusted-data markers) to paste into any chatbot. `tests/mcp-stdio.js` drives a whole session over STDIO.
 
-The plugin stores the latest report in one table (`{prefix}elderward_findings`) and its scan state in an option; uninstalling removes both, the work folder under `wp-content/uploads/elderward/`, Elderward's `.htaccess` blocks, and the recovery key and state.
+The plugin stores the latest report in one table (`{prefix}elderward_findings`) and its scan state in an option; uninstalling removes both, the work folder under `wp-content/uploads/elderward/`, Elderward's `.htaccess` blocks, the recovery key and state, and the tamper seal.
 
 ## The standalone CLI
 
@@ -323,6 +332,9 @@ tests/background-ui.js, findings-ui.js, signatures-ui.js   Playwright: runner/sc
 tests/hardening-ui.js   Playwright: Hardening tab on an Apache site (apply, check, Nginx download, remove)
 tests/recovery.js  Playwright: recovery key, recovery page on a broken site, scan, export, revoke
 tests/mcp-stdio.js MCP client session over STDIO through the MCP Adapter
+tests/checksums.sh checksums.json is current; the self-check on a release-like copy
+tests/tamper.sh    sealed settings on a test site (WP-CLI); tests/tamper-ui.js: the review notices
+build/make-checksums.php   writes checksums.json (run it after changing any shipped file)
 recovery.php, includes/recovery/   recovery mode (runs without WordPress; PHP 5.6 syntax)
 site/              the project homepage (static HTML, not part of the plugin zip)
 ```

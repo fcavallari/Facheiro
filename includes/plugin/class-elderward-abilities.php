@@ -429,7 +429,7 @@ final class Elderward_Abilities
         if (1 !== preg_match('/^[0-9a-f]{40}$/', $fingerprint)) {
             return new WP_Error('elderward_fp', 'Give the id of a finding or a fingerprint.');
         }
-        $existed = isset(Elderward_False_Positives::rules()[$fingerprint]);
+        $existed = isset(Elderward_False_Positives::all_rules()[$fingerprint]);
         Elderward_False_Positives::unmark($fingerprint);
         return array('removed' => $existed);
     }
