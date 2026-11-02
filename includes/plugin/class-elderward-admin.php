@@ -869,7 +869,7 @@ final class Elderward_Admin
             }
         }
         set_transient('elderward_notice_' . get_current_user_id(), $notices, MINUTE_IN_SECONDS);
-        wp_safe_redirect(self::page_url());
+        wp_safe_redirect(self::settings_url());
         exit;
     }
 
@@ -1001,7 +1001,8 @@ final class Elderward_Admin
                     ?> <a href="<?php echo esc_url(self::signatures_url()); ?>"><?php esc_html_e('Review signatures', 'elderward'); ?></a></li>
                 <?php endif; ?>
                 <?php if ($set_count > 0) : ?>
-                    <li><?php esc_html_e('The scan settings (how and when scans run, the access log path) were changed. Check them under Settings on the Scan tab.', 'elderward'); ?>
+                    <li><?php esc_html_e('The scan settings (how and when scans run, the access log path) were changed.', 'elderward'); ?>
+                        <a href="<?php echo esc_url(self::settings_url()); ?>"><?php esc_html_e('Review settings', 'elderward'); ?></a>
                         <?php self::seal_button('accept_settings', __('The scan settings are correct', 'elderward')); ?></li>
                 <?php endif; ?>
             </ul>
@@ -1146,7 +1147,7 @@ final class Elderward_Admin
         $filter = isset($_GET['severity']) ? sanitize_key(wp_unslash($_GET['severity'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter on a listing.
         $filter = in_array(strtoupper($filter), $severities, true) ? strtoupper($filter) : '';
         $paged = isset($_GET['paged']) ? max(1, (int) $_GET['paged']) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination.
-        $tab = (isset($_GET['tab']) && in_array($_GET['tab'], array('signatures', 'hardening', 'recovery', 'assistants'), true)) ? sanitize_key(wp_unslash($_GET['tab'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- selects a tab.
+        $tab = (isset($_GET['tab']) && in_array($_GET['tab'], array('signatures', 'hardening', 'recovery', 'assistants', 'settings'), true)) ? sanitize_key(wp_unslash($_GET['tab'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- selects a tab.
         $fp_view = isset($_GET['view']) && 'fp' === $_GET['view']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter on a listing.
         if ($fp_view) {
             $filter = '';
@@ -1177,6 +1178,7 @@ final class Elderward_Admin
                 <a href="<?php echo esc_url(add_query_arg('tab', 'hardening', $page_url)); ?>" class="nav-tab <?php echo 'hardening' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Hardening', 'elderward'); ?></a>
                 <a href="<?php echo esc_url(add_query_arg('tab', 'recovery', $page_url)); ?>" class="nav-tab <?php echo 'recovery' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Recovery', 'elderward'); ?></a>
                 <a href="<?php echo esc_url(add_query_arg('tab', 'assistants', $page_url)); ?>" class="nav-tab <?php echo 'assistants' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('AI assistants', 'elderward'); ?></a>
+                <a href="<?php echo esc_url(self::settings_url()); ?>" class="nav-tab <?php echo 'settings' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Settings', 'elderward'); ?></a>
             </nav>
             <?php if ('' !== $tab) : ?>
                 <?php
@@ -1186,6 +1188,8 @@ final class Elderward_Admin
                     Elderward_Admin_Hardening::render();
                 } elseif ('recovery' === $tab) {
                     Elderward_Admin_Recovery::render();
+                } elseif ('settings' === $tab) {
+                    self::render_settings_tab();
                 } else {
                     self::render_assistants_tab();
                 }
@@ -1239,7 +1243,6 @@ final class Elderward_Admin
         $settings = Elderward_Settings::get();
         $running = null !== $job && 'running' === $job['status'];
         $datetime_format = get_option('date_format') . ' ' . get_option('time_format');
-        $next_run = Elderward_Cron::next_run();
         $fp_rules = Elderward_False_Positives::all_rules();
         $log_real = '' === $settings['log'] ? '' : Elderward_Settings::resolve_log_path($settings['log']);
         ?>
@@ -1256,7 +1259,11 @@ final class Elderward_Admin
                     <li>
                         <?php
                         if ('' === $settings['log']) {
-                            esc_html_e('Access logs: not checked (add their location under Settings)', 'elderward');
+                            printf(
+                                /* translators: %s: link to the Settings tab */
+                                esc_html__('Access logs: not checked (add their location on the %s tab)', 'elderward'),
+                                '<a href="' . esc_url(self::settings_url()) . '">' . esc_html__('Settings', 'elderward') . '</a>'
+                            );
                         } elseif (is_wp_error($log_real)) {
                             /* translators: %s: access log path */
                             printf(esc_html__('Access logs: %s cannot be read, so they are skipped (see Settings)', 'elderward'), '<code>' . esc_html($settings['log']) . '</code>');
@@ -1441,10 +1448,23 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
                 <p class="description"><?php esc_html_e('No WP-CLI? The same scanners run with php bin/elderward.php from the plugin folder; see the readme.', 'elderward'); ?></p>
             </div>
             <?php endif; ?>
-
-            <?php self::render_settings($settings, $datetime_format, $next_run, $log_real); ?>
         </div>
         <?php
+    }
+
+    private static function settings_url()
+    {
+        return add_query_arg('tab', 'settings', self::page_url());
+    }
+
+    /**
+     * The Settings tab: how scans run, automatic scans, access logs.
+     */
+    private static function render_settings_tab()
+    {
+        $settings = Elderward_Settings::get();
+        $log_real = '' === $settings['log'] ? '' : Elderward_Settings::resolve_log_path($settings['log']);
+        self::render_settings($settings, get_option('date_format') . ' ' . get_option('time_format'), Elderward_Cron::next_run(), $log_real);
     }
 
     /**

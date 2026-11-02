@@ -29,12 +29,15 @@ const logPath = process.env.ELDERWARD_LOG || '';
 	await page.click('#wp-submit');
 	await page.waitForURL(/wp-admin/);
 
-	await page.goto(base + '/wp-admin/admin.php?page=elderward');
-	await page.waitForSelector('#elderward-start');
-	// The access-log location is a setting used by every scan.
+	// The access-log location is a setting used by every scan, on the
+	// Settings tab; saving comes back to that tab.
+	await page.goto(base + '/wp-admin/admin.php?page=elderward&tab=settings');
 	await page.fill('#elderward-settings-log', logPath || '');
 	await page.click('.elderward-settings #submit');
-	await page.waitForURL(/page=elderward/);
+	await page.waitForURL(/page=elderward&tab=settings/);
+	if (await page.locator('#elderward-start').count() !== 0) { console.error('FAIL: the Settings tab shows the scan controls'); process.exitCode = 1; }
+	await page.goto(base + '/wp-admin/admin.php?page=elderward');
+	if (await page.locator('.elderward-settings').count() !== 0) { console.error('FAIL: the Scan tab still shows the settings'); process.exitCode = 1; }
 	await page.waitForSelector('#elderward-start');
 	await page.click('#elderward-start');
 	await page.waitForSelector('#elderward-progress:not([hidden])');

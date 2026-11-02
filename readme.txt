@@ -52,7 +52,7 @@ Development happens at [github.com/fioa8c/elderward](https://github.com/fioa8c/e
 1. Upload the `elderward` folder to `/wp-content/plugins/`, or install it from the Plugins screen.
 2. Activate the plugin. It creates one database table (`{prefix}elderward_findings`) to hold the latest report.
 3. Open **Elderward** in the admin menu (in the Network Admin on multisite) and click **Start scan**. The scan continues in the background; the page shows its progress and reloads with the findings when it ends.
-4. Under **Settings** on the same page, optionally give the location of the web server's access logs, choose how scans run (in the background through WP-Cron, or only while the page is open) and, if you want, automatic scans.
+4. On the **Settings** tab, optionally give the location of the web server's access logs, choose how scans run (in the background through WP-Cron, or only while the page is open) and, if you want, automatic scans.
 5. To act on the findings, use the WP-CLI commands shown under the results, after taking a backup.
 6. Recommended: apply the Recommended template on the **Hardening** tab, and create a recovery key on the **Recovery** tab so recovery mode is ready if the site ever breaks.
 7. Optional: to use an AI assistant, install the MCP Adapter plugin and follow the steps on the **AI assistants** tab.
@@ -65,7 +65,7 @@ Yes, with the default setting. The scan is a chain of short WP-Cron jobs; the pa
 
 = Can I schedule scans? =
 
-Yes: daily, twice daily or weekly at a time of day (and weekday) in the site's timezone, from the Settings section of the Elderward page. An automatic scan runs in the background, checks the access logs set in the settings, and is skipped when another scan is already running. The results replace the previous report on the page.
+Yes: daily, twice daily or weekly at a time of day (and weekday) in the site's timezone, from the Settings tab of the Elderward page. An automatic scan runs in the background, checks the access logs set in the settings, and is skipped when another scan is already running. The results replace the previous report on the page.
 
 = What does marking a false positive do? =
 
