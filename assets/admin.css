@@ -1,0 +1,950 @@
+/*
+ * Elderward admin page. One centred column: the banner, tabs, cards and
+ * tables all share its edges. WordPress admin font throughout; monospace
+ * only for paths, hashes, code and commands.
+ */
+.wrap.elderward-wrap {
+	max-width: 1200px;
+	margin: 12px auto 0;
+	padding: 0 20px 40px;
+	box-sizing: border-box;
+	color: #1d2327;
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+.elderward-wrap p,
+.elderward-wrap li,
+.elderward-wrap td,
+.elderward-wrap th,
+.elderward-wrap label {
+	font-size: 14px;
+}
+
+.elderward-wrap code,
+.elderward-wrap pre,
+.elderward-wrap textarea.code,
+.elderward-wrap input.code {
+	font-family: Menlo, Consolas, Monaco, "Liberation Mono", monospace;
+}
+
+.elderward-wrap .description,
+.elderward-wrap p.description {
+	color: #50575e;
+	font-size: 13px;
+}
+
+/* Brand header: the website's palette (abyss, bone, sigil gold, verdigris). */
+.elderward-wrap .elderward-brand {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	margin: 0;
+	padding: 20px 24px;
+	box-sizing: border-box;
+	color: #dcd3b0;
+	background:
+		radial-gradient(ellipse 60% 120% at 85% 50%, rgba(23, 61, 55, 0.8), transparent 70%),
+		radial-gradient(ellipse 70% 100% at 5% 100%, rgba(14, 43, 39, 0.9), transparent 70%),
+		#061614;
+	border: 1px solid #173d37;
+	border-radius: 6px;
+	/* Below WordPress's floating Help button, at the column's full width. */
+	clear: both;
+}
+
+.elderward-brand-mark {
+	flex: 0 0 auto;
+	width: 60px;
+	height: 60px;
+	filter: drop-shadow(0 0 10px rgba(217, 174, 85, 0.25));
+}
+
+.elderward-brand-text {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.elderward-brand-word {
+	display: block;
+	width: auto;
+	height: 34px;
+}
+
+.elderward-wrap .elderward-brand-tag {
+	margin: 6px 0 0;
+	font-size: 14px;
+	line-height: 1.4;
+	color: #b9b195;
+}
+
+.elderward-brand-version {
+	flex: 0 0 auto;
+	padding: 2px 10px;
+	border: 1px solid #2c5a51;
+	border-radius: 999px;
+	font-size: 12px;
+	color: #8fb9ab;
+	white-space: nowrap;
+}
+
+.elderward-wrap .wp-header-end {
+	margin: 0;
+}
+
+.elderward-wrap .notice {
+	margin: 16px 0 0;
+}
+
+/* Tabs: aligned with the column, a clear active state. */
+.elderward-wrap .elderward-tabs {
+	margin: 20px 0 20px;
+	padding: 0;
+	border-bottom: 1px solid #c3c4c7;
+}
+
+.elderward-wrap .elderward-tabs .nav-tab {
+	margin: 0 6px -1px 0;
+	padding: 8px 16px;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.5;
+	border-radius: 4px 4px 0 0;
+}
+
+.elderward-wrap .elderward-tabs .nav-tab:first-child {
+	margin-left: 0;
+}
+
+.elderward-wrap .elderward-tabs .nav-tab-active,
+.elderward-wrap .elderward-tabs .nav-tab-active:hover {
+	background: #fff;
+	border-bottom-color: #fff;
+	color: #1d2327;
+}
+
+.elderward-intro {
+	margin: 0 0 20px;
+	max-width: 80ch;
+	color: #3c434a;
+}
+
+/* Cards */
+.elderward-card {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	padding: 20px 24px;
+	margin: 0 0 20px;
+	box-sizing: border-box;
+}
+
+.elderward-card > :last-child {
+	margin-bottom: 0;
+}
+
+.elderward-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px 16px;
+	margin: 0 0 12px;
+}
+
+.elderward-wrap .elderward-card h2,
+.elderward-wrap .elderward-card-head h2 {
+	margin: 0;
+	padding: 0;
+	font-size: 18px;
+	font-weight: 600;
+	line-height: 1.4;
+	color: #1d2327;
+}
+
+.elderward-wrap .elderward-card h3 {
+	margin: 20px 0 4px;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.elderward-head-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.elderward-step {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	margin-right: 6px;
+	border-radius: 50%;
+	background: #173d37;
+	color: #f0e6c4;
+	font-size: 14px;
+	vertical-align: 1px;
+}
+
+.elderward-lead {
+	margin: 0 0 8px;
+	color: #3c434a;
+}
+
+.elderward-empty {
+	color: #50575e;
+}
+
+/* Fields outside form tables: label above the control. */
+.elderward-field {
+	margin: 16px 0;
+}
+
+.elderward-field label {
+	display: block;
+	margin: 0 0 6px;
+	font-weight: 600;
+}
+
+.elderward-field .description {
+	margin: 6px 0 0;
+}
+
+/* Form tables inside cards: a fixed label column, aligned rows. */
+.elderward-card .form-table {
+	margin: 0 0 16px;
+}
+
+.elderward-card .form-table th {
+	width: 200px;
+	padding: 16px 20px 16px 0;
+	font-weight: 600;
+	vertical-align: top;
+}
+
+.elderward-card .form-table td {
+	padding: 12px 0;
+	vertical-align: top;
+}
+
+.elderward-card .form-table tr + tr th,
+.elderward-card .form-table tr + tr td {
+	border-top: 1px solid #f0f0f1;
+}
+
+.elderward-card .form-table td p.description {
+	margin: 6px 0 0;
+}
+
+.elderward-settings fieldset label {
+	display: block;
+	margin: 0 0 2px;
+	font-weight: 600;
+}
+
+.elderward-card .form-table td fieldset p.description {
+	margin: 0 0 12px 24px;
+}
+
+.elderward-card .form-table td fieldset p.description:last-child {
+	margin-bottom: 0;
+}
+
+.elderward-schedule-when {
+	margin-left: 8px;
+}
+
+.elderward-schedule-when label {
+	margin: 0 4px;
+}
+
+.elderward-schedule-when[hidden],
+.elderward-schedule-day[hidden] {
+	display: none;
+}
+
+/* "?" help toggles and the text they reveal. */
+.elderward-help-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	margin: 0 0 0 4px;
+	padding: 0;
+	border: 1px solid #8c8f94;
+	border-radius: 50%;
+	background: #fff;
+	color: #50575e;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+	vertical-align: 2px;
+}
+
+.elderward-help-toggle:hover,
+.elderward-help-toggle[aria-expanded="true"] {
+	border-color: #2271b1;
+	background: #2271b1;
+	color: #fff;
+}
+
+.elderward-help-toggle:focus {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+	box-shadow: none;
+}
+
+.elderward-help-text {
+	margin: 10px 0 0;
+	padding: 10px 14px;
+	border-left: 4px solid #72aee6;
+	background: #f0f6fc;
+	max-width: 75ch;
+}
+
+.elderward-help-text[hidden] {
+	display: none;
+}
+
+.elderward-wrap .elderward-help-text p {
+	margin: 0 0 8px;
+	font-size: 13px;
+	color: #1d2327;
+}
+
+.elderward-wrap .elderward-help-text p:last-child {
+	margin-bottom: 0;
+}
+
+/* Scan card */
+.elderward-scope {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 4px 24px;
+	margin: 0 0 16px;
+	padding: 0;
+	list-style: none;
+}
+
+.elderward-scope li {
+	position: relative;
+	margin: 0;
+	padding-left: 20px;
+	color: #3c434a;
+}
+
+.elderward-scope li::before {
+	content: "";
+	position: absolute;
+	left: 2px;
+	top: 0.6em;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #4f8676;
+}
+
+.elderward-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0 0 4px;
+}
+
+.elderward-wrap .elderward-buttons .button-hero {
+	margin: 0;
+	font-size: 14px;
+	min-height: 40px;
+	line-height: 2.7;
+	padding: 0 20px;
+}
+
+.elderward-progress {
+	margin-top: 16px;
+}
+
+.elderward-bar {
+	background: #dcdcde;
+	border-radius: 999px;
+	height: 10px;
+	overflow: hidden;
+}
+
+.elderward-bar-fill {
+	background: #2271b1;
+	height: 100%;
+	transition: width 0.3s ease;
+}
+
+.elderward-last {
+	margin: 16px 0 0;
+	padding-top: 12px;
+	border-top: 1px solid #f0f0f1;
+	color: #3c434a;
+}
+
+.elderward-error {
+	color: #b32d2e;
+}
+
+#elderward-runner-note {
+	margin: 4px 0 0;
+}
+
+.elderward-note {
+	padding: 10px 14px;
+	border-left: 4px solid #dba617;
+	background: #fcf9e8;
+	margin: 0 0 16px;
+}
+
+/* Findings */
+.elderward-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0 0 12px;
+	padding: 0;
+	list-style: none;
+}
+
+.elderward-filters li {
+	margin: 0;
+}
+
+.elderward-filters a {
+	display: inline-block;
+	padding: 3px 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 999px;
+	color: #2c3338;
+	font-size: 13px;
+	text-decoration: none;
+}
+
+.elderward-filters a:hover {
+	border-color: #2271b1;
+	color: #2271b1;
+}
+
+.elderward-filters a.current {
+	border-color: #1d2327;
+	background: #1d2327;
+	color: #fff;
+}
+
+.elderward-filters .count {
+	color: inherit;
+	opacity: 0.75;
+}
+
+.elderward-wrap .elderward-table {
+	border-color: #dcdcde;
+	border-radius: 4px;
+	table-layout: fixed;
+}
+
+.elderward-wrap .elderward-table th {
+	font-weight: 600;
+}
+
+.elderward-wrap .elderward-table td,
+.elderward-wrap .elderward-table th {
+	padding: 10px 12px;
+	vertical-align: top;
+	overflow-wrap: anywhere;
+}
+
+.elderward-table .elderward-col-sev { width: 84px; }
+.elderward-table .elderward-col-type { width: 170px; }
+.elderward-table .elderward-col-path { width: 21%; }
+.elderward-table .elderward-col-target { width: 140px; }
+.elderward-table .elderward-col-actions { width: 170px; }
+
+.elderward-type {
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	color: #3c434a;
+}
+
+.elderward-wrap code.elderward-path,
+.elderward-wrap .elderward-table td > code {
+	display: inline;
+	padding: 1px 4px;
+	background: #f6f7f7;
+	border-radius: 3px;
+	font-size: 12px;
+	word-break: break-all;
+}
+
+.elderward-table details {
+	margin-top: 6px;
+}
+
+.elderward-table details summary {
+	cursor: pointer;
+	color: #2271b1;
+	font-size: 13px;
+}
+
+.elderward-table details pre {
+	white-space: pre-wrap;
+	word-break: break-all;
+	background: #f6f7f7;
+	padding: 8px 10px;
+	margin: 6px 0 0;
+	max-height: 200px;
+	overflow: auto;
+	font-size: 12px;
+}
+
+.elderward-sev {
+	display: inline-block;
+	min-width: 56px;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.03em;
+	line-height: 1.6;
+	text-align: center;
+	color: #fff;
+	background: #646970;
+	box-sizing: border-box;
+}
+
+.elderward-sev-high { background: #d63638; }
+.elderward-sev-error { background: #996800; }
+.elderward-sev-medium { background: #dba617; color: #1d2327; }
+.elderward-sev-low { background: #2271b1; }
+.elderward-sev-info { background: #646970; }
+
+.elderward-actions .button,
+.elderward-actions .elderward-inline-form {
+	margin: 0 4px 6px 0;
+}
+
+.elderward-wrap .elderward-actions .button-small {
+	white-space: normal;
+	line-height: 1.4;
+	padding: 3px 8px;
+	min-height: 26px;
+	text-align: left;
+}
+
+.elderward-wrap .elderward-hash {
+	margin: 8px 0 0;
+	font-size: 12px;
+	color: #50575e;
+	word-break: break-all;
+}
+
+.elderward-hash span {
+	font-weight: 600;
+}
+
+.elderward-hash code {
+	font-size: 11px;
+	background: transparent;
+	padding: 0;
+}
+
+.elderward-wrap .elderward-fp-why {
+	margin: 8px 0 0;
+	font-style: italic;
+	color: #50575e;
+	font-size: 13px;
+}
+
+.elderward-row-message {
+	color: #50575e;
+	font-style: italic;
+}
+
+.elderward-sample-help {
+	margin: 16px 0 0;
+}
+
+.elderward-findings .tablenav {
+	height: auto;
+	margin: 12px 0 0;
+}
+
+/* Cleanup commands */
+.elderward-cli {
+	margin: 12px 0;
+	padding: 14px 16px;
+	border-radius: 4px;
+	background: #1d2327;
+	color: #f0f0f1;
+	font-size: 13px;
+	line-height: 1.7;
+	overflow: auto;
+}
+
+.elderward-cli-comment {
+	color: #8c8f94;
+}
+
+/* Signature editor */
+.elderward-conditions {
+	margin: 0;
+	white-space: pre-wrap;
+	word-break: break-all;
+	font-size: 12px;
+}
+
+.elderward-inline-form {
+	display: inline;
+}
+
+.elderward-disabled td {
+	opacity: 0.6;
+}
+
+.elderward-builtin summary {
+	cursor: pointer;
+	list-style-position: inside;
+}
+
+.elderward-builtin summary h2 {
+	display: inline;
+}
+
+.elderward-builtin[open] summary {
+	margin-bottom: 12px;
+}
+
+.elderward-test-result:not(:empty) {
+	margin-top: 12px;
+	padding: 10px 14px;
+	border-left: 4px solid #4f8676;
+	background: #f6f7f7;
+}
+
+.elderward-test-result p {
+	margin: 0 0 4px;
+	font-weight: 600;
+}
+
+.elderward-test-result ul {
+	margin: 0 0 0 1.5em;
+	list-style: disc;
+}
+
+/* AI assistants */
+.elderward-checklist {
+	margin: 0;
+}
+
+.elderward-checklist li {
+	padding-left: 1.6em;
+	position: relative;
+}
+
+.elderward-checklist li::before {
+	position: absolute;
+	left: 0;
+	font-weight: 700;
+}
+
+.elderward-checklist li.is-ok::before { content: "\2713"; color: #00a32a; }
+.elderward-checklist li.is-missing::before { content: "\2715"; color: #d63638; }
+
+.elderward-examples {
+	list-style: disc;
+	margin: 0 0 16px 1.5em;
+}
+
+.elderward-config {
+	margin: 0 0 8px;
+}
+
+.elderward-wrap textarea.elderward-copy {
+	font-size: 12px;
+	line-height: 1.5;
+	background: #f6f7f7;
+}
+
+@media (max-width: 782px) {
+	.wrap.elderward-wrap { padding: 0 12px 24px; }
+	.elderward-wrap .elderward-brand { padding: 14px 16px; gap: 14px; }
+	.elderward-brand-mark { width: 44px; height: 44px; }
+	.elderward-brand-word { height: 26px; }
+	.elderward-brand-version { display: none; }
+	.elderward-card { padding: 16px; }
+	.elderward-card .form-table th { width: auto; padding-bottom: 0; }
+	.elderward-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+	.elderward-wrap .elderward-table { min-width: 1000px; }
+	.elderward-scope { grid-template-columns: 1fr; }
+}
+
+.elderward-wrap textarea.large-text,
+.elderward-wrap input.large-text {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+/* Segmented choices (server, template) */
+.elderward-choice-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 4px 0 10px;
+}
+
+.elderward-choice {
+	position: relative;
+}
+
+.elderward-choice input {
+	position: absolute;
+	opacity: 0;
+	inset: 0;
+	margin: 0;
+	cursor: pointer;
+}
+
+.elderward-choice span {
+	display: inline-block;
+	padding: 8px 16px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	background: #fff;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.elderward-choice input:checked + span {
+	border-color: #2271b1;
+	background: #2271b1;
+	color: #fff;
+}
+
+.elderward-choice input:focus-visible + span {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+/* Hardening protections */
+.elderward-features {
+	margin: 16px 0 0;
+	padding: 0;
+	list-style: none;
+	border-top: 1px solid #f0f0f1;
+}
+
+.elderward-feature {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 2px 16px;
+	margin: 0;
+	padding: 14px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.elderward-wrap .elderward-feature-help,
+.elderward-wrap .elderward-feature-risk {
+	grid-column: 1 / -1;
+	margin: 0 0 0 52px;
+	font-size: 13px;
+	color: #50575e;
+	max-width: 85ch;
+}
+
+.elderward-wrap .elderward-feature-risk {
+	margin-top: 4px;
+}
+
+.elderward-feature-tags {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.elderward-switch {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.elderward-switch input {
+	position: absolute;
+	opacity: 0;
+	width: 1px;
+	height: 1px;
+}
+
+.elderward-switch-track {
+	position: relative;
+	flex: 0 0 auto;
+	width: 40px;
+	height: 22px;
+	border-radius: 999px;
+	background: #8c8f94;
+	transition: background 0.15s ease;
+}
+
+.elderward-switch-track::after {
+	content: "";
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: #fff;
+	transition: transform 0.15s ease;
+}
+
+.elderward-switch input:checked + .elderward-switch-track {
+	background: #2271b1;
+}
+
+.elderward-switch input:checked + .elderward-switch-track::after {
+	transform: translateX(18px);
+}
+
+.elderward-switch input:focus-visible + .elderward-switch-track {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+.elderward-tag,
+.elderward-check {
+	display: inline-block;
+	padding: 1px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.7;
+	background: #e7f3ec;
+	color: #1a5c36;
+	white-space: nowrap;
+}
+
+.elderward-tag-strict {
+	background: #fcf3e3;
+	color: #7a4a00;
+}
+
+.elderward-tag-risky {
+	background: #fcf0f1;
+	color: #8a2424;
+}
+
+.elderward-check[hidden] {
+	display: none;
+}
+
+.elderward-check-protected {
+	background: #00a32a;
+	color: #fff;
+}
+
+.elderward-check-exposed {
+	background: #d63638;
+	color: #fff;
+}
+
+.elderward-check-unknown {
+	background: #dcdcde;
+	color: #3c434a;
+}
+
+.elderward-check-list {
+	margin: 12px 0 0;
+}
+
+.elderward-check-list li {
+	margin: 0 0 8px;
+}
+
+.elderward-preview {
+	margin: 12px 0;
+}
+
+.elderward-wrap .elderward-preview-file {
+	margin: 12px 0 4px;
+	font-weight: 600;
+}
+
+.elderward-preview .elderward-cli {
+	margin-top: 0;
+	max-height: 360px;
+}
+
+.elderward-steps {
+	margin: 0 0 12px 1.5em;
+}
+
+.elderward-steps li {
+	margin-bottom: 6px;
+}
+
+/* Recovery */
+.elderward-key-reveal {
+	margin: 0 0 16px;
+	padding: 12px 16px;
+	border-left: 4px solid #00a32a;
+	background: #edfaef;
+}
+
+.elderward-key-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.elderward-key-row input {
+	font-size: 15px !important;
+}
+
+.elderward-field-inline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.elderward-recovery-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin: 16px 0 8px;
+}
+
+.elderward-recovery-form label {
+	font-weight: 600;
+}
+
+.elderward-recovery-form .button {
+	margin: 0;
+}
+
+@media (max-width: 782px) {
+	.elderward-feature { grid-template-columns: 1fr; }
+	.elderward-feature-tags { justify-content: flex-start; margin-left: 52px; }
+	.elderward-wrap .elderward-feature-help,
+	.elderward-wrap .elderward-feature-risk { margin-left: 0; }
+}
+
+.elderward-wrap [data-server-only][hidden] {
+	display: none !important;
+}
+
+.elderward-wrap .elderward-key-reveal[hidden],
+.elderward-wrap .elderward-recovery-form [hidden] {
+	display: none;
+}

@@ -1,0 +1,131 @@
+<?php
+/**
+ * Plugin bootstrap: activation, shared helpers, wiring of the admin page.
+ *
+ * @package Elderward
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+final class Elderward_Plugin
+{
+    const DB_VERSION = '2';
+    const OPTION_DB_VERSION = 'elderward_db_version';
+
+    public static function init()
+    {
+        if (get_option(self::OPTION_DB_VERSION) !== self::DB_VERSION) {
+            // Covers installs activated before a schema change and
+            // network-wide activations that skipped the hook.
+            self::create_table();
+        }
+        Elderward_Cron::init();
+        Elderward_Abilities::init();
+        if (is_admin()) {
+            Elderward_Admin::init();
+        }
+    }
+
+    public static function activate()
+    {
+        self::create_table();
+        Elderward_Cron::sync_schedule();
+    }
+
+    public static function deactivate()
+    {
+        Elderward_Cron::deactivate();
+    }
+
+    /**
+     * Only administrators may run scans or read results; on multisite the
+     * scan covers the whole install, so only super admins qualify.
+     */
+    public static function can_manage()
+    {
+        if (!current_user_can('manage_options')) {
+            return false;
+        }
+        if (is_multisite() && !is_super_admin()) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * One findings table per install (base prefix on multisite).
+     */
+    public static function findings_table()
+    {
+        global $wpdb;
+        return $wpdb->base_prefix . 'elderward_findings';
+    }
+
+    /**
+     * A path relative to the WordPress root (or $root), unchanged when it
+     * lies outside.
+     */
+    public static function relative_path($path, $root = null)
+    {
+        $path = (string) $path;
+        $root = untrailingslashit(null === $root ? ABSPATH : $root);
+        return (0 === strpos($path, $root . '/')) ? substr($path, strlen($root) + 1) : $path;
+    }
+
+    public static function create_table()
+    {
+        global $wpdb;
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        $table = self::findings_table();
+        $charset_collate = $wpdb->get_charset_collate();
+        $sql = "CREATE TABLE {$table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            job_id varchar(32) NOT NULL,
+            severity varchar(8) NOT NULL,
+            type varchar(40) NOT NULL,
+            path text NOT NULL,
+            detail text NOT NULL,
+            context longtext NULL,
+            sha256 char(64) NULL,
+            fingerprint char(40) NOT NULL DEFAULT '',
+            fp tinyint(1) NOT NULL DEFAULT 0,
+            created datetime NOT NULL,
+            PRIMARY KEY  (id),
+            KEY job_severity (job_id, severity),
+            KEY fingerprint (fingerprint)
+        ) {$charset_collate};";
+        dbDelta($sql);
+        update_option(self::OPTION_DB_VERSION, self::DB_VERSION, false);
+    }
+
+    /**
+     * Build an engine Context wired to WordPress: HTTP through the
+     * WordPress HTTP API, database through $wpdb, the plugin's own folder
+     * excluded from file scans.
+     *
+     * @param array                      $options  Engine options (key => value).
+     * @param Elderward\Engine\Reporter  $reporter Where findings go.
+     * @param string|null                $work_dir Directory for work files.
+     */
+    public static function make_context(array $options, Elderward\Engine\Reporter $reporter, $work_dir = null)
+    {
+        // Custom signatures from the editor apply to every scan on this site
+        // (admin page, WP-Cron runner, WP-CLI, assistants), and every scan
+        // builds its Context here, so they load here rather than on every
+        // request.
+        Elderward_Signatures::install();
+        if (!isset($options['scandirectory'])) {
+            $options['scandirectory'] = untrailingslashit(ABSPATH);
+        }
+        return new Elderward\Engine\Context(
+            $options,
+            $reporter,
+            new Elderward_WP_Http(),
+            new Elderward_WP_Db(),
+            ELDERWARD_DIR,
+            null === $work_dir ? get_temp_dir() : $work_dir
+        );
+    }
+}

@@ -13,13 +13,13 @@ curl -L -o wp.zip https://wordpress.org/latest.zip && unzip -q wp.zip
 find /tmp/ew/wordpress -exec touch {} +
 ```
 
-`WP=/tmp/ew/wordpress` below (or your site's root). `EW=php /path/to/elderward.php`.
+`WP=/tmp/ew/wordpress` below (or your site's root). `EW=php /path/to/elderward/bin/elderward.php` (the standalone CLI inside the plugin folder; section F covers the plugin and WP-CLI).
 
 ---
 
 ## A. Quick regressions (no WordPress needed)
 
-**A1.** `php -l elderward.php` → `No syntax errors detected`.
+**A1.** `php -l` on every PHP file (`for f in $(git ls-files '*.php'); do php -l $f; done`) → only `No syntax errors detected`. `tests/regress.sh` → `failed=0`.
 
 **A2.** `$EW help=1` → usage screen listing scandirectory, allfiles, dryrun, scancron, scanlog, scanintegrity, checksumdir, locale, scantimes, help.
 
@@ -54,7 +54,7 @@ Expect: `HIGH,LOG_IOC,...access.uploads.php...`, two `MEDIUM,LOG_IOC` lines (env
 **A5. Blocked checks are ERROR findings, not silent passes.**
 
 ```sh
-php -d disable_functions=shell_exec elderward.php scancron=1; echo "exit=$?"
+php -d disable_functions=shell_exec bin/elderward.php scancron=1; echo "exit=$?"
 $EW scancron=1; echo "exit=$?"
 mkdir -p /tmp/ew/logs && ln -sf /nonexistent/access.log.1.gz /tmp/ew/logs/access.log.1.gz && cp /tmp/ew/access.log /tmp/ew/logs/
 $EW scanlog=/tmp/ew/logs; echo "exit=$?"
@@ -195,6 +195,84 @@ Role tampering: with a role-editor plugin (or by editing `wp_user_roles` directl
 
 - `$EW scandb=1 scandirectory=$COPY` → `Error: could not connect ...`, exit 1; with `format=json` the only stdout line is `{"event":"error",...}`.
 - `$EW scanall=1 scandirectory=$COPY` → the sorted report contains `ERROR,DB_UNAVAILABLE,...wp-config.php,... the database was NOT scanned` and exit is at least 2. With a wrong prefix instead: three `ERROR,DB_QUERY_FAILED` lines (users, options, posts).
+
+---
+
+## F. The plugin (needs a WordPress install with WP-CLI)
+
+Install the repo as `wp-content/plugins/elderward` on a disposable site (a symlink works) and activate it with `WP_DEBUG` and `WP_DEBUG_LOG` on. Nothing plugin-specific should appear in `wp-content/debug.log` at any point below (WordPress' own "could not establish a secure connection to WordPress.org" warnings on an offline box are not ours).
+
+**F1. Activation and WP-CLI parity.** `wp plugin activate elderward` creates `{prefix}elderward_findings`. Then, with the E2 artifacts planted plus a PHP file under `wp-content/uploads/`, a dotfile PHP under `wp-content/`, an mu-plugin, a `.user.ini` with `auto_prepend_file`, and the A3 `ndsw` payload in a `.js` under `wp-content/themes/`:
+
+```sh
+wp elderward scanall --log=/path/to/logs --format=json; echo "exit=$?"
+wp elderward db --format=json | sort > /tmp/ew/db-wpcli.txt
+php bin/elderward.php scandb=1 format=json scandirectory=$(wp eval 'echo ABSPATH;') | sort > /tmp/ew/db-cli.txt
+diff /tmp/ew/db-wpcli.txt /tmp/ew/db-cli.txt && echo IDENTICAL
+```
+
+Expect: exit 3 and finding types `UPLOADS_PHP`, `HIDDEN_PHP`, `MU_PLUGIN`, `PHP_PREPEND`, `MALWARE_FOUND` (dry run), `DB_NEW_ADMIN`/`DB_ADMIN_USER`, `DB_ROLE_CAPS`, `DB_OPTION_IOC`, `DB_POST_IOC`, `DB_SITE_URL`, `LOG_IOC`, plus `INTEGRITY_*` lines (on a networked site the live checks from section B apply; offline every package is `INTEGRITY_NO_REFERENCE`). The `$wpdb` and mysqli database scans must be line-for-line identical. **PASTE the type counts.**
+
+**F2. Cleanup and restore from WP-CLI.** `wp elderward scan --dryrun` → `MALWARE_FOUND` exit 3, file unchanged; `wp elderward scan` → `MALWARE_CLEANED`, payload gone, the `var legit`/`console.log` lines intact. On a networked site, D2's tampered `functions.php`: `wp elderward integrity --restore --dryrun` → `INTEGRITY_RESTORABLE`; `wp elderward integrity --restore --quarantine-dir=/tmp/ew/quarantine` → `INTEGRITY_RESTORED` and a `*.quarantine` copy.
+
+**F3. Admin page.** Elderward in the admin menu, right below Tools, with the Elderward mark as its icon in every admin colour scheme (in the Network Admin on multisite; the old `tools.php?page=elderward` address redirects there): enter the log directory under **Settings > Access logs** and save, then **Start scan**. The progress bar advances through "Quick checks … Malware signatures (dry run)"; reload the page mid-scan and it resumes; when done the page reloads with the findings table sorted HIGH, ERROR, MEDIUM, LOW, INFO, the filter counts matching, and both exports downloading. The JSON export must carry the same (severity, type) multiset as `wp elderward scanall --format=json` for the same log path. `node tests/admin-ui.js` (Playwright; `ELDERWARD_URL`, `ELDERWARD_USER`, `ELDERWARD_PASS`, `ELDERWARD_LOG`) automates this and prints the counts. Confirm that nothing on disk changed (the `.js` payload is still there after an admin scan) and that `wp-content/uploads/elderward/` holds no job folder once the scan is finished.
+
+**F4. Access control.** Logged in as a Subscriber/Editor, `admin.php?page=elderward` → "You are not allowed"; an `admin-ajax.php` POST with `action=elderward_step` and no nonce → HTTP 403; `admin-post.php?action=elderward_export&format=json` logged out → no finding lines in the response.
+
+**F5. Uninstall.** `wp plugin deactivate elderward && wp plugin uninstall elderward --skip-delete` → the findings table, the `elderward_*` options (job, lock, settings, db version, false positives, signatures), the `elderward_*` cron events and `wp-content/uploads/elderward/` are gone. Reactivate → the table is recreated.
+
+**F6. Large tables.** Pad the database (30k posts with ids 13 apart, a block of 600 consecutive posts that all contain `<iframe`, 20k options with ids 17 apart, `autoload='no'`, a planted injection every 1000 rows; the SQL is in the plugin's git history under "range paging"). Then `wp elderward db --format=json | sort` must equal `php bin/elderward.php scandb=1 format=json | sort` (range paging vs streaming), and an admin scan with the step budget forced down (copy `tests/mu-plugin-test-hooks.php` into `wp-content/mu-plugins/` and `wp option update elderward_test_budget 0.05`) must finish with the same `DB_*` rows in the findings table and show "Scanning database: … past id …" messages while it runs. A step that dies (`wp option update elderward_test_die 1`, then start a scan) must leave the job **failed** with "PHP stopped the request: elderward test fatal" on the next status read, with no `elderward_job_lock` option left behind; a step that exits silently (`elderward_test_exit 1`) must fail the job after three attempts with "cut short 3 times". Remove the mu-plugin afterwards. **PASTE the step counts.**
+
+**F7. Background runner and schedule.** With `tests/mu-plugin-test-hooks.php` installed and `wp option update elderward_test_chunk 2` (short cron chunks, so hand-overs happen):
+
+```sh
+wp eval 'Elderward_Job::start(array(), "manual", true); Elderward_Cron::kick();'   # no browser anywhere
+watch -n 3 'wp option get elderward_job --format=json | head -c 200; wp cron event list | grep elderward'
+ELDERWARD_LOG=/path/to/logs node tests/background-ui.js                             # settings, leave-and-return, browser runner
+wp option update elderward_test_no_loopback 1 && node tests/background-ui.js --stale; wp option delete elderward_test_no_loopback
+wp cron event run elderward_scheduled_scan                                           # a scheduled run, started by cron
+wp plugin deactivate elderward && wp cron event list | grep elderward; wp plugin activate elderward
+```
+
+Expect: the WP-CLI-started job reaches `done` on its own, the web server log shows a chain of `POST /wp-cron.php` requests (one per chunk), and no `elderward_run_job` event or `elderward_job_lock` option is left when it ends. `background-ui.js` must report "Settings saved." without a warning, a "Next scan" on the chosen weekday and time in the site's timezone (`wp cron event list` shows `elderward_scheduled_scan` with recurrence `1 week`), a background scan that completes while the tab is on the dashboard with **zero** `elderward_step` requests from the tab, and a browser-runner scan that does send them. With the loopback blocked, `--stale` must see the page kick WP-Cron once, take over after about 150 s ("continues from this tab") and finish the scan. The scheduled run creates a job with `origin=schedule` that completes in the background and shows "Last automatic scan: complete". Deactivation leaves no `elderward_*` cron events and cancels a running job; activation re-creates the recurring event from the saved settings. Nothing in `debug.log`. **PASTE the takeover time and the wp-cron request count.**
+
+**F8. False positives and samples.** After a finished admin scan with the F1 fixtures:
+
+```sh
+node tests/findings-ui.js /tmp/ew/downloads      # mark + undo, sample download, bad nonce -> 403
+7z x -pinfected /tmp/ew/downloads/sample-*.zip    # or PHP ZipArchive::setPassword('infected')
+echo '// x' >> wp-content/.hidden.php             # after marking the HIDDEN_PHP finding, then rescan
+```
+
+Expect: the marked finding leaves "All" and the severity counts and appears under "False positives" with the note and who marked it; undo brings it back. The zip holds `<sha256>.sample` (AES-256, password `infected`), `manifest.json` (relative path, SHA-256 at scan and now, finding) and `README.txt`; the extracted file hashes to the SHA-256 shown on the page. A sample request for `wp-config.php` or a file outside the root is refused. A marked file that changes comes back on the next scan with "Marked as a false positive before, but the file changed since"; a marked database finding stays hidden. The JSON export carries the marked finding with `"false_positive": true`; the text export leaves it out. `node tests/admin-ui.js` still reports "export matches table: yes".
+
+**F9. Signature editor.** Plant `wp-content/plugins/acme/loader.php` containing `acme_loader` and `eval($x)`, then `node tests/signatures-ui.js` and a new scan. Expect: a non-compiling regex is refused with the form kept; the tester matches the fixture by path and a pasted sample, refuses `../../etc/passwd` and `wp-config.php`; disable/enable, JSON import, export and delete work; an anonymous POST is refused. The scan then reports `MEDIUM,SIGNATURE_MATCH,…/acme/loader.php,custom.acme-loader: ACME loader backdoor (custom signature, report only)` in the admin table, `wp elderward scanall` and `wp elderward scan --dryrun`; a real `wp elderward scan` on that folder leaves the file byte-identical. The standalone CLI with `signatures=<exported file>` reports the same line, and `tests/regress.sh` still passes (no output change without `signatures=`).
+
+**F10. AI assistants (WordPress 6.9+).** Install the [MCP Adapter](https://github.com/WordPress/mcp-adapter) (from a git checkout: `COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev` so the Jetpack autoloader is generated) and activate it. `wp mcp-adapter list` shows the default server with 1 prompt. Then, with a user that lacks `manage_options` (not the F1 subscriber, whose role the fixture gave `manage_options`):
+
+```sh
+wp user create ew-author author@example.test --role=author
+node tests/mcp-stdio.js "wp --path=$(wp eval 'echo ABSPATH;')" admin ew-author
+```
+
+Expect "all good": 14 `elderward/*` abilities discovered plus the `elderward-triage` prompt; a scan started with `origin assistant` reaches `done` with **0** `advance-scan` calls while WP-Cron works (get-status must see progress made by other processes); `read-flagged-file` returns the uploads shell with the scan-time hash and refuses a database finding; a candidate signature matches the fixture but not `wp-includes/version.php`, `/.*/` is refused, and testing against `wp-config.php` is refused; mark/unmark round-trips and the saved rule shows `via: assistant` (the admin page says "by an AI assistant acting as …"); a saved access-log path that no longer exists does not stop `start-scan`; the author gets "Permission denied". Then connect a real client (Claude Desktop, Claude Code or Antigravity) with the configuration from the **AI assistants** tab, ask it to "use the Elderward triage prompt", and check that it explains the findings without claiming to have cleaned anything. **PASTE the client used and anything it got wrong.**
+
+**F11. Hardening.** On an **Apache or LiteSpeed** site (`AllowOverride All`), open Elderward > Hardening, keep **Recommended** and **Apply protections**, then **Check now**; or run `node tests/hardening-ui.js` (`ELDERWARD_URL` pointing at that site). Then by hand:
+
+```
+curl -s -o /dev/null -w '%{http_code}\n' https://SITE/wp-content/uploads/<any existing .php>   # 403
+curl -s -o /dev/null -w '%{http_code}\n' https://SITE/wp-includes/version.php                  # 403
+curl -s -o /dev/null -w '%{http_code}\n' https://SITE/wp-config.php                            # 403
+curl -s -o /dev/null -w '%{http_code}\n' https://SITE/.git/config                              # 403 (or 404 with no .git)
+curl -s -o /dev/null -w '%{http_code}\n' https://SITE/wp-includes/js/tinymce/wp-tinymce.php    # 200
+curl -s -o /dev/null -w '%{http_code}\n' https://SITE/.well-known/<an existing file>           # 200
+```
+
+Expect: each Recommended protection "Protected", the site, login, admin, permalinks, REST API (`/wp-json/`) and WP-Cron still working, and the root `.htaccess` keeping the WordPress block and anything else that was there. **Remove Elderward rules** must leave every `.htaccess` byte-identical to before (`md5sum` before and after) and delete the files Elderward created. Rollback: on a host where `.htaccess` may not set `Options` (`AllowOverride FileInfo AuthConfig Limit`), applying Recommended must report that the site stopped responding and leave every file as it was; without "Turn off folder listings" it applies. **Nginx:** `wp elderward harden --server=nginx --preset=strict --print > /etc/nginx/snippets/elderward.conf`, `include snippets/elderward.conf;` in the server block above `location ~ \.php$`, `nginx -t && systemctl reload nginx`, then `wp elderward harden --check --preset=strict` (exit 0) and the same curls. **PASTE the server, the check output and anything that broke.**
+
+**F12. Recovery mode.** Create a key on Elderward > Recovery (copy it: it is shown once). Break the site on purpose: put a must-use plugin with a syntax error in `wp-content/mu-plugins/` (the site and the admin show a critical error). Open `wp-content/plugins/elderward/recovery.php`, sign in, and run the scan; or run `node tests/recovery.js /path/to/wordpress`. Expect: "What broke the site" names the broken file; the scan completes with the same (severity, type) findings as `php bin/elderward.php scanall=1 scandirectory=/path/to/wordpress format=json`; the export matches the table. Then: with a generated key, 12 wrong keys still let the right key in; with a hand-written key, the 11th attempt from the same client within 15 minutes gets 429 even with the right key, while another client (different `X-Forwarded-For` behind a proxy) still signs in; a job file edited to drop `dryrun` or add `restore` still runs report-only (the files stay byte-identical); a temp state folder owned by another user is ignored; a POST without the page token gets 403; an expired key, a revoked key and a hand-written key under 24 characters all give 404, even with a session cookie; a hand-written key of 24+ characters works and the page warns that it never expires; `includes/recovery/app.php` and `wp-content/elderward-recovery-key.php` requested over HTTP show nothing. **PASTE the PHP version, whether the page was served over HTTPS, and the scan duration.**
+
+**F13. Plugin Check.** With the [Plugin Check](https://wordpress.org/plugins/plugin-check/) plugin installed: `wp plugin check elderward --format=table`. Expect zero errors; **PASTE any warnings** (expected ones: the direct filesystem writes in the engine, `shell_exec` in the crontab scanner, the `$wpdb` adapter's unprepared fixed SELECTs, and `recovery.php` as a file that runs without WordPress — each is documented in `readme.txt`).
 
 ---
 
