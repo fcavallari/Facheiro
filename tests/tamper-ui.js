@@ -15,8 +15,9 @@
  *    deleted one (Acknowledge).
  * 4. "The scan settings are correct" clears the last item, and with it the
  *    notice.
- * 5. With a self-check summary reporting a changed file, the "own files were
- *    changed" banner shows on every tab.
+ * 5. With a HIGH self-check finding in the current job, the "own files were
+ *    changed" banner shows on every tab, and goes once it is marked as a
+ *    false positive.
  *
  * Leaves the site's false positives, signatures and settings as it found them.
  */
@@ -101,14 +102,22 @@ function restore(backup) {
 		if (await page.locator('.notice-error.elderward-tamper:has(.elderward-tamper-list)').count() !== 0) { fail('tamper notice still shown after reviewing everything'); }
 
 		// 5. The self-check banner.
-		wpEval('$j = Elderward_Job::current(); if (null === $j) { echo "no job"; } else { $j["summaries"]["self"] = array("MODIFIED" => 1, "MISSING" => 0, "EXTRA" => 0); update_option("elderward_job", $j, false); }');
+		// A HIGH self-check finding in the current job shows the banner;
+		// marked as a false positive, it no longer does.
+		wpEval('global $wpdb; $j = Elderward_Job::current(); if (null === $j) { echo "no job"; return; }'
+			+ '$j["summaries"]["self"] = array("MODIFIED" => 1, "MISSING" => 0, "EXTRA" => 0); update_option("elderward_job", $j, false);'
+			+ '$wpdb->insert(Elderward_Plugin::findings_table(), array("job_id" => $j["id"], "severity" => "HIGH", "type" => "INTEGRITY_MODIFIED", "path" => realpath(ELDERWARD_DIR) . "/includes/ui-test.php", "detail" => "ui test", "fingerprint" => "ui-test", "fp" => 0, "created" => gmdate("Y-m-d H:i:s")));');
 		for (const tab of ['', '&tab=signatures', '&tab=hardening']) {
 			await page.goto(pageUrl + tab);
 			const banner = await page.locator('.notice-error.elderward-tamper:has-text("own files were changed")').count();
 			if (banner !== 1) { fail('self-check banner missing on tab "' + tab + '"'); }
 		}
+		wpEval('global $wpdb; $wpdb->update(Elderward_Plugin::findings_table(), array("fp" => Elderward_False_Positives::MATCHED), array("fingerprint" => "ui-test"));');
+		await page.goto(pageUrl);
+		if (await page.locator('.notice-error.elderward-tamper:has-text("own files were changed")').count() !== 0) { fail('banner still shown after the finding was marked as a false positive'); }
 	} finally {
 		await browser.close();
+		wpEval('global $wpdb; $wpdb->delete(Elderward_Plugin::findings_table(), array("fingerprint" => "ui-test"));');
 		restore(backup);
 	}
 	if (errors.length) { fail(errors.join('; ')); }

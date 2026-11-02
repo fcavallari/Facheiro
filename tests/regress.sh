@@ -172,7 +172,9 @@ JSON
 sig_check() {
     local name="$1" want_rc="$2" want="$3" refuse="$4"; shift 4
     local out rc
-    out="$(cd "$WORK" && php "$NEW" "$@" 2>/dev/null)"; rc=$?
+    # noselfcheck=1: these cases are about the scan under test, not about
+    # whether checksums.json matches this checkout (tests/checksums.sh).
+    out="$(cd "$WORK" && php "$NEW" "$@" noselfcheck=1 2>/dev/null)"; rc=$?
     if [ "$rc" == "$want_rc" ] && printf '%s' "$out" | grep -q -- "$want" && { [ -z "$refuse" ] || ! printf '%s' "$out" | grep -q -- "$refuse"; }; then
         PASS=$((PASS+1)); printf 'PASS  %-39s exit=%s\n' "$name" "$rc"
     else

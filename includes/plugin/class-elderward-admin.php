@@ -509,7 +509,8 @@ final class Elderward_Admin
     private static function render_signatures_tab()
     {
         $defs = Elderward_Signatures::all();
-        $sig_diff = Elderward_Seal::diff('signatures');
+        $seal = Elderward_Seal::status();
+        $sig_diff = $seal['diff']['signatures'];
         $sig_tampered = array_flip(array_merge($sig_diff['added'], $sig_diff['changed']));
         $edit_id = isset($_GET['edit']) ? sanitize_text_field(wp_unslash($_GET['edit'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- selects which row to show in the form.
         $form = array('id' => '', 'target' => 'file', 'severity' => 'HIGH', 'description' => '', 'enabled' => true, 'conditions' => '', 'original_id' => '');
@@ -908,15 +909,40 @@ final class Elderward_Admin
     }
 
     /**
+     * HIGH/MEDIUM self-check findings of the current job about Elderward's
+     * own files (changed code, added PHP) that nobody marked as a false
+     * positive.
+     */
+    private static function own_files_changed($job)
+    {
+        global $wpdb;
+        if (null === $job || empty($job['summaries']['self'])) {
+            return 0;
+        }
+        $dir = realpath(ELDERWARD_DIR);
+        if (false === $dir) {
+            return 0;
+        }
+        $table = Elderward_Plugin::findings_table();
+        // phpcs:disable WordPress.DB -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
+        $count = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM `{$table}` WHERE job_id = %s AND type IN ('INTEGRITY_MODIFIED', 'INTEGRITY_EXTRA') AND severity IN ('HIGH', 'MEDIUM') AND fp <> %d AND path LIKE %s",
+            $job['id'],
+            Elderward_False_Positives::MATCHED,
+            $wpdb->esc_like(untrailingslashit(str_replace('\\', '/', $dir)) . '/') . '%'
+        ));
+        // phpcs:enable WordPress.DB
+        return $count;
+    }
+
+    /**
      * Tamper notices shown at the top of every Elderward tab: Elderward's
      * own files changed (from the last scan's self-check), and saved
      * settings changed outside Elderward (checked now).
      */
     private static function render_tamper_notices($job)
     {
-        $self = (null !== $job && isset($job['summaries']['self']) && is_array($job['summaries']['self'])) ? $job['summaries']['self'] : array();
-        $changed_files = (isset($self['MODIFIED']) ? (int) $self['MODIFIED'] : 0) + (isset($self['EXTRA']) ? (int) $self['EXTRA'] : 0);
-        if ($changed_files > 0) {
+        if (self::own_files_changed($job) > 0) {
             ?>
             <div class="notice notice-error elderward-tamper"><p><strong><?php esc_html_e('Elderward\'s own files were changed, so these results may not be trustworthy.', 'elderward'); ?></strong>
                 <?php esc_html_e('Reinstall Elderward from wordpress.org, or run the standalone command-line tool from a fresh download, then scan again. The Elderward self-check findings list the files.', 'elderward'); ?></p></div>
@@ -1568,7 +1594,8 @@ wp elderward integrity --restore --quarantine-dir=/path/outside/webroot</pre>
      */
     private static function render_fp_rules(array $rules, $datetime_format)
     {
-        $diff = Elderward_Seal::diff('false_positives', $rules);
+        $seal = Elderward_Seal::status();
+        $diff = $seal['diff']['false_positives'];
         $tampered = array_flip(array_merge($diff['added'], $diff['changed']));
         ?>
         <div class="elderward-card elderward-fp-rules" id="elderward-fp-rules">

@@ -7,8 +7,9 @@
 //   php build/make-checksums.php           write checksums.json
 //   php build/make-checksums.php --check   exit 1 if it is out of date
 //
-// Run it after changing any shipped file. The file list comes from git
-// (tracked and new, not ignored files), minus what .distignore leaves out of a release.
+// Run it after changing any tracked file. The file list comes from git
+// (tracked and new, not ignored files): what .distignore leaves out of a
+// release goes under "dev", checked only in a git checkout.
 //////////////
 
 if (PHP_SAPI !== 'cli') {
@@ -50,8 +51,8 @@ if ($check) {
         fwrite(STDERR, SelfCheckScanner::MANIFEST . " is out of date: run php build/make-checksums.php\n");
         exit(1);
     }
-    echo SelfCheckScanner::MANIFEST . ' is up to date (' . count($manifest['files']) . " files)\n";
+    echo SelfCheckScanner::MANIFEST . ' is up to date (' . count($manifest['files']) . ' release files, ' . count($manifest['dev']) . " development files)\n";
     exit(0);
 }
 file_put_contents($target, $json);
-echo 'Wrote ' . SelfCheckScanner::MANIFEST . ' (' . count($manifest['files']) . " files)\n";
+echo 'Wrote ' . SelfCheckScanner::MANIFEST . ' (' . count($manifest['files']) . ' release files, ' . count($manifest['dev']) . " development files)\n";
