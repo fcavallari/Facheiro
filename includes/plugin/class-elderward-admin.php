@@ -508,6 +508,7 @@ final class Elderward_Admin
         $builtin = Elderward_Signatures::builtin_listing();
         ?>
         <p class="elderward-intro"><?php esc_html_e('A signature describes something to look for. Add your own for a threat specific to this site; they run in every scan from the next one on. Custom signatures only report matches (as SIGNATURE_MATCH for files): nothing is ever cleaned or deleted because of one.', 'elderward'); ?></p>
+        <p class="elderward-intro"><a href="https://github.com/fioa8c/elderward/blob/main/docs/writing-signatures.md" target="_blank" rel="noopener noreferrer"><?php esc_html_e('How to write a good signature', 'elderward'); ?><span class="screen-reader-text"> <?php esc_html_e('(opens in a new tab)', 'elderward'); ?></span></a></p>
 
         <div class="elderward-card">
             <div class="elderward-card-head">

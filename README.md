@@ -277,7 +277,7 @@ File cleanup signatures live in `Signatures::cleanup()` in `includes/engine/sign
 
 ### Custom signatures
 
-Site-specific signatures do not need code changes. Write them in the plugin's Signatures tab or in a JSON file, the same format the tab exports:
+Site-specific signatures do not need code changes. Write them in the plugin's Signatures tab or in a JSON file, the same format the tab exports. **[Writing malware signatures](docs/writing-signatures.md)** is the full guide: what each target sees, turning a sample into a rule, keeping it fast and free of false positives, testing, sharing, and worked examples ([`docs/examples/signatures.json`](docs/examples/signatures.json)).
 
 ```json
 {"elderward_signatures": 1, "signatures": [
@@ -287,7 +287,7 @@ Site-specific signatures do not need code changes. Write them in the plugin's Si
 ]}
 ```
 
-`target` is `file`, `db_option` or `db_post`. File signatures list 1 to 10 conditions that must all match, the first being the prefilter. Database signatures take one `pattern`. A custom signature always reports, as `SIGNATURE_MATCH` for files with its own severity, and never cleans, not even in a real `wp elderward scan` run. Built-in signatures are checked first. A regex that does not compile, or that matches an empty string, is refused. The standalone CLI takes the same file:
+`target` is `file`, `db_option` or `db_post`. File signatures list 1 to 10 conditions that must all match, the first being the prefilter. Database signatures take one `pattern`; post signatures see the content of every live post (with a custom post signature installed, the scan reads all posts instead of only those with code-like markers). A custom signature always reports, as `SIGNATURE_MATCH` for files with its own severity, and never cleans, not even in a real `wp elderward scan` run. Built-in signatures are checked first. A regex that does not compile, or that matches an empty string, is refused. The standalone CLI takes the same file:
 
 ```
 php bin/elderward.php scanall=1 scandirectory=/var/www/html signatures=/path/signatures.json

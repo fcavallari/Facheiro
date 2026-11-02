@@ -77,7 +77,7 @@ Click **Download sample** next to the finding. You get a zip with the file, name
 
 = Can a custom signature break my site? =
 
-No. Custom signatures only report matches, as `SIGNATURE_MATCH` findings for files. They never clean or delete anything, even in a command-line cleanup run. A regular expression that does not compile, or that would match an empty file, is refused when you save it.
+No. Custom signatures only report matches, as `SIGNATURE_MATCH` findings for files. They never clean or delete anything, even in a command-line cleanup run. A regular expression that does not compile, or that would match an empty file, is refused when you save it. The guide [Writing malware signatures](https://github.com/fioa8c/elderward/blob/main/docs/writing-signatures.md) explains how to write rules that catch the threat without flagging clean code, and how to test them.
 
 = Which AI assistants work, and what can they do? =
 
@@ -152,4 +152,6 @@ AI assistants connect to your site through the separate MCP Adapter plugin, usin
 * Hardening for Apache/LiteSpeed (`.htaccess`, applied with an automatic health check and rollback) and Nginx (downloadable configuration), with Recommended and Strict templates and a live check.
 * Recovery mode: a key-protected page that shows what broke the site and runs the full scan without loading WordPress.
 * Brazilian Portuguese translation of the admin pages and the recovery page.
+* A guide to writing custom signatures (docs/writing-signatures.md), with tested examples, linked from the Signatures tab.
+* Custom post-content signatures now see every live post, not only posts containing code-like markers.
 * WordPress abilities for AI assistants over MCP (WordPress 6.9+ with the MCP Adapter plugin), a triage prompt, and a copyable brief for chatbots without MCP.
