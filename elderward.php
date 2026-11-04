@@ -34,6 +34,7 @@ require_once ELDERWARD_DIR . 'includes/engine/load.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-plugin.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-wp-http.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-wp-db.php';
+require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-seal.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-settings.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-cron.php';
 require_once ELDERWARD_DIR . 'includes/plugin/class-elderward-job.php';

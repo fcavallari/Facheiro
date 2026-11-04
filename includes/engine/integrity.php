@@ -42,8 +42,14 @@ class IntegrityScanner extends Scanner
         $layout = Layout::of($this->ctx);
         Layout::report_notes($this->ctx, false);
         $units = array(array('core' => 1));
+        $own = $this->ctx->has('noselfcheck') ? array() : SelfCheckScanner::copies($this->ctx);
         foreach ($layout->plugin_dirs as $plugins) {
             foreach ((array) @glob($plugins . '/*', GLOB_ONLYDIR) as $plugin_dir) {
+                // Elderward's own copy is the self-check's job.
+                $real = @realpath($plugin_dir);
+                if (false !== $real && in_array(rtrim(str_replace('\\', '/', $real), '/'), $own, true)) {
+                    continue;
+                }
                 $units[] = array('plugin' => $plugin_dir);
             }
         }
@@ -255,7 +261,7 @@ class IntegrityScanner extends Scanner
         }
     }
 
-    private function fetch_reference_checksums($url, $offline_name)
+    protected function fetch_reference_checksums($url, $offline_name)
     {
         ///////////////
         // checksumdir=/path switches to pre-downloaded manifests for hosts with
@@ -359,10 +365,11 @@ class IntegrityScanner extends Scanner
         return (false);
     }
 
-    private function verify_against_manifest($base_dir, $manifest, $label, $present_files, array &$totals)
+    protected function verify_against_manifest($base_dir, $manifest, $label, $present_files, array &$totals, $algo = 'md5', $missing_severity = 'LOW')
     {
         ///////////////
-        // $manifest maps package-relative paths to expected md5(s). Report
+        // $manifest maps package-relative paths to expected hash(es) ($algo:
+        // md5 for the wordpress.org APIs, sha256 for Elderward's own list). Report
         // mismatches (MODIFIED), files gone from disk (MISSING), and files on
         // disk that the official package does not contain (EXTRA). Extra or
         // modified PHP is the classic dropped/backdoored webshell: HIGH.
@@ -383,7 +390,7 @@ class IntegrityScanner extends Scanner
             }
             $full_path = $base_dir . '/' . $relative_path;
             if (!is_file($full_path)) {
-                $this->report('LOW', 'INTEGRITY_MISSING', $full_path, $label . ': file from the official package is missing');
+                $this->report($missing_severity, 'INTEGRITY_MISSING', $full_path, $label . ': file from the official package is missing');
                 $totals['MISSING']++;
                 $restorable[] = array('rel' => $relative_path, 'expected' => $expected);
                 continue;
@@ -392,7 +399,7 @@ class IntegrityScanner extends Scanner
             // A file we cannot read is UNVERIFIED, not modified: saying
             // "checksum does not match" would be false, and restoring would
             // overwrite content the tool never saw.
-            $actual_md5 = @md5_file($full_path);
+            $actual_md5 = @hash_file($algo, $full_path);
             if (false === $actual_md5) {
                 $this->report('ERROR', 'INTEGRITY_UNREADABLE', $full_path, $label . ': cannot read the file to verify its checksum');
                 $totals['UNREADABLE']++;

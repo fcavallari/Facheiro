@@ -46,6 +46,7 @@ final class Elderward_Plugin
     public static function stage_label($stage)
     {
         $labels = array(
+            'self'       => __('Elderward self-check', 'elderward'),
             'quick'      => __('Quick checks', 'elderward'),
             'integrity'  => __('Integrity', 'elderward'),
             'timestamps' => __('Timestamps', 'elderward'),
@@ -79,6 +80,49 @@ final class Elderward_Plugin
             return false;
         }
         if (is_multisite() && !is_super_admin()) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * The folder that holds the plugins folder (wp-content on almost every
+     * site): where the recovery key and the tamper seal live, outside the
+     * database and outside the plugin folder an update replaces.
+     */
+    public static function content_dir()
+    {
+        return dirname(untrailingslashit(WP_PLUGIN_DIR));
+    }
+
+    /**
+     * Read a file in the "<?php exit; ?>" + JSON format (recovery key, tamper
+     * seal): requesting it over the web shows nothing. Null when the file is
+     * missing or its JSON is not an object.
+     */
+    public static function read_guarded_json($file)
+    {
+        if (!is_file($file)) {
+            return null;
+        }
+        $raw = (string) @file_get_contents($file); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- local file; unreadable means null.
+        $data = json_decode(trim(preg_replace('/^\s*<\?php.*?\?>/s', '', $raw, 1)), true);
+        return is_array($data) ? $data : null;
+    }
+
+    /**
+     * Write a guarded JSON file atomically (temp file + rename), so a reader
+     * never sees half of it.
+     */
+    public static function write_guarded_json($file, array $data)
+    {
+        $content = '<?php exit; ?>' . "\n" . wp_json_encode($data) . "\n";
+        $tmp = $file . '.' . wp_generate_password(8, false, false) . '.tmp';
+        if (false === @file_put_contents($tmp, $content)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- must be a plain file readable without WordPress or the database; failure is returned.
+            return false;
+        }
+        if (!@rename($tmp, $file)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename, WordPress.PHP.NoSilencedErrors.Discouraged -- atomic replace; failure is returned.
+            wp_delete_file($tmp);
             return false;
         }
         return true;
@@ -161,7 +205,7 @@ final class Elderward_Plugin
                 $options['plugindir'] = untrailingslashit(WP_PLUGIN_DIR);
             }
         }
-        return new Elderward\Engine\Context(
+        $ctx = new Elderward\Engine\Context(
             $options,
             $reporter,
             new Elderward_WP_Http(),
@@ -169,5 +213,8 @@ final class Elderward_Plugin
             ELDERWARD_DIR,
             null === $work_dir ? get_temp_dir() : $work_dir
         );
+        // Run once per scan by the engine's self-check stage.
+        $ctx->preflight[] = array('Elderward_Seal', 'report');
+        return $ctx;
     }
 }

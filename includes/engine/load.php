@@ -27,6 +27,7 @@ if (!defined('ELDERWARD_ENGINE_LOADED')) {
     require_once __DIR__ . '/crontab.php';
     require_once __DIR__ . '/logs.php';
     require_once __DIR__ . '/integrity.php';
+    require_once __DIR__ . '/selfcheck.php';
     require_once __DIR__ . '/timestamps.php';
     require_once __DIR__ . '/quick.php';
     require_once __DIR__ . '/database.php';

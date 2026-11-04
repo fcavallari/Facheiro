@@ -27,7 +27,7 @@ final class Elderward_Recovery_Key
      */
     public static function dir()
     {
-        return dirname(untrailingslashit(WP_PLUGIN_DIR));
+        return Elderward_Plugin::content_dir();
     }
 
     public static function path()
@@ -61,10 +61,8 @@ final class Elderward_Recovery_Key
         if (!is_file($file) || !is_readable($file)) {
             return null;
         }
-        $raw = (string) file_get_contents($file); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local file.
-        $json = trim(preg_replace('/^\s*<\?php.*?\?>/s', '', $raw, 1));
-        $data = json_decode($json, true);
-        if (!is_array($data)) {
+        $data = Elderward_Plugin::read_guarded_json($file);
+        if (null === $data) {
             return array('manual' => true, 'valid' => false, 'created' => (int) filemtime($file), 'expires' => 0, 'by' => '');
         }
         $manual = isset($data['key']);
@@ -100,12 +98,11 @@ final class Elderward_Recovery_Key
             'expires' => 0 === $days ? 0 : time() + $days * DAY_IN_SECONDS,
             'by'      => sanitize_user((string) $by),
         );
-        $content = self::GUARD . "\n" . wp_json_encode($data) . "\n";
         if (!wp_is_writable(self::dir()) && !(is_file(self::path()) && wp_is_writable(self::path()))) {
             /* translators: %s: folder path */
             return new WP_Error('elderward_recovery_write', sprintf(__('%s is not writable by PHP, so the key file could not be saved.', 'elderward'), self::dir()));
         }
-        if (false === file_put_contents(self::path(), $content, LOCK_EX)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- must be a plain file recovery.php can read without WordPress.
+        if (!Elderward_Plugin::write_guarded_json(self::path(), $data)) {
             return new WP_Error('elderward_recovery_write', __('The key file could not be saved.', 'elderward'));
         }
         return $key;
