@@ -569,7 +569,7 @@ final class App
      */
     private static function scan_options(array $stored)
     {
-        $options = array('scanall' => 1, 'scandirectory' => self::$root);
+        $options = array('scanall' => 1, 'scandirectory' => self::$root, 'plugindir' => dirname(self::$plugin_dir));
         if (isset($stored['scanlog'])) {
             $real = realpath((string) $stored['scanlog']);
             if (false !== $real && is_readable($real)) {
@@ -612,7 +612,7 @@ final class App
             return array('ok' => false, 'message' => self::t('No writable folder for the scan state (neither the system temp folder nor wp-content).'));
         }
         self::load_engine();
-        $options = array('scanall' => 1, 'scandirectory' => self::$root);
+        $options = array('scanall' => 1, 'scandirectory' => self::$root, 'plugindir' => dirname(self::$plugin_dir));
         $log = isset($_POST['log']) ? trim((string) $_POST['log']) : '';
         if ('' !== $log) {
             $real = realpath($log);

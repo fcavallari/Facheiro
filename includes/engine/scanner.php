@@ -40,9 +40,9 @@ abstract class Scanner
     {
     }
 
-    protected function report($severity, $type, $path, $detail, $context = array())
+    protected function report($severity, $type, $path, $detail, $context = array(), $meta = array())
     {
-        $this->ctx->reporter->finding($severity, $type, $path, $detail, $context);
+        $this->ctx->reporter->finding($severity, $type, $path, $detail, $context, $meta);
     }
 
     protected function progress($text)

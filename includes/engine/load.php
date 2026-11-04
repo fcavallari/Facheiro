@@ -21,6 +21,7 @@ if (!defined('ELDERWARD_ENGINE_LOADED')) {
     require_once __DIR__ . '/db.php';
     require_once __DIR__ . '/signatures.php';
     require_once __DIR__ . '/files.php';
+    require_once __DIR__ . '/layout.php';
     require_once __DIR__ . '/scanner.php';
     require_once __DIR__ . '/cleanup.php';
     require_once __DIR__ . '/crontab.php';

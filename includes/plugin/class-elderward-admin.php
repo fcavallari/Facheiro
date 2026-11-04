@@ -1385,8 +1385,10 @@ final class Elderward_Admin
                                         <p class="elderward-hash"><span>SHA-256</span> <code><?php echo esc_html($sha256); ?></code>
                                             <a href="<?php echo esc_url('https://www.virustotal.com/gui/file/' . $sha256); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Look up on VirusTotal', 'elderward'); ?><span class="screen-reader-text"> <?php esc_html_e('(opens in a new tab)', 'elderward'); ?></span></a></p>
                                     <?php endif; ?>
-                                    <?php if (Elderward_False_Positives::CHANGED === $fp) : ?>
+                                    <?php if (Elderward_False_Positives::CHANGED === $fp && Elderward_False_Positives::is_file_type($finding->type)) : ?>
                                         <p class="elderward-note"><?php esc_html_e('Marked as a false positive before, but the file has changed since it was reviewed, so it is reported again.', 'elderward'); ?></p>
+                                    <?php elseif (Elderward_False_Positives::CHANGED === $fp) : ?>
+                                        <p class="elderward-note"><?php esc_html_e('Marked as a false positive before, but the stored value has changed since it was reviewed, so it is reported again.', 'elderward'); ?></p>
                                     <?php elseif (Elderward_False_Positives::MATCHED === $fp && isset($fp_rules[$fingerprint])) : ?>
                                         <p class="elderward-fp-why"><?php echo esc_html(self::rule_summary($fp_rules[$fingerprint], $datetime_format)); ?></p>
                                     <?php endif; ?>

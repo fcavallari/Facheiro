@@ -7,8 +7,9 @@ namespace Elderward\Engine;
 // inventory, and hidden dotfile PHP.
 //
 // Units: the files directly in the WordPress root, then each top-level
-// directory (wp-content split into its own subdirectories, since uploads
-// alone can be the bulk of a site).
+// directory (the content folder split into its own subdirectories, since
+// uploads alone can be the bulk of a site), then any content or plugin
+// folder that lives outside the root.
 //////////////
 
 class QuickScanner extends Scanner
@@ -26,18 +27,34 @@ class QuickScanner extends Scanner
     public function plan(array &$state)
     {
         $root = require_wordpress_root($this->ctx->root());
+        $layout = Layout::of($this->ctx);
+        Layout::report_notes($this->ctx, true);
         $units = array(array('files' => $root));
         foreach (self::subdirs($root) as $dir) {
-            if ('wp-content' === basename($dir)) {
-                $units[] = array('files' => $dir);
-                foreach (self::subdirs($dir) as $sub) {
-                    $units[] = array('dir' => $sub);
-                }
+            if ($layout->is_content_dir($dir)) {
+                self::content_units($dir, $units);
                 continue;
             }
             $units[] = array('dir' => $dir);
         }
+        // A content or plugin folder outside the root (split-core layouts)
+        // is never reached from the root walk.
+        foreach ($layout->outside_root as $dir) {
+            if ($layout->is_content_dir($dir)) {
+                self::content_units($dir, $units);
+            } else {
+                $units[] = array('dir' => $dir);
+            }
+        }
         return ($units);
+    }
+
+    private static function content_units($dir, array &$units)
+    {
+        $units[] = array('files' => $dir);
+        foreach (self::subdirs($dir) as $sub) {
+            $units[] = array('dir' => $sub);
+        }
     }
 
     private static function subdirs($dir)
@@ -57,6 +74,7 @@ class QuickScanner extends Scanner
     public function run(array $unit, array &$state)
     {
         $root = $this->ctx->root();
+        $layout = Layout::of($this->ctx);
         $counts = &$state['counts'];
         if (isset($unit['files'])) {
             // Only the files directly inside this directory.
@@ -65,7 +83,7 @@ class QuickScanner extends Scanner
                 if ('.' === $entry || '..' === $entry || !is_file($path)) {
                     continue;
                 }
-                $this->check_file($root, $path, $entry, $counts);
+                $this->check_file($root, $layout, $path, $entry, $counts);
             }
             return (null);
         }
@@ -74,7 +92,7 @@ class QuickScanner extends Scanner
             if (!$file->isFile()) {
                 continue;
             }
-            $this->check_file($root, $file->getPathname(), $file->getFilename(), $counts);
+            $this->check_file($root, $layout, $file->getPathname(), $file->getFilename(), $counts);
         }
         return (null);
     }
@@ -87,24 +105,24 @@ class QuickScanner extends Scanner
             . ' prepend/append directives, ' . $counts['MU_PLUGIN'] . ' mu-plugins, ' . $counts['HIDDEN_PHP'] . " hidden php files\n");
     }
 
-    private function check_file($root, $path, $basename, array &$counts)
+    private function check_file($root, Layout $layout, $path, $basename, array &$counts)
     {
         // Uploads hold media, never code: PHP there is the classic dropped
         // webshell (plugins do scatter "Silence is golden" index.php files).
-        if (false !== strpos($path, '/wp-content/uploads/') && is_php_file($basename) && 'index.php' !== $basename) {
+        if ($layout->in_content_subdir($path, 'uploads') && is_php_file($basename) && 'index.php' !== $basename) {
             $this->report('HIGH', 'UPLOADS_PHP', $path, 'executable PHP inside wp-content/uploads - usually a webshell dropped through an upload form');
             $counts['UPLOADS_PHP']++;
             return;
         }
 
         if (in_array($basename, array('.user.ini', 'php.ini', '.htaccess'), true)) {
-            $this->check_prepend_directives($root, $path, $counts);
+            $this->check_prepend_directives($layout, $path, $counts);
             return;
         }
 
         // mu-plugins load on every request with no activation step: a
         // favorite persistence spot. Inventory, not accusation.
-        if (false !== strpos($path, '/wp-content/mu-plugins/') && is_php_file($basename)) {
+        if ($layout->in_content_subdir($path, 'mu-plugins') && is_php_file($basename)) {
             $this->report('INFO', 'MU_PLUGIN', $path, 'must-use plugin: loads on every request with no activation step - confirm it is intentional');
             $counts['MU_PLUGIN']++;
             return;
@@ -116,7 +134,7 @@ class QuickScanner extends Scanner
         }
     }
 
-    private function check_prepend_directives($root, $config_path, array &$counts)
+    private function check_prepend_directives(Layout $layout, $config_path, array &$counts)
     {
         ///////////////
         // auto_prepend_file / auto_append_file make PHP execute a file on EVERY
@@ -142,7 +160,7 @@ class QuickScanner extends Scanner
                 continue;
             }
 
-            if ('wordfence-waf.php' === basename($target) && is_dir($root . '/wp-content/plugins/wordfence')) {
+            if ('wordfence-waf.php' === basename($target) && $layout->has_plugin('wordfence')) {
                 $this->report('INFO', 'PHP_PREPEND', $config_path, 'Wordfence WAF bootstrap prepend: ' . $directive_line . ' - verify the target only loads wordfence/waf/bootstrap.php');
             } else {
                 $this->report('MEDIUM', 'PHP_PREPEND', $config_path, $target . ' is executed on EVERY php request via: ' . $directive_line . ' - verify this file');

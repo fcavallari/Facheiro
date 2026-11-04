@@ -33,11 +33,20 @@ class TimestampScanner extends Scanner
 
     public function plan(array &$state)
     {
-        $root = require_wordpress_root($this->ctx->root());
+        require_wordpress_root($this->ctx->root());
         $units = array(array('core' => 1));
-        foreach (array('plugins', 'themes') as $package_type) {
-            foreach ((array) @glob($root . '/wp-content/' . $package_type . '/*', GLOB_ONLYDIR) as $package_dir) {
-                $units[] = array('package' => $package_dir, 'label' => rtrim($package_type, 's') . ' ' . basename($package_dir));
+        $layout = Layout::of($this->ctx);
+        Layout::report_notes($this->ctx, false);
+        $package_roots = array();
+        foreach ($layout->plugin_dirs as $dir) {
+            $package_roots[] = array($dir, 'plugin');
+        }
+        foreach ($layout->content_dirs as $dir) {
+            $package_roots[] = array($dir . '/themes', 'theme');
+        }
+        foreach ($package_roots as $package_root) {
+            foreach ((array) @glob($package_root[0] . '/*', GLOB_ONLYDIR) as $package_dir) {
+                $units[] = array('package' => $package_dir, 'label' => $package_root[1] . ' ' . basename($package_dir));
             }
         }
         return ($units);

@@ -81,6 +81,10 @@ if (isset($options['help'])) {
     echo "  checksumdir=/path     Use pre-downloaded manifests and packages instead of the network\n";
     echo "                        (core-{version}.json, plugin-{slug}-{version}.json,\n";
     echo "                        theme-{slug}-{version}.zip; *.zip of core/plugins for restore)\n";
+    echo "  contentdir=/path      Content folder (WP_CONTENT_DIR) when it is not\n";
+    echo "                        scandirectory/wp-content and wp-config.php does not say\n";
+    echo "                        where it is in a form Elderward can read\n";
+    echo "  plugindir=/path       Plugin folder (WP_PLUGIN_DIR), likewise\n";
     echo "  locale=xx_XX          Core locale for the checksum lookup (default: en_US)\n";
     echo "  restore=1             With scanintegrity: restore MODIFIED and MISSING files from\n";
     echo "                        the official package zips (byte-verified against the checksum\n";

@@ -62,11 +62,15 @@ class SelfCheckScanner extends IntegrityScanner
         if (null !== $ctx->plugin_dir && '' !== $ctx->plugin_dir && is_file($ctx->plugin_dir . '/elderward.php')) {
             $copies[] = $ctx->plugin_dir;
         }
-        $installed = @realpath($ctx->root() . '/wp-content/plugins/' . self::SLUG);
-        if (false !== $installed && is_file($installed . '/elderward.php')) {
-            $installed = rtrim(str_replace('\\', '/', $installed), '/');
-            if (!in_array($installed, $copies, true)) {
-                $copies[] = $installed;
+        // The copy installed in the scanned site, wherever its plugin folder is.
+        $plugin_dirs = is_wordpress_root($ctx->root()) ? Layout::of($ctx)->plugin_dirs : array($ctx->root() . '/wp-content/plugins');
+        foreach ($plugin_dirs as $plugins) {
+            $installed = @realpath($plugins . '/' . self::SLUG);
+            if (false !== $installed && is_file($installed . '/elderward.php')) {
+                $installed = rtrim(str_replace('\\', '/', $installed), '/');
+                if (!in_array($installed, $copies, true)) {
+                    $copies[] = $installed;
+                }
             }
         }
         return ($copies);

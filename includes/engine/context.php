@@ -32,6 +32,8 @@ class Context
     // microtime(true) after which scanners should yield between units;
     // null means run to completion (CLI).
     public $deadline = null;
+    // The resolved content-folder Layout (layout.php), built on first use.
+    public $layout = null;
     // Checks the entry layer adds, run once per scan by the self-check
     // stage: callables taking the Reporter (the plugin's sealed settings).
     public $preflight = array();
@@ -63,6 +65,8 @@ class Context
     public function with(array $overrides, array $remove = array())
     {
         $copy = clone $this;
+        // The options may move the root or the content folder.
+        $copy->layout = null;
         foreach ($overrides as $key => $value) {
             $copy->options[$key] = $value;
         }

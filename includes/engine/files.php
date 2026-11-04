@@ -40,6 +40,25 @@ function is_scannable_file(Context $ctx, $file)
         || in_array(strtolower($file->getExtension()), Signatures::extensions(), true));
 }
 
+function is_wordpress_root($dir)
+{
+    return (is_file(rtrim($dir, '/') . '/wp-includes/version.php'));
+}
+
+///////////////
+// The folders a whole-tree walk covers: the scan directory, plus, when it
+// is the WordPress root, any content or plugin folder that lives outside
+// it (split-core layouts), which a walk of the root alone never reaches.
+//////////////
+function scan_roots(Context $ctx, $scan_dir)
+{
+    $dirs = array($scan_dir);
+    if (rtrim($scan_dir, '/') === $ctx->root() && is_wordpress_root($scan_dir)) {
+        $dirs = array_merge($dirs, Layout::of($ctx)->outside_root);
+    }
+    return ($dirs);
+}
+
 function require_wordpress_root($root)
 {
     $root = rtrim($root, '/');

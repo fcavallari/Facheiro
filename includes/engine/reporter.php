@@ -26,9 +26,16 @@ namespace Elderward\Engine;
 // 1 usage/fatal error, 2 LOW/MEDIUM/ERROR findings, 3 HIGH findings.
 //////////////
 
+///////////////
+// $meta carries facts for the entry layer that are not part of the output
+// contract (text and JSON ignore it): 'value_sha256' is the SHA-256 of the
+// database value a DB finding is about, as scanned, so the plugin can bind
+// a false-positive mark to that content the way file marks are bound to
+// the file's hash.
+//////////////
 interface Reporter
 {
-    public function finding($severity, $type, $path, $detail, $context = array());
+    public function finding($severity, $type, $path, $detail, $context = array(), $meta = array());
     public function summary($scan, $data, $text);
     public function progress($text);
     public function fatal($message);
@@ -87,7 +94,7 @@ class TextReporter extends BaseReporter
         $this->buffer = $enable ? array() : null;
     }
 
-    public function finding($severity, $type, $path, $detail, $context = array())
+    public function finding($severity, $type, $path, $detail, $context = array(), $meta = array())
     {
         $this->track($severity);
         $finding = array('severity' => $severity, 'type' => $type, 'path' => $path, 'detail' => $detail, 'context' => $context);
@@ -138,7 +145,7 @@ class TextReporter extends BaseReporter
 
 class JsonReporter extends BaseReporter
 {
-    public function finding($severity, $type, $path, $detail, $context = array())
+    public function finding($severity, $type, $path, $detail, $context = array(), $meta = array())
     {
         $this->track($severity);
         $event = array('event' => 'finding', 'severity' => $severity, 'type' => $type, 'path' => $path, 'detail' => $detail);

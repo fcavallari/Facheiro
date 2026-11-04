@@ -22,7 +22,7 @@ class CollectReporter extends BaseReporter
         $this->counts = $counts;
     }
 
-    public function finding($severity, $type, $path, $detail, $context = array())
+    public function finding($severity, $type, $path, $detail, $context = array(), $meta = array())
     {
         $this->track($severity);
         $this->counts[$severity] = isset($this->counts[$severity]) ? $this->counts[$severity] + 1 : 1;

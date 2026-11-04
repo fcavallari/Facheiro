@@ -326,45 +326,48 @@ class CorrelateScanner extends Scanner
             throw new Fatal('cannot open correlation directory ' . $this->root);
         }
 
-        $files = recursive_file_iterator($this->root);
-
+        if (rtrim($this->root, '/') === $this->ctx->root() && is_wordpress_root($this->root)) {
+            Layout::report_notes($this->ctx, false);
+        }
         $correlated = 0;
-        foreach ($files as $file) {
-            if (!is_scannable_file($this->ctx, $file)) {
-                continue;
-            }
-
-            // filemtime, not SplFileInfo::getMTime - the latter throws (even
-            // through @) when the file vanishes between listing and stat.
-            $mtime = @filemtime($file->getPathname());
-            if (false === $mtime) {
-                continue;
-            }
-
-            // Walk the minute buckets covering [mtime - window, mtime + window].
-            $in_window = array('count' => 0, 'names' => array(), 'example' => '');
-            $start = ($mtime - $window) - (($mtime - $window) % 60);
-            for ($minute = $start; $minute <= ($mtime + $window); $minute += 60) {
-                if (!isset($flagged_minutes[$minute])) {
+        foreach (scan_roots($this->ctx, $this->root) as $walk_root) {
+            foreach (recursive_file_iterator($walk_root) as $file) {
+                if (!is_scannable_file($this->ctx, $file)) {
                     continue;
                 }
-                $in_window['count'] += $flagged_minutes[$minute]['count'];
-                $in_window['names'] += $flagged_minutes[$minute]['names'];
-                if ('' === $in_window['example']) {
-                    $in_window['example'] = $flagged_minutes[$minute]['example'];
-                }
-            }
-            if (0 === $in_window['count']) {
-                continue;
-            }
 
-            $path = $file->getPathname();
-            $severity = is_php_file($path) ? 'HIGH' : 'MEDIUM';
-            $this->report($severity, 'LOG_FILE_CORRELATION', $path,
-                'modified ' . date('Y-m-d H:i:s', $mtime) . ' within ' . $window . 's of flagged traffic: '
-                . implode(' ', array_keys($in_window['names'])) . ' (' . $in_window['count'] . ' flagged requests in window)',
-                array('e.g. ' . $in_window['example']));
-            $correlated++;
+                // filemtime, not SplFileInfo::getMTime - the latter throws (even
+                // through @) when the file vanishes between listing and stat.
+                $mtime = @filemtime($file->getPathname());
+                if (false === $mtime) {
+                    continue;
+                }
+
+                // Walk the minute buckets covering [mtime - window, mtime + window].
+                $in_window = array('count' => 0, 'names' => array(), 'example' => '');
+                $start = ($mtime - $window) - (($mtime - $window) % 60);
+                for ($minute = $start; $minute <= ($mtime + $window); $minute += 60) {
+                    if (!isset($flagged_minutes[$minute])) {
+                        continue;
+                    }
+                    $in_window['count'] += $flagged_minutes[$minute]['count'];
+                    $in_window['names'] += $flagged_minutes[$minute]['names'];
+                    if ('' === $in_window['example']) {
+                        $in_window['example'] = $flagged_minutes[$minute]['example'];
+                    }
+                }
+                if (0 === $in_window['count']) {
+                    continue;
+                }
+
+                $path = $file->getPathname();
+                $severity = is_php_file($path) ? 'HIGH' : 'MEDIUM';
+                $this->report($severity, 'LOG_FILE_CORRELATION', $path,
+                    'modified ' . date('Y-m-d H:i:s', $mtime) . ' within ' . $window . 's of flagged traffic: '
+                    . implode(' ', array_keys($in_window['names'])) . ' (' . $in_window['count'] . ' flagged requests in window)',
+                    array('e.g. ' . $in_window['example']));
+                $correlated++;
+            }
         }
 
         $this->summary('correlate', array('correlated' => $correlated, 'window_seconds' => $window),

@@ -28,7 +28,7 @@ Anything that blocks a check - an unreadable file, a failed query, a missing PHP
 
 **Scans run in the background** through WP-Cron, so you can start one and close the tab; the page shows the progress whenever you come back. A setting switches to running the steps from the browser tab instead, for hosts where WP-Cron is unreliable. **Scheduled scans** (daily, twice daily or weekly at a time you choose) run the same report-only scan automatically.
 
-**Review the findings in place.** Mark a finding as a **false positive** with a note and later scans hide it, while still keeping it in the record. For a file, the mark only holds while the file is byte-for-byte the one you reviewed, so an attacker cannot hide behind a file you once cleared. **Download sample** packs a flagged file into a zip encrypted with the password `infected`, with a manifest, for you to send to a malware analyst or sandbox. Elderward never uploads anything itself.
+**Review the findings in place.** Mark a finding as a **false positive** with a note and later scans hide it, while still keeping it in the record. For a file or a database value, the mark only holds while it is byte-for-byte the one you reviewed, so an attacker cannot hide behind a file or an option you once cleared. **Download sample** packs a flagged file into a zip encrypted with the password `infected`, with a manifest, for you to send to a malware analyst or sandbox. Elderward never uploads anything itself.
 
 **Write your own signatures** on the Signatures tab: exact text or regular expressions for files, option values or post content. Test them against a pasted sample or a file of the site before saving, and export them as JSON for other sites or the standalone scanner. Custom signatures only detect; they never clean.
 
@@ -69,7 +69,7 @@ Yes: daily, twice daily or weekly at a time of day (and weekday) in the site's t
 
 = What does marking a false positive do? =
 
-The finding is still recorded by later scans, but it moves out of the counts and the default view into the **False positives** filter and the JSON export, which flags it. The text export leaves it out. For a finding about a file, the mark stores the file's SHA-256. If the file changes, the finding comes back with a note saying it was marked before. Marks can be removed one by one or all at once.
+The finding is still recorded by later scans, but it moves out of the counts and the default view into the **False positives** filter and the JSON export, which flags it. The text export leaves it out. For a finding about a file, the mark stores the file's SHA-256; for a finding about a database value (an option or a post), the SHA-256 of that value. If either changes, the finding comes back with a note saying it was marked before. Marks can be removed one by one or all at once.
 
 = How do I send a suspicious file for analysis? =
 

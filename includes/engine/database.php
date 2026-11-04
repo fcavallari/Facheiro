@@ -87,6 +87,9 @@ class DatabaseScanner extends Scanner
             return array();
         }
 
+        // The active_plugins check needs the plugin folder: say when it is
+        // unknown (inside scanall the quick scan already did).
+        Layout::report_notes($this->ctx, false);
         $this->progress('Scanning database ' . $this->ctx->db->name() . ' (prefix ' . $this->ctx->db->prefix() . ") - read-only\n");
         return array(
             array('table' => 'admins', 'after' => 0),
@@ -198,7 +201,10 @@ class DatabaseScanner extends Scanner
         $counts = &$state['counts'];
         $prefix = $db->prefix();
         $options_table = $db->table('options');
-        $root = $this->ctx->root();
+        // active_plugins entries are relative to the folder WordPress loads
+        // plugins from; with no plugin folder found that check is skipped
+        // (the layout ERROR already says so).
+        $plugin_dir = Layout::of($this->ctx)->plugin_dir();
         $signatures = Signatures::db_options();
         $scanner = $this;
 
@@ -209,11 +215,13 @@ class DatabaseScanner extends Scanner
             'where'   => '',
             'pk'      => 'option_id',
         );
-        return $this->iterate('options', 'options', $query, function ($row) use (&$counts, $ctx, $prefix, $options_table, $root, $signatures, $scanner) {
+        return $this->iterate('options', 'options', $query, function ($row) use (&$counts, $ctx, $prefix, $options_table, $plugin_dir, $signatures, $scanner) {
             $counts['OPTIONS']++;
             $option_name = $row[1];
             $value = (string) $row[2];
             $where = 'db:' . $options_table . ':' . $option_name;
+            // Binds a false-positive mark to the value that was reviewed.
+            $meta = array('value_sha256' => hash('sha256', $value));
 
             ///////////////
             // siteurl/home hijacks redirect every visitor; report the values
@@ -221,9 +229,9 @@ class DatabaseScanner extends Scanner
             //////////////
             if ('siteurl' === $option_name || 'home' === $option_name) {
                 if (preg_match('@^https?://[^\s<>\'"]+$@', $value) === 1) {
-                    $scanner->report_public('INFO', 'DB_SITE_URL', $where, $option_name . ' = ' . $value . ' - confirm this is the real site address');
+                    $scanner->report_public('INFO', 'DB_SITE_URL', $where, $option_name . ' = ' . $value . ' - confirm this is the real site address', array(), $meta);
                 } else {
-                    $scanner->report_public('HIGH', 'DB_SITE_URL', $where, $option_name . ' does not look like a plain URL (hijack or injection): ' . substr($value, 0, 200));
+                    $scanner->report_public('HIGH', 'DB_SITE_URL', $where, $option_name . ' does not look like a plain URL (hijack or injection): ' . substr($value, 0, 200), array(), $meta);
                     $counts['FLAGGED_OPTIONS']++;
                 }
                 return (!$ctx->out_of_time());
@@ -239,7 +247,7 @@ class DatabaseScanner extends Scanner
                         if (false !== strpos($plugin_entry, '..')) {
                             $scanner->report_public('HIGH', 'DB_ACTIVE_PLUGIN', $where, 'active plugin path escapes the plugins directory: ' . $plugin_entry);
                             $counts['FLAGGED_OPTIONS']++;
-                        } elseif (!is_file($root . '/wp-content/plugins/' . $plugin_entry)) {
+                        } elseif (null !== $plugin_dir && !is_file($plugin_dir . '/' . $plugin_entry)) {
                             $scanner->report_public('LOW', 'DB_ACTIVE_PLUGIN', $where, 'active plugin file missing on disk: ' . $plugin_entry);
                         }
                     }
@@ -249,7 +257,7 @@ class DatabaseScanner extends Scanner
 
             // Role definitions: a non-admin role quietly granted admin powers.
             if ($prefix . 'user_roles' === $option_name) {
-                $scanner->check_user_roles($value, $where, $counts);
+                $scanner->check_user_roles($value, $where, $counts, $meta);
                 return (!$ctx->out_of_time());
             }
 
@@ -261,7 +269,7 @@ class DatabaseScanner extends Scanner
                 $excerpt_start = max(0, $hit[0][1] - 40);
                 $scanner->report_public($signature['severity'], 'DB_OPTION_IOC', $where,
                     $signature['name'] . ': ' . $signature['description'],
-                    array('e.g. ' . substr($value, $excerpt_start, 200)));
+                    array('e.g. ' . substr($value, $excerpt_start, 200)), $meta);
                 $counts['FLAGGED_OPTIONS']++;
                 break;
             }
@@ -312,7 +320,8 @@ class DatabaseScanner extends Scanner
                     $suppressed++;
                 } else {
                     $scanner->report_public($signature['severity'], 'DB_POST_IOC', 'db:' . $posts_table . ':ID=' . $row[0],
-                        $signature['name'] . ' in ' . $row[2] . ' "' . $row[1] . '": ' . $signature['description']);
+                        $signature['name'] . ' in ' . $row[2] . ' "' . $row[1] . '": ' . $signature['description'],
+                        array(), array('value_sha256' => hash('sha256', $content)));
                 }
                 break;
             }
@@ -325,7 +334,7 @@ class DatabaseScanner extends Scanner
         return ($next);
     }
 
-    public function check_user_roles($value, $where, array &$counts)
+    public function check_user_roles($value, $where, array &$counts, array $meta = array())
     {
         ///////////////
         // {prefix}user_roles is serialized role => array(name, capabilities =>
@@ -343,7 +352,7 @@ class DatabaseScanner extends Scanner
             if (preg_match_all('/"(' . self::ADMIN_CAPS . ')";b:1;/', $role[2], $caps)) {
                 $this->report('MEDIUM', 'DB_ROLE_CAPS', $where,
                     'role "' . $role[1] . '" holds administrator-level capabilities: ' . implode(', ', array_unique($caps[1]))
-                    . ' - role-editor plugins and shop-manager roles do this legitimately; verify it was intentional and check who holds the role');
+                    . ' - role-editor plugins and shop-manager roles do this legitimately; verify it was intentional and check who holds the role', array(), $meta);
                 $counts['FLAGGED_OPTIONS']++;
             }
         }
@@ -351,8 +360,8 @@ class DatabaseScanner extends Scanner
 
     // Closures in PHP 5.x cannot call a protected method of the enclosing
     // object; this is the same as report() for use from the row callbacks.
-    public function report_public($severity, $type, $path, $detail, $context = array())
+    public function report_public($severity, $type, $path, $detail, $context = array(), $meta = array())
     {
-        $this->report($severity, $type, $path, $detail, $context);
+        $this->report($severity, $type, $path, $detail, $context, $meta);
     }
 }
