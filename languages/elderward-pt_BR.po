@@ -1271,6 +1271,10 @@ msgstr "Consultar no VirusTotal"
 msgid "Marked as a false positive before, but the file has changed since it was reviewed, so it is reported again."
 msgstr "Marcado como falso positivo antes, mas o arquivo mudou desde que foi revisado, então volta a ser informado."
 
+#: includes/plugin/class-elderward-admin.php:1212
+msgid "Marked as a false positive before, but the stored value has changed since it was reviewed, so it is reported again."
+msgstr "Marcado como falso positivo antes, mas o valor armazenado mudou desde que foi revisado, então volta a ser informado."
+
 #: includes/plugin/class-elderward-admin.php:1199
 msgid "Not a false positive"
 msgstr "Não é falso positivo"

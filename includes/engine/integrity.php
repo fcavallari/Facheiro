@@ -39,11 +39,18 @@ class IntegrityScanner extends Scanner
             }
         }
 
+        $layout = Layout::of($this->ctx);
+        Layout::report_notes($this->ctx, false);
         $units = array(array('core' => 1));
-        foreach ((array) @glob($root . '/wp-content/plugins/*', GLOB_ONLYDIR) as $plugin_dir) {
-            $units[] = array('plugin' => $plugin_dir);
+        foreach ($layout->plugin_dirs as $plugins) {
+            foreach ((array) @glob($plugins . '/*', GLOB_ONLYDIR) as $plugin_dir) {
+                $units[] = array('plugin' => $plugin_dir);
+            }
         }
-        $theme_dirs = (array) @glob($root . '/wp-content/themes/*', GLOB_ONLYDIR);
+        $theme_dirs = array();
+        foreach ($layout->content_dirs as $content) {
+            $theme_dirs = array_merge($theme_dirs, (array) @glob($content . '/themes/*', GLOB_ONLYDIR));
+        }
         if (count($theme_dirs) > 0 && !class_exists('ZipArchive')) {
             $units[] = array('themes_unavailable' => 1);
         } else {
@@ -64,19 +71,22 @@ class IntegrityScanner extends Scanner
         } elseif (isset($unit['plugin'])) {
             $this->check_plugin($unit['plugin'], $totals);
         } elseif (isset($unit['themes_unavailable'])) {
-            $this->report('INFO', 'INTEGRITY_NO_REFERENCE', $root . '/wp-content/themes', 'themes: PHP zip extension not available, cannot verify themes');
+            $content = Layout::of($this->ctx)->content_dir();
+            $this->report('INFO', 'INTEGRITY_NO_REFERENCE', (null === $content ? $root . '/wp-content' : $content) . '/themes', 'themes: PHP zip extension not available, cannot verify themes');
             $totals['NO_REFERENCE']++;
         } elseif (isset($unit['theme'])) {
             $this->check_theme($unit['theme'], $totals);
         } elseif (isset($unit['loose'])) {
             // Single-file plugins (e.g. hello.php) sit directly in the plugins dir
             // and carry no per-directory manifest.
-            foreach ((array) @glob($root . '/wp-content/plugins/*.php') as $loose_plugin) {
-                if ('index.php' === basename($loose_plugin)) {
-                    continue;
+            foreach (Layout::of($this->ctx)->plugin_dirs as $plugins) {
+                foreach ((array) @glob($plugins . '/*.php') as $loose_plugin) {
+                    if ('index.php' === basename($loose_plugin)) {
+                        continue;
+                    }
+                    $this->report('INFO', 'INTEGRITY_NO_REFERENCE', $loose_plugin, 'single-file plugin: no checksum manifest to verify against');
+                    $totals['NO_REFERENCE']++;
                 }
-                $this->report('INFO', 'INTEGRITY_NO_REFERENCE', $loose_plugin, 'single-file plugin: no checksum manifest to verify against');
-                $totals['NO_REFERENCE']++;
             }
         }
         return (null);
@@ -403,7 +413,7 @@ class IntegrityScanner extends Scanner
                 $known_benign = isset($known_benign_list[$basename]);
                 // wordfence-waf.php is only expected where Wordfence is installed;
                 // anywhere else the name is camouflage.
-                if ($known_benign && 'wordfence-waf.php' === $basename && !is_dir($base_dir . '/wp-content/plugins/wordfence')) {
+                if ($known_benign && 'wordfence-waf.php' === $basename && !Layout::of($this->ctx)->has_plugin('wordfence')) {
                     $known_benign = false;
                 }
 

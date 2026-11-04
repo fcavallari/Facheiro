@@ -23,13 +23,14 @@ class Elderward_Store_Reporter extends Elderward\Engine\BaseReporter
         $this->counts = $counts;
     }
 
-    public function finding($severity, $type, $path, $detail, $context = array())
+    public function finding($severity, $type, $path, $detail, $context = array(), $meta = array())
     {
         global $wpdb;
         $this->track($severity);
         $sha256 = Elderward_False_Positives::file_hash($type, $path);
+        $value_sha256 = Elderward_False_Positives::value_hash($type, $meta);
         $fingerprint = Elderward_False_Positives::fingerprint($type, $path, $detail);
-        $fp = Elderward_False_Positives::classify($fingerprint, $sha256);
+        $fp = Elderward_False_Positives::classify($fingerprint, $sha256, $value_sha256);
         // A finding the administrator already cleared is stored but kept
         // out of the severity counts.
         $bucket = (Elderward_False_Positives::MATCHED === $fp) ? 'FALSE_POSITIVE' : $severity;
@@ -49,12 +50,13 @@ class Elderward_Store_Reporter extends Elderward\Engine\BaseReporter
                 'path'     => (string) $path,
                 'detail'   => (string) $detail,
                 'context'     => empty($context) ? null : wp_json_encode(array_values((array) $context)),
-                'sha256'      => $sha256,
-                'fingerprint' => $fingerprint,
-                'fp'          => $fp,
-                'created'     => gmdate('Y-m-d H:i:s'),
+                'sha256'       => $sha256,
+                'value_sha256' => $value_sha256,
+                'fingerprint'  => $fingerprint,
+                'fp'           => $fp,
+                'created'      => gmdate('Y-m-d H:i:s'),
             ),
-            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s')
+            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s')
         );
     }
 

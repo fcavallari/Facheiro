@@ -3,12 +3,15 @@
  * Findings an administrator reviewed and marked as false positives.
  *
  * A rule remembers the finding (type, path, detail) and, for findings about
- * a file, the SHA-256 of that file when it was reviewed. Later scans still
+ * a file, the SHA-256 of that file when it was reviewed; for findings about
+ * a database value (an option, a post), the SHA-256 of that value as the
+ * scan read it. Later scans still
  * record a matching finding but flag it as a false positive, so it drops out
  * of the default view and the counts, yet stays in the table and in the JSON
  * export. If the file content changed since the review the rule no longer
  * applies: the finding comes back with a note saying so, because an attacker
- * can append to any file an administrator once cleared.
+ * can append to any file an administrator once cleared, or swap the payload
+ * in an option row that still matches the same signature.
  *
  * @package Elderward
  */
@@ -59,6 +62,19 @@ final class Elderward_False_Positives
     }
 
     /**
+     * SHA-256 of the database value a finding is about, as the engine
+     * scanned it; null for file findings and findings with no value.
+     */
+    public static function value_hash($type, $meta)
+    {
+        if (self::is_file_type($type) || !isset($meta['value_sha256'])) {
+            return null;
+        }
+        $hash = (string) $meta['value_sha256'];
+        return (1 === preg_match('/^[0-9a-f]{64}$/', $hash)) ? $hash : null;
+    }
+
+    /**
      * SHA-256 of the file a finding is about, or null when the finding is
      * not about a file or the file cannot be hashed.
      */
@@ -101,16 +117,20 @@ final class Elderward_False_Positives
 
     /**
      * How a new finding relates to the saved rules: NONE, MATCHED, or
-     * CHANGED (marked before, but the file is not the one reviewed).
+     * CHANGED (marked before, but the file or the database value is not
+     * the one reviewed). A database mark saved before values were hashed
+     * has no value hash, so it comes back once as CHANGED: re-marking it
+     * binds it to the current value.
      */
-    public static function classify($fingerprint, $sha256)
+    public static function classify($fingerprint, $sha256, $value_sha256 = null)
     {
         $rules = self::rules();
         if (!isset($rules[$fingerprint])) {
             return self::NONE;
         }
         $reviewed = isset($rules[$fingerprint]['sha256']) ? $rules[$fingerprint]['sha256'] : null;
-        return ($reviewed === $sha256) ? self::MATCHED : self::CHANGED;
+        $reviewed_value = isset($rules[$fingerprint]['value_sha256']) ? $rules[$fingerprint]['value_sha256'] : null;
+        return ($reviewed === $sha256 && $reviewed_value === $value_sha256) ? self::MATCHED : self::CHANGED;
     }
 
     /**
@@ -126,7 +146,7 @@ final class Elderward_False_Positives
         }
         $table = Elderward_Plugin::findings_table();
         // phpcs:ignore WordPress.DB -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
-        $row = $wpdb->get_row($wpdb->prepare("SELECT id, severity, type, path, detail, sha256, fp" . ($with_context ? ', context' : '') . " FROM `{$table}` WHERE id = %d AND job_id = %s", (int) $id, $job['id']));
+        $row = $wpdb->get_row($wpdb->prepare("SELECT id, severity, type, path, detail, sha256, value_sha256, fp" . ($with_context ? ', context' : '') . " FROM `{$table}` WHERE id = %d AND job_id = %s", (int) $id, $job['id']));
         return $row ? $row : null;
     }
 
@@ -150,12 +170,14 @@ final class Elderward_False_Positives
         // The content the administrator reviewed is the one the scan saw;
         // rows from before hashes were stored fall back to the file now.
         $sha256 = (null !== $row->sha256 && '' !== $row->sha256) ? $row->sha256 : self::file_hash($row->type, $row->path);
+        $value_sha256 = (null !== $row->value_sha256 && '' !== $row->value_sha256) ? $row->value_sha256 : null;
         $rule = array(
             'type'     => (string) $row->type,
             'severity' => (string) $row->severity,
             'path'     => (string) $row->path,
             'detail'   => (string) $row->detail,
             'sha256'   => $sha256,
+            'value_sha256' => $value_sha256,
             'note'     => self::clean_note($note),
             'user'     => get_current_user_id(),
             'via'      => (self::VIA_ASSISTANT === $via) ? self::VIA_ASSISTANT : self::VIA_ADMIN,
@@ -209,10 +231,11 @@ final class Elderward_False_Positives
             $wpdb->query($wpdb->prepare("UPDATE `{$table}` SET fp = 0 WHERE fingerprint = %s", $fingerprint));
             return;
         }
-        $rows = $wpdb->get_results($wpdb->prepare("SELECT id, sha256 FROM `{$table}` WHERE fingerprint = %s", $fingerprint));
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT id, sha256, value_sha256 FROM `{$table}` WHERE fingerprint = %s", $fingerprint));
         foreach ((array) $rows as $row) {
             $sha256 = (null === $row->sha256 || '' === $row->sha256) ? null : $row->sha256;
-            $wpdb->update($table, array('fp' => self::classify($fingerprint, $sha256)), array('id' => (int) $row->id), array('%d'), array('%d'));
+            $value_sha256 = (null === $row->value_sha256 || '' === $row->value_sha256) ? null : $row->value_sha256;
+            $wpdb->update($table, array('fp' => self::classify($fingerprint, $sha256, $value_sha256)), array('id' => (int) $row->id), array('%d'), array('%d'));
         }
         // phpcs:enable WordPress.DB
     }

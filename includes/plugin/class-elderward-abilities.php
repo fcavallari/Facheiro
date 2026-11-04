@@ -413,6 +413,7 @@ final class Elderward_Abilities
             'marked'      => true,
             'fingerprint' => Elderward_False_Positives::fingerprint($rule['type'], $rule['path'], $rule['detail']),
             'file_bound'  => null !== $rule['sha256'],
+            'value_bound' => !empty($rule['value_sha256']),
         );
     }
 
@@ -446,6 +447,7 @@ final class Elderward_Abilities
                 'path'        => Elderward_Plugin::relative_path($rule['path']),
                 'detail'      => self::cap($rule['detail']),
                 'sha256'      => $rule['sha256'],
+                'value_sha256' => isset($rule['value_sha256']) ? $rule['value_sha256'] : null,
                 'by'          => $user ? $user->user_login : null,
                 'at'          => gmdate('c', (int) $rule['time']),
                 'note'        => $rule['note'],
@@ -611,7 +613,7 @@ final class Elderward_Abilities
             'detail'         => self::cap($row->detail),
             'context'        => array_map(array(__CLASS__, 'cap'), $context),
             'sha256'         => (null === $row->sha256 || '' === $row->sha256) ? null : $row->sha256,
-            'false_positive' => Elderward_False_Positives::MATCHED === $fp ? 'yes' : (Elderward_False_Positives::CHANGED === $fp ? 'marked before, file changed since' : 'no'),
+            'false_positive' => Elderward_False_Positives::MATCHED === $fp ? 'yes' : (Elderward_False_Positives::CHANGED === $fp ? (Elderward_False_Positives::is_file_type($row->type) ? 'marked before, file changed since' : 'marked before, stored value changed since') : 'no'),
             'can_read_file'  => (null !== $row->sha256 && '' !== $row->sha256 && 1 !== preg_match('/^wp-config/i', basename((string) $row->path))),
         );
     }

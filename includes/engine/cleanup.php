@@ -33,6 +33,9 @@ class SignatureScanner extends Scanner
         if (!is_dir($this->scan_dir) || !is_readable($this->scan_dir)) {
             throw new Fatal('cannot open scan directory ' . $this->scan_dir);
         }
+        if (is_wordpress_root($this->scan_dir)) {
+            Layout::report_notes($this->ctx, false);
+        }
         return array(array('collect' => 1));
     }
 
@@ -62,14 +65,16 @@ class SignatureScanner extends Scanner
             throw new Fatal('cannot write the work file ' . $list_path);
         }
 
-        $files = recursive_file_iterator($this->scan_dir);
-        foreach ($files as $file) {
-            // Skip the tool itself and anything outside the risky-extension
-            // list (allfiles=1 overrides) - shared with the correlate walk.
-            if (!is_scannable_file($this->ctx, $file)) {
-                continue;
+        foreach (scan_roots($this->ctx, $this->scan_dir) as $dir) {
+            $files = recursive_file_iterator($dir);
+            foreach ($files as $file) {
+                // Skip the tool itself and anything outside the risky-extension
+                // list (allfiles=1 overrides) - shared with the correlate walk.
+                if (!is_scannable_file($this->ctx, $file)) {
+                    continue;
+                }
+                fwrite($fh, base64_encode($file->getPathname()) . "\n"); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- one path per line, whatever bytes the filename holds.
             }
-            fwrite($fh, base64_encode($file->getPathname()) . "\n"); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- one path per line, whatever bytes the filename holds.
         }
         fclose($fh);
 

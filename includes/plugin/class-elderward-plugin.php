@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 
 final class Elderward_Plugin
 {
-    const DB_VERSION = '2';
+    const DB_VERSION = '3';
     const OPTION_DB_VERSION = 'elderward_db_version';
 
     public static function init()
@@ -119,6 +119,7 @@ final class Elderward_Plugin
             detail text NOT NULL,
             context longtext NULL,
             sha256 char(64) NULL,
+            value_sha256 char(64) NULL,
             fingerprint char(40) NOT NULL DEFAULT '',
             fp tinyint(1) NOT NULL DEFAULT 0,
             created datetime NOT NULL,
@@ -148,6 +149,17 @@ final class Elderward_Plugin
         Elderward_Signatures::install();
         if (!isset($options['scandirectory'])) {
             $options['scandirectory'] = untrailingslashit(ABSPATH);
+        }
+        // WordPress already knows where its content and plugins live; the
+        // engine would otherwise have to parse them out of wp-config.php.
+        // Only for a scan of this site: WP-CLI can scan another folder.
+        if (realpath($options['scandirectory']) === realpath(ABSPATH)) {
+            if (!isset($options['contentdir'])) {
+                $options['contentdir'] = untrailingslashit(WP_CONTENT_DIR);
+            }
+            if (!isset($options['plugindir'])) {
+                $options['plugindir'] = untrailingslashit(WP_PLUGIN_DIR);
+            }
         }
         return new Elderward\Engine\Context(
             $options,

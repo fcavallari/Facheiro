@@ -32,6 +32,8 @@ class Context
     // microtime(true) after which scanners should yield between units;
     // null means run to completion (CLI).
     public $deadline = null;
+    // The resolved content-folder Layout (layout.php), built on first use.
+    public $layout = null;
 
     // $http and $db are untyped so a null default stays valid on PHP 5.6 and
     // PHP 8.4 alike (implicit nullable types are deprecated there).
@@ -60,6 +62,8 @@ class Context
     public function with(array $overrides, array $remove = array())
     {
         $copy = clone $this;
+        // The options may move the root or the content folder.
+        $copy->layout = null;
         foreach ($overrides as $key => $value) {
             $copy->options[$key] = $value;
         }

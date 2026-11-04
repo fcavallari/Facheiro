@@ -8,7 +8,7 @@ use Elderward\Engine\Scanner; use Elderward\Engine\CurlHttp; use Elderward\Engin
 
 class CollectReporter extends BaseReporter {
     public $lines = array(); public $units = 0;
-    public function finding($s, $t, $p, $d, $c = array()) { $this->track($s); $this->lines[] = "$s,$t,$p,$d"; }
+    public function finding($s, $t, $p, $d, $c = array(), $m = array()) { $this->track($s); $this->lines[] = "$s,$t,$p,$d"; }
     public function summary($scan, $data, $text) { $this->lines[] = 'summary:' . $scan . ':' . json_encode($data); }
     public function progress($text) {}
     public function fatal($m) { $this->lines[] = 'fatal:' . $m; }

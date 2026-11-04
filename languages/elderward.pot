@@ -1271,6 +1271,10 @@ msgstr ""
 msgid "Marked as a false positive before, but the file has changed since it was reviewed, so it is reported again."
 msgstr ""
 
+#: includes/plugin/class-elderward-admin.php:1212
+msgid "Marked as a false positive before, but the stored value has changed since it was reviewed, so it is reported again."
+msgstr ""
+
 #: includes/plugin/class-elderward-admin.php:1199
 msgid "Not a false positive"
 msgstr ""

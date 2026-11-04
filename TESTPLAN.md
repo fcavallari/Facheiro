@@ -21,7 +21,7 @@ find /tmp/ew/wordpress -exec touch {} +
 
 **A1.** `php -l` on every PHP file (`for f in $(git ls-files '*.php'); do php -l $f; done`) → only `No syntax errors detected`. `tests/regress.sh` → `failed=0`.
 
-**A2.** `$EW help=1` → usage screen listing scandirectory, allfiles, dryrun, scancron, scanlog, scanintegrity, checksumdir, locale, scantimes, help.
+**A2.** `$EW help=1` → usage screen listing scandirectory, allfiles, dryrun, scancron, scanlog, scanintegrity, checksumdir, contentdir, plugindir, locale, scantimes, help.
 
 **A3. Cleanup engine.**
 
@@ -61,6 +61,28 @@ $EW scanlog=/tmp/ew/logs; echo "exit=$?"
 ```
 
 Expect: the first command prints `ERROR,CRONTAB_UNAVAILABLE,crontab,crontab NOT checked: shell_exec is not available...` and exits 2. The second prints `No crontab for the current user.` (exit 0) when the user has none, the usual `CRONTAB_IOC` lines when it has malicious entries, or `CRONTAB_UNAVAILABLE` with the `crontab -l` error if the binary is missing. The directory log scan prints `ERROR,LOG_UNREADABLE,/tmp/ew/logs/access.log.1.gz,log NOT scanned: cannot open it (permissions?)` alongside the A4 findings (on a host without zlib a real `.gz` reports `compressed log NOT scanned: PHP zlib extension not available`); the exit code is 3 because of the HIGH log IoC.
+
+**A6. Moved content folder (split-core layout).**
+
+```sh
+mkdir -p /tmp/ew/empty /tmp/ew/split/wp/wp-includes /tmp/ew/split/app/uploads/2026 /tmp/ew/split/app/mu-plugins /tmp/ew/split/app/themes/t
+echo "<?php \$wp_version = '6.5';" > /tmp/ew/split/wp/wp-includes/version.php
+printf "<?php\ndefine('WP_CONTENT_DIR', dirname(__FILE__) . '/../app');\n" > /tmp/ew/split/wp/wp-config.php
+echo '<?php echo 1;' > /tmp/ew/split/app/uploads/2026/shell.php
+echo '<?php' > /tmp/ew/split/app/mu-plugins/m.php
+cp /tmp/ew/site/ndsw.js /tmp/ew/split/app/themes/t/x.js   # from A3, before the cleanup run
+$EW scanall=1 scandirectory=/tmp/ew/split/wp checksumdir=/tmp/ew/empty
+$EW scandirectory=/tmp/ew/split/wp                         # cleanup run
+$EW scandirectory=/tmp/ew/split/wp contentdir=/tmp/ew/split/app dryrun=1
+```
+
+Expect from scanall: `INFO,CONTENT_DIR,/tmp/ew/split/app,content folder is ... (WP_CONTENT_DIR in ...)`, `HIGH,UPLOADS_PHP` for `shell.php`, `INFO,MU_PLUGIN` for `m.php`, and `HIGH,MALWARE_FOUND` for `x.js`, all under `/tmp/ew/split/app` (none of them were found before this check existed). The cleanup run without `contentdir=` prints `ERROR,CONTENT_DIR_UNKNOWN,...cleanup and restore do not follow a wp-config.php define out of the root...` and leaves `x.js` untouched; with `contentdir=` and `dryrun=1` it reports `MALWARE_FOUND` there. Then:
+
+- `mkdir -p /tmp/ew/split/wp/wp-content/uploads && echo '<?php' > /tmp/ew/split/wp/wp-content/uploads/old.php` and rerun `quickscan=1`: the `CONTENT_DIR` detail says `<root>/wp-content` exists too and is also scanned, and `old.php` is reported as well.
+- Set the define to `$webroot . '/app'`: `ERROR,CONTENT_DIR_UNKNOWN,...cannot evaluate...`. Set it to `'/'` or `__DIR__ . '/..'`: `ERROR,CONTENT_DIR_UNKNOWN,...refused...`.
+- Remove the define and `wp-content`: `ERROR,CONTENT_DIR_UNKNOWN,...no wp-content folder under the root...`.
+- `contentdir=/nonexistent` → `Error: contentdir=/nonexistent is not a directory`, exit 1.
+- On a standard layout none of these findings appear: `tests/regress.sh` stays `failed=0`.
 
 ---
 
@@ -246,7 +268,7 @@ node tests/findings-ui.js /tmp/ew/downloads      # mark + undo, sample download,
 echo '// x' >> wp-content/.hidden.php             # after marking the HIDDEN_PHP finding, then rescan
 ```
 
-Expect: the marked finding leaves "All" and the severity counts and appears under "False positives" with the note and who marked it; undo brings it back. The zip holds `<sha256>.sample` (AES-256, password `infected`), `manifest.json` (relative path, SHA-256 at scan and now, finding) and `README.txt`; the extracted file hashes to the SHA-256 shown on the page. A sample request for `wp-config.php` or a file outside the root is refused. A marked file that changes comes back on the next scan with "Marked as a false positive before, but the file changed since"; a marked database finding stays hidden. The JSON export carries the marked finding with `"false_positive": true`; the text export leaves it out. `node tests/admin-ui.js` still reports "export matches table: yes".
+Expect: the marked finding leaves "All" and the severity counts and appears under "False positives" with the note and who marked it; undo brings it back. The zip holds `<sha256>.sample` (AES-256, password `infected`), `manifest.json` (relative path, SHA-256 at scan and now, finding) and `README.txt`; the extracted file hashes to the SHA-256 shown on the page. A sample request for `wp-config.php` or a file outside the root is refused. A marked file that changes comes back on the next scan with "Marked as a false positive before, but the file changed since"; a marked database finding stays hidden while its value is unchanged. Then change the marked option's value so the same signature still matches (`wp option update <name> '<script src="https://other.test/y.js"></script>'`) and rescan: it comes back with "Marked as a false positive before, but the stored value has changed since" (`fp` = 2). The JSON export carries the marked finding with `"false_positive": true`; the text export leaves it out. `node tests/admin-ui.js` still reports "export matches table: yes".
 
 **F9. Signature editor.** Plant `wp-content/plugins/acme/loader.php` containing `acme_loader` and `eval($x)`, then `node tests/signatures-ui.js` and a new scan. Expect: a non-compiling regex is refused with the form kept; the tester matches the fixture by path and a pasted sample, refuses `../../etc/passwd` and `wp-config.php`; disable/enable, JSON import, export and delete work; an anonymous POST is refused. The scan then reports `MEDIUM,SIGNATURE_MATCH,…/acme/loader.php,custom.acme-loader: ACME loader backdoor (custom signature, report only)` in the admin table, `wp elderward scanall` and `wp elderward scan --dryrun`; a real `wp elderward scan` on that folder leaves the file byte-identical. A custom `db_post` signature for a plain spam link (no `<?php`, `eval(` or `<iframe` in the post) reports `DB_POST_IOC` for that post. The examples in `docs/examples/signatures.json` import cleanly, each matches its sample from `docs/writing-signatures.md`, and none matches a clean WordPress install (`php bin/elderward.php dryrun=1 signatures=docs/examples/signatures.json scandirectory=/path/to/clean-wordpress` reports no `SIGNATURE_MATCH`). The standalone CLI with `signatures=<exported file>` reports the same line, and `tests/regress.sh` still passes (no output change without `signatures=`).
 
