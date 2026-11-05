@@ -272,7 +272,16 @@ final class Signatures
     // Actions:
     //   array('remove_regex' => pattern)   Delete every match of the pattern
     //                                      from the file. Fails (and reports)
-    //                                      if nothing was removed.
+    //                                      if nothing was removed. It must
+    //                                      begin at the campaign's own marker,
+    //                                      never at a shape legitimate code
+    //                                      shares. With 'start' => pattern
+    //                                      (where one injection begins) the
+    //                                      file is cut at every start and each
+    //                                      stretch cleaned on its own, so a
+    //                                      greedy removal cannot run from one
+    //                                      injection into the next and take
+    //                                      the legitimate code between them.
     //   array('delete_file' => true)       Delete the whole file.
     //   array('report' => SEVERITY)        Report SIGNATURE_MATCH only, never
     //                                      modify (custom signatures).
@@ -287,14 +296,24 @@ final class Signatures
                 'triggers'  => array(
                     array('regex' => '/\w\s*=\s*parseInt\(\w\(\w\.\w\)\)\s*\/\s*[\dx]+\s*[\+\s*\-]+\s*parseInt\(\w\(\w\.\w\)\)\s*\/\s*[\dx]+\s*[\+\s*\-]+\s*/'),
                 ),
-                'action'    => array('remove_regex' => '/if\((typeof)?\s*nds.===.?undefined.?\)[^#]+return\s*A\s*\(\s*\)\s*;?\s*}\s*}\s*;?/s'),
+                'action'    => array(
+                    'remove_regex' => '/if\((typeof)?\s*nds.===.?undefined.?\)[^#]+return\s*A\s*\(\s*\)\s*;?\s*}\s*}\s*;?/s',
+                    'start'        => '/if\((typeof)?\s*nds.===.?undefined.?\)/',
+                ),
             ),
             'javascript_wqpq' => array(
                 'prefilter' => array('regex' => '/if\((typeof)?\s*wqpq\s*===.?undefined.?\)/'),
                 'triggers'  => array(
                     array('regex' => '/try{var\s*\w\s*=\s*\-?parseInt\(\w\(0x\d+,\s*.\w+/'),
                 ),
-                'action'    => array('remove_regex' => '/if\((typeof)?\s*\w+.?===.?undefined.?\)[^\n]+;\s*\}\s*\}\s*\(\s*\)\s*\);\s*\};/s'),
+                // The removal starts at the wqpq guard itself: "\w+" here
+                // once matched any typeof guard (if(typeof jQuery===
+                // "undefined")), and on a one-line minified file took the
+                // legitimate code from that guard to the injection with it.
+                'action'    => array(
+                    'remove_regex' => '/if\((typeof)?\s*wqpq\s*===.?undefined.?\)[^\n]+;\s*\}\s*\}\s*\(\s*\)\s*\);\s*\};/s',
+                    'start'        => '/if\((typeof)?\s*wqpq\s*===.?undefined.?\)/',
+                ),
             ),
         );
     }
@@ -932,6 +951,9 @@ final class Signatures
                 }
                 if (null !== $pattern && false === @preg_match($pattern, '')) {
                     throw new Fatal('invalid regex in cleanup signature ' . $name . ': ' . $pattern);
+                }
+                if (isset($condition['start']) && (!isset($condition['remove_regex']) || !is_string($condition['start']) || false === @preg_match($condition['start'], '') || 1 === @preg_match($condition['start'], ''))) {
+                    throw new Fatal('invalid cleanup signature ' . $name . ': start needs remove_regex and a regex that does not match the empty string');
                 }
                 if (isset($condition['absent']) && (!is_array($condition['absent']) || array() === $condition['absent'] || in_array('', $condition['absent'], true))) {
                     throw new Fatal('invalid cleanup signature ' . $name . ': absent needs a list of non-empty strings');

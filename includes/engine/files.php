@@ -88,9 +88,22 @@ function write_cleaned_file($file_path, $cleaned_content)
         return (false);
     }
 
-    // tempnam creates the file 0600; carry over the target's permissions.
+    // tempnam creates the file 0600 and owned by whoever runs the tool;
+    // carry over the target's owner, group and permissions. An operator
+    // cleaning as root would otherwise leave a 0640 or 0600 file the web
+    // server can no longer read (a white screen if it is wp-config.php).
+    // Owner first: chown clears some mode bits. Without the privilege the
+    // calls fail and the file stays with the current user, as before.
     $perms = @fileperms($file_path);
     if (false !== $perms) {
+        $owner = @fileowner($file_path);
+        $group = @filegroup($file_path);
+        if (false !== $group && $group !== @filegroup($tmp_path) && function_exists('chgrp')) {
+            @chgrp($tmp_path, $group);
+        }
+        if (false !== $owner && $owner !== @fileowner($tmp_path) && function_exists('chown')) {
+            @chown($tmp_path, $owner);
+        }
         @chmod($tmp_path, $perms & 0777);
     } else {
         // No existing target (restoring a deleted file): 0600 would be

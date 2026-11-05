@@ -79,7 +79,10 @@ final class Elderward_Admin_Hardening
             if ('apache' !== $server) {
                 $notices[] = array('error', __('Elderward can only write rules for Apache or LiteSpeed. For Nginx, download the configuration file.', 'elderward'));
             } else {
-                $report = 'remove' === $op ? Elderward_Hardening::remove() : Elderward_Hardening::apply($features);
+                // Only honoured when the administrator ticked it on the form
+                // this request's nonce came from.
+                $unverified = !empty($_POST['unverified']);
+                $report = 'remove' === $op ? Elderward_Hardening::remove() : Elderward_Hardening::apply($features, $unverified);
                 $notices = self::report_notices($report, $op);
             }
         }
@@ -291,6 +294,10 @@ final class Elderward_Admin_Hardening
                             );
                             ?>
                         </p>
+                    <?php endif; ?>
+                    <?php if (!empty($state['unverifiable'])) : ?>
+                        <p><label><input type="checkbox" name="unverified" value="1" /> <strong><?php esc_html_e('Apply without the safety check', 'elderward'); ?></strong></label></p>
+                        <p class="description"><?php esc_html_e('This site cannot reach itself over HTTP, so Elderward cannot check it after writing the rules. If your server refuses one of them, the whole site, this page included, shows an error until you delete the lines between "# BEGIN Elderward" and "# END Elderward" in the .htaccess files over FTP or your host\'s file manager.', 'elderward'); ?></p>
                     <?php endif; ?>
                 </div>
                 <div data-server-only="nginx">

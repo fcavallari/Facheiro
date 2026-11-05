@@ -4,3 +4,5 @@ composer.lock
 .phpcs.cache
 build/logo/fonts/
 build/logo/out/
+reports/
+research_notes/

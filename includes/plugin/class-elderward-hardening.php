@@ -287,7 +287,11 @@ final class Elderward_Hardening
         }
         if (isset($on['dotfiles'])) {
             $rules['root'][] = '# Hidden files and folders (.git, .env, ...), except .well-known.';
-            $rules['root'] = array_merge($rules['root'], self::files_match('^\.'));
+            // Not ".well-known" itself: with no such folder on disk, Apache
+            // maps /.well-known/webfinger (and every other address WordPress
+            // answers there: ActivityPub, security.txt, app links) to a file
+            // of that name, and "^\." alone refused them all.
+            $rules['root'] = array_merge($rules['root'], self::files_match('^\.(?!well-known$)'));
             $rules['root'][] = '<IfModule mod_rewrite.c>';
             $rules['root'][] = '    RewriteEngine On';
             $rules['root'][] = '    RewriteRule (?:^|/)\.(?!well-known(?:/|$)) - [F]';
@@ -432,20 +436,26 @@ final class Elderward_Hardening
      * no longer wanted), then check the site; on failure put every file
      * back. Returns a report.
      *
-     * @return array{ok:bool, files:array, rolled_back:bool, health:array, verified:bool, message:string}
+     * @param array $features   Protections to write.
+     * @param bool  $unverified Write even when the site cannot reach itself
+     *                          over HTTP, so nothing can be checked or undone
+     *                          (the administrator asked for it explicitly).
+     * @return array{ok:bool, files:array, rolled_back:bool, health:array, verified:bool, unverifiable:bool, message:string}
      *         verified is false when the site could not be reached to check
-     *         it, before or after: then nothing proves it still works.
+     *         it: then nothing proves it still works. unverifiable is true
+     *         when that is why nothing was written.
      */
-    public static function apply(array $features)
+    public static function apply(array $features, $unverified = false)
     {
         $features = self::clean_features($features);
         $state = self::state();
         $targets = self::apache_targets();
         $rules = self::apache_rules($features);
-        $report = array('ok' => true, 'files' => array(), 'rolled_back' => false, 'health' => array(), 'verified' => false, 'message' => '');
+        $report = array('ok' => true, 'files' => array(), 'rolled_back' => false, 'health' => array(), 'verified' => false, 'unverifiable' => false, 'message' => '');
 
         // Refuse up front if a file that needs writing cannot be written,
         // so nothing is half applied.
+        $touched = array();
         foreach ($targets as $role => $file) {
             $needed = !empty($rules[$role]) || self::has_block($file);
             if ($needed && !self::writable($file)) {
@@ -454,9 +464,35 @@ final class Elderward_Hardening
                 $report['message'] = sprintf(__('%s cannot be written by PHP, so nothing was changed. Fix its permissions or add the rules by hand.', 'elderward'), $file);
                 return $report;
             }
+            if ($needed) {
+                $touched[] = $role;
+            }
         }
 
-        $before = self::health();
+        $before = self::health($touched);
+
+        ///////////////
+        // The check is what makes writing rules safe: a rule the server
+        // does not allow in .htaccess answers every request with a 500, the
+        // admin pages included, so the warning printed afterwards would
+        // never be seen and "Remove" could not be reached. When the site
+        // cannot reach itself, new rules are written only if the
+        // administrator asked for that in so many words. Taking rules out
+        // is always allowed: it is the way back.
+        //////////////
+        $can_verify = self::verifiable($before);
+        if ($can_verify !== empty($state['unverifiable'])) {
+            // Remembered so the page can offer the explicit choice.
+            $state['unverifiable'] = !$can_verify;
+            self::save_state($state);
+        }
+        if (!$can_verify && !$unverified && !empty($features) && !empty($touched)) {
+            $report['ok'] = false;
+            $report['unverifiable'] = true;
+            $report['message'] = __('This site cannot reach itself over HTTP, so Elderward could not check it after the change or undo a breakage. Nothing was changed. To write the rules anyway, tick "Apply without the safety check" and keep FTP or file manager access at hand, or add the rules shown in the preview by hand.', 'elderward');
+            return $report;
+        }
+
         $originals = array();
         foreach ($targets as $role => $file) {
             $wanted = $rules[$role];
@@ -477,9 +513,9 @@ final class Elderward_Hardening
             }
         }
 
-        $after = self::health();
+        $after = self::health($touched);
         $report['health'] = array('before' => $before, 'after' => $after);
-        $report['verified'] = self::verifiable($before);
+        $report['verified'] = $can_verify;
         if (!$report['ok'] || self::broke($before, $after)) {
             self::restore($originals);
             $report['ok'] = false;
@@ -568,13 +604,36 @@ final class Elderward_Hardening
     }
 
     /**
-     * Status codes of the home page, a login page and an admin request:
-     * the pages a broken .htaccess turns into 500 errors. 0 = no answer.
+     * Status codes of the home page, a login page and an admin request (the
+     * pages a broken root .htaccess turns into 500 errors), plus one address
+     * inside every other folder whose .htaccess is being written: a rule
+     * the server refuses there breaks only that folder (every script and
+     * style in wp-includes, every image in uploads) while the three pages
+     * keep answering. 0 = no answer.
+     *
+     * @param array $roles Roles from apache_targets() about to be written.
      */
-    private static function health()
+    private static function health(array $roles = array())
     {
+        $urls = array('home' => home_url('/'), 'login' => wp_login_url(), 'ajax' => admin_url('admin-ajax.php'));
+        $uploads = self::uploads();
+        // A real, static file where WordPress guarantees one (it must keep
+        // being served); elsewhere a name that does not exist, which still
+        // makes the server read that folder's .htaccess.
+        $probes = array(
+            'uploads'        => $uploads['url'] . '/elderward-health-check.txt',
+            'includes'       => includes_url('css/dashicons.min.css'),
+            'admin_includes' => admin_url('includes/elderward-health-check.txt'),
+            'themes'         => get_stylesheet_directory_uri() . '/style.css',
+            'plugins'        => plugins_url('assets/admin.css', ELDERWARD_FILE),
+        );
+        foreach ($roles as $role) {
+            if (isset($probes[$role])) {
+                $urls[$role] = $probes[$role];
+            }
+        }
         $out = array();
-        foreach (self::fetch_all(array('home' => home_url('/'), 'login' => wp_login_url(), 'ajax' => admin_url('admin-ajax.php'))) as $key => $response) {
+        foreach (self::fetch_all($urls) as $key => $response) {
             $out[$key] = $response['code'];
         }
         return $out;
@@ -599,6 +658,13 @@ final class Elderward_Hardening
             }
             // A page that answered before and no longer answers at all.
             if (0 === $code && $was > 0) {
+                return true;
+            }
+            // A page or file that was served and is now refused or gone
+            // (403 where mod_rewrite is not allowed, a rule that catches
+            // more than it should): none of these addresses is one a
+            // protection is meant to block.
+            if ($was >= 200 && $was < 400 && $code >= 400) {
                 return true;
             }
         }
