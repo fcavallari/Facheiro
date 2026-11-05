@@ -88,7 +88,7 @@ wp elderward log /var/log/apache2 [--correlate] [--window=300]
 ```
 
 ```
-wp elderward harden [--server=apache|nginx] [--preset=recommended|strict] [--features=a,b] [--print|--apply|--remove|--check]
+wp elderward harden [--server=apache|nginx] [--preset=recommended|strict] [--features=a,b] [--print|--apply [--unverified]|--remove|--check]
 wp elderward recovery-key create|status|revoke [--expires=<days>|never]
 ```
 
@@ -111,7 +111,7 @@ The Hardening tab (and `wp elderward harden`) writes web server rules for a temp
 | Turn off XML-RPC | Strict | `xmlrpc.php` deny | `location = /xmlrpc.php` |
 | Block direct PHP in plugins | custom only | rewrite rule, `elderward/recovery.php` allowed | regex location, same exception |
 
-On Apache/LiteSpeed the rules go between `# BEGIN Elderward` and `# END Elderward` (`insert_with_markers()`). Before writing, every needed file must be writable; after writing, the home page, login and admin-ajax are requested, and if any starts failing (e.g. `Options` not allowed by `AllowOverride`) every file is restored byte-for-byte. Removing takes the blocks out and deletes files Elderward created. Nginx configuration is downloaded (or printed with `--print`) and included in the `server { }` block above the PHP location. **Check now** / `--check` requests files that do not exist (a PHP file in uploads, a `.sql` dump, a dot-folder…) and reports a protection as active only when the server refuses them, so it verifies hand-made rules too and creates nothing.
+On Apache/LiteSpeed the rules go between `# BEGIN Elderward` and `# END Elderward` (`insert_with_markers()`). Before writing, every needed file must be writable and the site must be able to reach itself over HTTP: the home page, login, admin-ajax and one address inside every other folder being written (a stylesheet in `wp-includes`, the active theme's `style.css`…) are requested before and after, and if any starts failing (a 5xx because `Options` is not allowed by `AllowOverride`, no answer, or a page that was served and is now refused) every file is restored byte-for-byte. A rule the server rejects answers every request with a 500, the admin included, so when the site cannot reach itself (loopback requests blocked by the host) nothing is written unless you tick **Apply without the safety check** (`--unverified`); removing rules never needs it. Removing takes the blocks out and deletes files Elderward created. Nginx configuration is downloaded (or printed with `--print`) and included in the `server { }` block above the PHP location. **Check now** / `--check` requests files that do not exist (a PHP file in uploads, a `.sql` dump, a dot-folder…) and reports a protection as active only when the server refuses them, so it verifies hand-made rules too and creates nothing.
 
 ### Recovery mode
 
@@ -210,6 +210,7 @@ The first three fields never contain commas; everything after the third comma is
 ```
 HIGH,MALWARE_CLEANED,/path/to/file.js,javascript_ndsw
 HIGH,MALWARE_FOUND,/path/to/file.js,javascript_ndsw (dry run: file not modified)
+HIGH,MALWARE_FOUND,/path/to/link.js,javascript_ndsw (symbolic link to /shared/file.js: never modified, clean the file it points to)
 HIGH,CRONTAB_IOC,crontab,crontab.tmp.006: * * * * * echo ... | base64 --decode > /tmp/x
 MEDIUM,LOG_IOC,/var/log/apache2/access.log,access.xmlrpc.flood: 4182 hit(s) - High volume of xmlrpc.php POSTs, ...
 ```

@@ -442,7 +442,8 @@ Built-in signatures live in `Signatures::builtin_cleanup()`, `builtin_db_options
 ),
 ```
 
-- `remove_regex` deletes every match from the file (written atomically). It must remove something, or the run reports `CLEANUP_FAILED`. Make it remove the injection only, never the legitimate code around it.
+- `remove_regex` deletes every match from the file (written atomically). It must remove something, or the run reports `CLEANUP_FAILED`. Make it remove the injection only, never the legitimate code around it: begin the pattern at the campaign's own marker (`wqpq`, not `\w+`: a generic `if(typeof x==="undefined")` also matches jQuery guards), and add `'start' => '/pattern where one injection begins/'` to the action when the removal is greedy. The file is then cut at every start and each stretch cleaned on its own, so a file injected twice does not lose the code between the two.
+- A file that is a symbolic link is never cleaned or deleted: it is reported as `MALWARE_FOUND` with its target, to be cleaned where it really lives. The cleaned file keeps the original's owner, group and mode when the tool is allowed to set them.
 - `delete_file` is only for files that are malicious as a whole (a dropped shell), never for an infected legitimate file.
 - Every pattern is compile-checked before a scan (`Signatures::lint()`), and `dryrun` covers both actions.
 - A new built-in signature needs a fixture and a test: a positive case (infected file cleaned correctly, file still valid) and a negative case (a clean file with similar code left alone), in `tests/regress.sh` or the `TESTPLAN.md` fixtures, and `tests/regress.sh` must still pass.

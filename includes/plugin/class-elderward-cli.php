@@ -266,6 +266,10 @@ class Elderward_CLI
      * [--apply]
      * : Write the .htaccess rules (Apache/LiteSpeed only).
      *
+     * [--unverified]
+     * : With --apply: write the rules even when the site cannot reach
+     * itself over HTTP, so nothing can be checked or undone automatically.
+     *
      * [--remove]
      * : Remove every Elderward rule from the .htaccess files.
      *
@@ -315,9 +319,12 @@ class Elderward_CLI
                 WP_CLI::error('Elderward writes rules only for Apache/LiteSpeed. For Nginx, use --print and include the file.');
             }
             Elderward_Hardening::remember($server, $preset, $features);
-            $report = isset($assoc_args['remove']) ? Elderward_Hardening::remove() : Elderward_Hardening::apply($features);
+            $report = isset($assoc_args['remove']) ? Elderward_Hardening::remove() : Elderward_Hardening::apply($features, isset($assoc_args['unverified']));
             foreach ($report['files'] as $file) {
                 WP_CLI::line(sprintf('%-8s %s', $file['action'], $file['file']));
+            }
+            if (!empty($report['unverifiable'])) {
+                WP_CLI::error('This site cannot reach itself over HTTP, so the change could not be checked or undone. Nothing was changed. Run again with --unverified to write the rules anyway, and open the site in a browser right after.');
             }
             if (!$report['ok']) {
                 WP_CLI::error('' !== $report['message'] ? $report['message'] : 'The rules could not be written.');

@@ -303,14 +303,66 @@ class SignatureScanner extends Scanner
         return (true);
     }
 
+    ///////////////
+    // Apply a remove_regex. With a 'start' pattern the file is cut where
+    // each injection begins and every stretch is cleaned on its own: the
+    // removal patterns are greedy up to the campaign's closing sequence, and
+    // on a file injected twice one match would otherwise run from the first
+    // injection to the end of the second, taking the legitimate code between
+    // them. Null when the regex engine gives up on any stretch.
+    //////////////
+    public static function remove_matches($file_buffer, $action)
+    {
+        if (!isset($action['start'])) {
+            return (preg_replace($action['remove_regex'], '', $file_buffer));
+        }
+        $hits = array();
+        $found = preg_match_all($action['start'], $file_buffer, $hits, PREG_OFFSET_CAPTURE);
+        if (false === $found) {
+            return (null);
+        }
+        if ($found < 2) {
+            return (preg_replace($action['remove_regex'], '', $file_buffer));
+        }
+        // The first stretch runs from the top of the file to the second
+        // start, the last one to the end of the file.
+        $cleared = '';
+        $from = 0;
+        for ($i = 1; $i <= $found; $i++) {
+            $to = ($i < $found) ? $hits[0][$i][1] : strlen($file_buffer);
+            $piece = preg_replace($action['remove_regex'], '', substr($file_buffer, $from, $to - $from));
+            if (null === $piece) {
+                return (null);
+            }
+            $cleared .= $piece;
+            $from = $to;
+        }
+        return ($cleared);
+    }
+
     private function apply_action($file_buffer, $file_path, $signature_name, $action)
     {
         $dryrun = $this->ctx->has('dryrun');
 
+        ///////////////
+        // A symbolic link is never written through or replaced. The rename
+        // in write_cleaned_file() would swap the link for a regular file and
+        // leave the real, still infected file where it is; writing to the
+        // target instead would let a link planted by the web user point a
+        // more privileged operator's cleanup at any file. Report it and let
+        // the operator scan the folder the target lives in. Said the same
+        // way in a dry run, which must predict what the real run does.
+        //////////////
+        if ((isset($action['remove_regex']) || isset($action['delete_file'])) && is_link($file_path)) {
+            $target = @realpath($file_path);
+            $this->report('HIGH', 'MALWARE_FOUND', $file_path, $signature_name . ' (symbolic link' . (false === $target ? '' : ' to ' . $target) . ': never modified, clean the file it points to)');
+            return;
+        }
+
         if (isset($action['remove_regex'])) {
             // $file_buffer already holds the whole file: files larger than
             // the read cap are reported as FILE_TOO_LARGE, never scanned.
-            $cleared_file = preg_replace($action['remove_regex'], '', $file_buffer);
+            $cleared_file = self::remove_matches($file_buffer, $action);
             if ($cleared_file === null || (strlen($file_buffer) === strlen($cleared_file))) {
                 $this->report('ERROR', 'CLEANUP_FAILED', $file_path, $signature_name . ': cleanup regex removed nothing: ' . $action['remove_regex']);
                 return;

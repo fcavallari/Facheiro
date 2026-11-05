@@ -352,6 +352,44 @@ else
 fi
 sig_check "rescan after restore is clean"      0 'Integrity scan complete: 0 modified, 0 missing' 'INTEGRITY_M' scanintegrity=1 "checksumdir=$PSUMS" "scandirectory=$PWP"
 
+###############
+# Cleanup safety (new rules, no old-script counterpart): a removal starts at
+# the campaign's own marker and stops at the end of that injection, so the
+# legitimate code around it survives byte for byte, and a symbolic link is
+# reported instead of being replaced by a regular file.
+##############
+CSITE="$WORK/cleanup-site"
+CLINK="$WORK/cleanup-linked"
+mkdir -p "$CSITE/js" "$CLINK"
+C_LEGIT='!function(){var a=1;if(typeof jQuery==="undefined"){throw new Error("needs jQuery")}window.lib={init:function(){return a}};}();'
+C_WQPQ=';if(typeof wqpq==="undefined"){(function(q,f){try{var c=-parseInt(Z(0x12, x9))/0x1;}catch(e){}}(a,b));var wqpq=true;(function(){if(1){x();}}());};'
+C_NDSW='if(ndsw===undefined){(function(){var a = parseInt(f(q.a)) / 0x1 + parseInt(f(q.b)) / 0x2 + 0;function A(){return 1;}return A();}};'
+# A one-line minified file with its own typeof guard, injection appended.
+printf '%s%s\n' "$C_LEGIT" "$C_WQPQ" > "$CSITE/js/lib.min.js"
+# The same file injected twice, legitimate code between the two.
+printf 'var first=1;\n%s\nvar between=2;\n%s\nvar last=3;\n' "$C_NDSW" "$C_NDSW" > "$CSITE/js/twice-ndsw.js"
+printf '%s%svar between=2;%s\n' "$C_LEGIT" "$C_WQPQ" "$C_WQPQ" > "$CSITE/js/twice-wqpq.js"
+printf 'var linked=1;\n%s\n' "$C_NDSW" > "$CLINK/shared.js"
+ln -s "$CLINK/shared.js" "$CSITE/js/linked.js"
+linked_before="$(sha256sum "$CLINK/shared.js")"
+sig_check "cleanup: dry run names the symlink" 3 'MALWARE_FOUND.*linked\.js.*symbolic link.*never modified' 'MALWARE_CLEANED\|linked\.js.*dry run' dryrun=1 "scandirectory=$CSITE"
+sig_check "cleanup: dry run lists the others"  3 'MALWARE_FOUND.*lib\.min\.js.*dry run' 'MALWARE_CLEANED' dryrun=1 "scandirectory=$CSITE"
+sig_check "cleanup: symlink reported, kept"    3 'MALWARE_FOUND.*linked\.js.*symbolic link.*never modified' 'MALWARE_CLEANED.*linked\.js' "scandirectory=$CSITE"
+if [ "$(cat "$CSITE/js/lib.min.js")" == "$C_LEGIT;" ] \
+    && [ "$(cat "$CSITE/js/twice-ndsw.js")" == "$(printf 'var first=1;\n\nvar between=2;\n\nvar last=3;')" ] \
+    && [ "$(cat "$CSITE/js/twice-wqpq.js")" == "$C_LEGIT;var between=2;;" ]; then
+    PASS=$((PASS+1)); echo "PASS  cleanup kept the legitimate code around and between injections"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  cleanup changed legitimate code:"; head -c 400 "$CSITE/js/lib.min.js" "$CSITE/js/twice-ndsw.js" "$CSITE/js/twice-wqpq.js"
+fi
+if [ -L "$CSITE/js/linked.js" ] && [ "$linked_before" == "$(sha256sum "$CLINK/shared.js")" ]; then
+    PASS=$((PASS+1)); echo "PASS  cleanup left the symbolic link and its target alone"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  cleanup replaced the symbolic link or wrote through it"
+fi
+sig_check "cleanup: rescan finds only the link" 3 'MALWARE_FOUND.*linked\.js' 'lib\.min\.js\|twice-' dryrun=1 "scandirectory=$CSITE"
+sig_check "cleanup: the link target is cleaned" 3 'MALWARE_CLEANED.*shared\.js' 'CLEANUP_FAILED' "scandirectory=$CLINK"
+
 echo
 echo "passed=$PASS failed=$FAIL skipped=$SKIP  (work dir: $WORK)"
 [ "$FAIL" = 0 ]

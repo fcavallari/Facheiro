@@ -101,7 +101,7 @@ Cleanup and restore have to write files atomically (temporary file plus rename, 
 
 = What if hardening breaks my site? =
 
-Before writing anything, Elderward checks that every file it needs can be written. After writing, it loads the home page, the login page and an admin request; if any of them starts failing (most often because the host does not allow one of the rules in `.htaccess`), it puts every file back exactly as it was and tells you which protections to leave out. Rules live only between `# BEGIN Elderward` and `# END Elderward`, and **Remove Elderward rules** takes them out again. If a protection breaks a feature without breaking the whole site, switch it off and apply again. If you cannot reach the admin at all, delete the lines between those markers in the `.htaccess` files over FTP.
+Before writing anything, Elderward checks that every file it needs can be written and that the site can reach itself over HTTP. After writing, it loads the home page, the login page, an admin request and a file in every other folder it wrote to; if any of them starts failing (most often because the host does not allow one of the rules in `.htaccess`), it puts every file back exactly as it was and tells you which protections to leave out. If the site cannot reach itself, so that nothing could be checked or undone, Elderward writes nothing unless you tick "Apply without the safety check". Rules live only between `# BEGIN Elderward` and `# END Elderward`, and **Remove Elderward rules** takes them out again. If a protection breaks a feature without breaking the whole site, switch it off and apply again. If you cannot reach the admin at all, delete the lines between those markers in the `.htaccess` files over FTP.
 
 = Is the recovery page a security risk? =
 

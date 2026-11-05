@@ -15,7 +15,7 @@ msgstr ""
 "X-Domain: elderward\n"
 
 #. Plugin Name of the plugin
-#: elderward.php:10
+#: elderward.php
 #: includes/plugin/class-elderward-admin.php:68
 #: includes/plugin/class-elderward-admin.php:69
 #: includes/plugin/class-elderward-admin.php:82
@@ -26,22 +26,22 @@ msgid "Elderward"
 msgstr "Elderward"
 
 #. Plugin URI of the plugin
-#: elderward.php:11
+#: elderward.php
 msgid "https://github.com/fioa8c/elderward"
 msgstr "https://github.com/fioa8c/elderward"
 
 #. Description of the plugin
-#: elderward.php:12
+#: elderward.php
 msgid "Malware scanner and incident response: integrity, database and log checks, server hardening, and a recovery mode for sites that no longer load."
 msgstr "Varredura de malware e resposta a incidentes: verificação de integridade, banco de dados e logs, blindagem do servidor e um modo de recuperação para sites que não carregam mais."
 
 #. Author of the plugin
-#: elderward.php:16
+#: elderward.php
 msgid "Fio Cavallari"
 msgstr "Fio Cavallari"
 
 #. Author URI of the plugin
-#: elderward.php:17
+#: elderward.php
 msgid "https://github.com/fioa8c"
 msgstr "https://github.com/fioa8c"
 
@@ -114,8 +114,8 @@ msgid "Triage Elderward results"
 msgstr "Triagem dos resultados do Elderward"
 
 #: includes/plugin/class-elderward-admin-hardening.php:53
-#: includes/plugin/class-elderward-admin-hardening.php:141
-#: includes/plugin/class-elderward-admin-hardening.php:151
+#: includes/plugin/class-elderward-admin-hardening.php:144
+#: includes/plugin/class-elderward-admin-hardening.php:154
 #: includes/plugin/class-elderward-admin-recovery.php:31
 #: includes/plugin/class-elderward-admin-recovery.php:55
 #: includes/plugin/class-elderward-admin.php:235
@@ -133,229 +133,229 @@ msgstr "Você não tem permissão para fazer isso."
 msgid "Elderward can only write rules for Apache or LiteSpeed. For Nginx, download the configuration file."
 msgstr "O Elderward só escreve regras para Apache ou LiteSpeed. Para Nginx, baixe o arquivo de configuração."
 
-#: includes/plugin/class-elderward-admin-hardening.php:87
+#: includes/plugin/class-elderward-admin-hardening.php:90
 msgid "Choices saved."
 msgstr "Escolhas salvas."
 
-#: includes/plugin/class-elderward-admin-hardening.php:98
+#: includes/plugin/class-elderward-admin-hardening.php:101
 msgid "The rules could not be written, so nothing was changed."
 msgstr "Não foi possível gravar as regras, então nada foi alterado."
 
-#: includes/plugin/class-elderward-admin-hardening.php:106
+#: includes/plugin/class-elderward-admin-hardening.php:109
 msgid "There were no Elderward rules to remove."
 msgstr "Não havia regras do Elderward para remover."
 
-#: includes/plugin/class-elderward-admin-hardening.php:106
+#: includes/plugin/class-elderward-admin-hardening.php:109
 msgid "Nothing to change."
 msgstr "Nada a alterar."
 
-#: includes/plugin/class-elderward-admin-hardening.php:113
+#: includes/plugin/class-elderward-admin-hardening.php:116
 msgid "Elderward rules removed, but this site cannot reach itself over HTTP, so Elderward could not check that it still works."
 msgstr "Regras do Elderward removidas, mas este site não consegue acessar a si mesmo por HTTP, então o Elderward não pôde verificar se ele continua funcionando."
 
-#: includes/plugin/class-elderward-admin-hardening.php:114
+#: includes/plugin/class-elderward-admin-hardening.php:117
 msgid "Protections written, but this site cannot reach itself over HTTP, so Elderward could not check that it still works and cannot undo a breakage on its own. Open the site in a new tab now; if it shows an error, click \"Remove Elderward rules\", or delete the lines between \"# BEGIN Elderward\" and \"# END Elderward\" over FTP."
 msgstr "Proteções gravadas, mas este site não consegue acessar a si mesmo por HTTP, então o Elderward não pôde verificar se ele continua funcionando nem desfazer sozinho uma quebra. Abra o site em uma nova aba agora; se aparecer um erro, clique em \"Remover regras do Elderward\" ou apague, por FTP, as linhas entre \"# BEGIN Elderward\" e \"# END Elderward\"."
 
-#: includes/plugin/class-elderward-admin-hardening.php:118
+#: includes/plugin/class-elderward-admin-hardening.php:121
 msgid "Elderward rules removed. The site still answers normally."
 msgstr "Regras do Elderward removidas. O site continua respondendo normalmente."
 
-#: includes/plugin/class-elderward-admin-hardening.php:119
+#: includes/plugin/class-elderward-admin-hardening.php:122
 msgid "Protections applied. The site still answers normally."
 msgstr "Proteções aplicadas. O site continua respondendo normalmente."
 
-#: includes/plugin/class-elderward-admin-hardening.php:121
+#: includes/plugin/class-elderward-admin-hardening.php:124
 msgid "Use \"Check now\" below to confirm that the server enforces each rule."
 msgstr "Use \"Verificar agora\", abaixo, para confirmar que o servidor aplica cada regra."
 
-#: includes/plugin/class-elderward-admin-hardening.php:130
+#: includes/plugin/class-elderward-admin-hardening.php:133
 msgid "created"
 msgstr "criado"
 
-#: includes/plugin/class-elderward-admin-hardening.php:132
+#: includes/plugin/class-elderward-admin-hardening.php:135
 msgid "rules removed"
 msgstr "regras removidas"
 
-#: includes/plugin/class-elderward-admin-hardening.php:134
+#: includes/plugin/class-elderward-admin-hardening.php:137
 msgid "updated"
 msgstr "atualizado"
 
-#: includes/plugin/class-elderward-admin-hardening.php:177
+#: includes/plugin/class-elderward-admin-hardening.php:180
 msgid "No protection selected: applying removes any Elderward rules."
 msgstr "Nenhuma proteção selecionada: aplicar remove todas as regras do Elderward."
 
-#: includes/plugin/class-elderward-admin-hardening.php:190
-#: includes/plugin/class-elderward-admin-hardening.php:359
+#: includes/plugin/class-elderward-admin-hardening.php:193
+#: includes/plugin/class-elderward-admin-hardening.php:366
 msgid "Protected"
 msgstr "Protegido"
 
-#: includes/plugin/class-elderward-admin-hardening.php:191
-#: includes/plugin/class-elderward-admin-hardening.php:360
+#: includes/plugin/class-elderward-admin-hardening.php:194
+#: includes/plugin/class-elderward-admin-hardening.php:367
 msgid "Not protected"
 msgstr "Desprotegido"
 
-#: includes/plugin/class-elderward-admin-hardening.php:192
-#: includes/plugin/class-elderward-admin-hardening.php:361
+#: includes/plugin/class-elderward-admin-hardening.php:195
+#: includes/plugin/class-elderward-admin-hardening.php:368
 msgid "Not checked"
 msgstr "Não verificado"
 
-#: includes/plugin/class-elderward-admin-hardening.php:195
+#: includes/plugin/class-elderward-admin-hardening.php:198
 msgid "Hardening tells the web server to refuse requests it should never serve: PHP dropped into uploads, copies of wp-config.php, .git folders, WordPress internals. It does not remove malware, but it stops many attacks from working and keeps a planted web shell from running."
 msgstr "A blindagem faz o servidor web recusar o que ele nunca deveria entregar: PHP largado na pasta de uploads, cópias do wp-config.php, pastas .git, arquivos internos do WordPress. Ela não remove malware, mas impede muitos ataques e não deixa um web shell plantado ser executado."
 
-#: includes/plugin/class-elderward-admin-hardening.php:203
+#: includes/plugin/class-elderward-admin-hardening.php:206
 msgid "Your web server"
 msgstr "Seu servidor web"
 
-#: includes/plugin/class-elderward-admin-hardening.php:207
+#: includes/plugin/class-elderward-admin-hardening.php:210
 msgid "Apache and LiteSpeed read rules from .htaccess files inside the site's folders, so Elderward can write them for you. Nginx reads its configuration only from the server's own files, which PHP cannot (and should not) change: Elderward gives you a file to add to it."
 msgstr "Apache e LiteSpeed leem regras de arquivos .htaccess dentro das pastas do site, então o Elderward pode escrevê-las por você. O Nginx lê a configuração só dos arquivos do próprio servidor, que o PHP não pode (nem deve) alterar: o Elderward entrega um arquivo para você incluir nela."
 
-#: includes/plugin/class-elderward-admin-hardening.php:208
+#: includes/plugin/class-elderward-admin-hardening.php:211
 msgid "Not sure? Most shared hosting runs Apache or LiteSpeed. Your host's documentation or support can tell you."
 msgstr "Não tem certeza? A maioria das hospedagens compartilhadas usa Apache ou LiteSpeed. A documentação ou o suporte da sua hospedagem sabe dizer."
 
-#: includes/plugin/class-elderward-admin-hardening.php:211
+#: includes/plugin/class-elderward-admin-hardening.php:214
 msgid "Web server"
 msgstr "Servidor web"
 
-#: includes/plugin/class-elderward-admin-hardening.php:222
+#: includes/plugin/class-elderward-admin-hardening.php:225
 msgid "Elderward could not tell which server this site runs on."
 msgstr "O Elderward não conseguiu identificar o servidor deste site."
 
 #. translators: %s: web server name
-#: includes/plugin/class-elderward-admin-hardening.php:225
+#: includes/plugin/class-elderward-admin-hardening.php:228
 #, php-format
 msgid "This site appears to run on %s."
 msgstr "Este site parece rodar em %s."
 
-#: includes/plugin/class-elderward-admin-hardening.php:233
+#: includes/plugin/class-elderward-admin-hardening.php:236
 msgid "Choose the protections"
 msgstr "Escolha as proteções"
 
-#: includes/plugin/class-elderward-admin-hardening.php:235
+#: includes/plugin/class-elderward-admin-hardening.php:238
 msgid "Template"
 msgstr "Modelo"
 
-#: includes/plugin/class-elderward-admin-hardening.php:243
+#: includes/plugin/class-elderward-admin-hardening.php:246
 msgid "Recommended is safe for almost every site. Strict adds protections that can break some themes and integrations. Change any switch to make your own selection."
 msgstr "O Recomendado é seguro para quase todos os sites. O Rigoroso acrescenta proteções que podem quebrar alguns temas e integrações. Mude qualquer chave para montar sua própria seleção."
 
-#: includes/plugin/class-elderward-admin-hardening.php:256
+#: includes/plugin/class-elderward-admin-hardening.php:259
 #: includes/plugin/class-elderward-hardening.php:98
 msgid "Recommended"
 msgstr "Recomendado"
 
-#: includes/plugin/class-elderward-admin-hardening.php:258
+#: includes/plugin/class-elderward-admin-hardening.php:261
 #: includes/plugin/class-elderward-hardening.php:99
 msgid "Strict"
 msgstr "Rigoroso"
 
-#: includes/plugin/class-elderward-admin-hardening.php:260
+#: includes/plugin/class-elderward-admin-hardening.php:263
 msgid "Test carefully"
 msgstr "Teste com cuidado"
 
-#: includes/plugin/class-elderward-admin-hardening.php:269
+#: includes/plugin/class-elderward-admin-hardening.php:272
 msgid "Can break:"
 msgstr "Pode quebrar:"
 
-#: includes/plugin/class-elderward-admin-hardening.php:277
+#: includes/plugin/class-elderward-admin-hardening.php:280
 msgid "Review and apply"
 msgstr "Revisar e aplicar"
 
-#: includes/plugin/class-elderward-admin-hardening.php:280
+#: includes/plugin/class-elderward-admin-hardening.php:283
 msgid "Elderward adds these rules between \"# BEGIN Elderward\" and \"# END Elderward\" lines and leaves everything else in each file alone. It checks the site before and after, and if the site stops answering normally it puts every file back."
 msgstr "O Elderward coloca estas regras entre as linhas \"# BEGIN Elderward\" e \"# END Elderward\" e não mexe no resto de cada arquivo. Ele verifica o site antes e depois e, se o site deixar de responder normalmente, devolve cada arquivo ao que era."
 
 #. translators: 1: number of protections, 2: user name, 3: date and time
-#: includes/plugin/class-elderward-admin-hardening.php:287
+#: includes/plugin/class-elderward-admin-hardening.php:290
 #, php-format
 msgid "%1$d protections applied by %2$s on %3$s."
 msgstr "%1$d proteções aplicadas por %2$s em %3$s."
 
-#: includes/plugin/class-elderward-admin-hardening.php:289
-#: includes/plugin/class-elderward-admin.php:1596
+#: includes/plugin/class-elderward-admin-hardening.php:292
+#: includes/plugin/class-elderward-admin.php:1598
 msgid "a deleted user"
 msgstr "um usuário excluído"
 
-#: includes/plugin/class-elderward-admin-hardening.php:298
+#: includes/plugin/class-elderward-admin-hardening.php:305
 msgid "Download the file below and put it on the server, for example as /etc/nginx/snippets/elderward.conf."
 msgstr "Baixe o arquivo abaixo e coloque-o no servidor, por exemplo como /etc/nginx/snippets/elderward.conf."
 
-#: includes/plugin/class-elderward-admin-hardening.php:299
+#: includes/plugin/class-elderward-admin-hardening.php:306
 msgid "Inside this site's server { } block, add the line: include snippets/elderward.conf; above the block that hands .php files to PHP (location ~ \\.php$)."
 msgstr "Dentro do bloco server { } deste site, adicione a linha include snippets/elderward.conf; acima do bloco que entrega os arquivos .php ao PHP (location ~ \\.php$)."
 
-#: includes/plugin/class-elderward-admin-hardening.php:300
+#: includes/plugin/class-elderward-admin-hardening.php:307
 msgid "Run nginx -t to test the configuration, then reload Nginx (systemctl reload nginx)."
 msgstr "Rode nginx -t para testar a configuração e depois recarregue o Nginx (systemctl reload nginx)."
 
-#: includes/plugin/class-elderward-admin-hardening.php:301
+#: includes/plugin/class-elderward-admin-hardening.php:308
 msgid "Come back here and use \"Check now\" to confirm."
 msgstr "Volte aqui e use \"Verificar agora\" para confirmar."
 
-#: includes/plugin/class-elderward-admin-hardening.php:303
+#: includes/plugin/class-elderward-admin-hardening.php:310
 msgid "On managed hosting without server access, send the file to your host's support and ask them to include it."
 msgstr "Em hospedagem gerenciada sem acesso ao servidor, envie o arquivo ao suporte da hospedagem e peça para incluí-lo."
 
-#: includes/plugin/class-elderward-admin-hardening.php:307
+#: includes/plugin/class-elderward-admin-hardening.php:314
 msgid "Apply protections"
 msgstr "Aplicar proteções"
 
-#: includes/plugin/class-elderward-admin-hardening.php:309
+#: includes/plugin/class-elderward-admin-hardening.php:316
 msgid "Remove Elderward rules"
 msgstr "Remover regras do Elderward"
 
-#: includes/plugin/class-elderward-admin-hardening.php:311
+#: includes/plugin/class-elderward-admin-hardening.php:318
 msgid "Download Nginx configuration"
 msgstr "Baixar a configuração do Nginx"
 
-#: includes/plugin/class-elderward-admin-hardening.php:312
+#: includes/plugin/class-elderward-admin-hardening.php:319
 #: includes/plugin/class-elderward-admin.php:758
 #: includes/plugin/class-elderward-admin.php:767
 msgid "Copy"
 msgstr "Copiar"
 
-#: includes/plugin/class-elderward-admin-hardening.php:319
+#: includes/plugin/class-elderward-admin-hardening.php:326
 msgid "Check the live site"
 msgstr "Verificar o site no ar"
 
-#: includes/plugin/class-elderward-admin-hardening.php:321
+#: includes/plugin/class-elderward-admin-hardening.php:328
 msgid "Check now"
 msgstr "Verificar agora"
 
-#: includes/plugin/class-elderward-admin-hardening.php:326
+#: includes/plugin/class-elderward-admin-hardening.php:333
 msgid "Elderward sends harmless test requests to this site, such as a request for a PHP file in uploads that does not exist, and looks at how the server answers. A refusal means the rule works. Nothing is created on the site."
 msgstr "O Elderward envia requisições de teste inofensivas a este site, como o pedido de um arquivo PHP inexistente na pasta de uploads, e observa a resposta do servidor. Uma recusa significa que a regra funciona. Nada é criado no site."
 
-#: includes/plugin/class-elderward-admin-hardening.php:327
+#: includes/plugin/class-elderward-admin-hardening.php:334
 msgid "It works whoever added the rules, so use it after including the Nginx file or editing .htaccess by hand. A firewall or CDN in front of the site can make a protection look active when the refusal comes from the firewall."
 msgstr "Funciona não importa quem tenha adicionado as regras, então use depois de incluir o arquivo do Nginx ou editar o .htaccess à mão. Um firewall ou CDN na frente do site pode fazer uma proteção parecer ativa quando a recusa vem do firewall."
 
 #. translators: %s: date and time
-#: includes/plugin/class-elderward-admin-hardening.php:334
+#: includes/plugin/class-elderward-admin-hardening.php:341
 #, php-format
 msgid "Last checked %s. The result of each protection is shown next to its switch above."
 msgstr "Última verificação: %s. O resultado de cada proteção aparece ao lado da chave dela, acima."
 
-#: includes/plugin/class-elderward-admin-hardening.php:336
+#: includes/plugin/class-elderward-admin-hardening.php:343
 msgid "Not checked yet."
 msgstr "Ainda não verificado."
 
-#: includes/plugin/class-elderward-admin-hardening.php:356
+#: includes/plugin/class-elderward-admin-hardening.php:363
 msgid "Write these rules to the .htaccess files shown? Elderward checks the site afterwards and undoes the change if the site stops working."
 msgstr "Gravar estas regras nos arquivos .htaccess mostrados? O Elderward verifica o site em seguida e desfaz a alteração se o site parar de funcionar."
 
-#: includes/plugin/class-elderward-admin-hardening.php:357
+#: includes/plugin/class-elderward-admin-hardening.php:364
 msgid "Remove every Elderward rule from the .htaccess files?"
 msgstr "Remover todas as regras do Elderward dos arquivos .htaccess?"
 
-#: includes/plugin/class-elderward-admin-hardening.php:358
+#: includes/plugin/class-elderward-admin-hardening.php:365
 msgid "Checking…"
 msgstr "Verificando…"
 
-#: includes/plugin/class-elderward-admin-hardening.php:362
+#: includes/plugin/class-elderward-admin-hardening.php:369
 msgid "Checked just now. The result of each protection is shown next to its switch above."
 msgstr "Verificado agora. O resultado de cada proteção aparece ao lado da chave dela, acima."
 
@@ -572,7 +572,7 @@ msgstr "\"Marcar como falso positivo\" esconde, nas próximas varreduras, um ach
 #: includes/plugin/class-elderward-admin.php:112
 #: includes/plugin/class-elderward-admin.php:1181
 #: includes/plugin/class-elderward-admin.php:1265
-#: includes/plugin/class-elderward-admin.php:1478
+#: includes/plugin/class-elderward-admin.php:1480
 msgid "Settings"
 msgstr "Configurações"
 
@@ -633,7 +633,7 @@ msgid "The AI assistants tab explains how to let an assistant such as Claude run
 msgstr "A aba Assistentes de IA explica como deixar um assistente, como o Claude, rodar varreduras e explicar os achados, pelo plugin MCP Adapter, ou como copiar um resumo para qualquer chat."
 
 #: includes/plugin/class-elderward-admin.php:131
-#: includes/plugin/class-elderward-admin.php:1438
+#: includes/plugin/class-elderward-admin.php:1440
 msgid "Cleaning up"
 msgstr "Limpeza"
 
@@ -764,7 +764,7 @@ msgid "Expired link, go back and try again."
 msgstr "Link expirado, volte e tente de novo."
 
 #: includes/plugin/class-elderward-admin.php:368
-#: includes/plugin/class-elderward-false-positives.php:178
+#: includes/plugin/class-elderward-false-positives.php:199
 msgid "That finding is not part of the current results."
 msgstr "Esse achado não faz parte dos resultados atuais."
 
@@ -884,7 +884,7 @@ msgstr "Condições"
 
 #: includes/plugin/class-elderward-admin.php:560
 #: includes/plugin/class-elderward-admin.php:1349
-#: includes/plugin/class-elderward-admin.php:1634
+#: includes/plugin/class-elderward-admin.php:1636
 msgid "Actions"
 msgstr "Ações"
 
@@ -905,7 +905,7 @@ msgid "Enable"
 msgstr "Ativar"
 
 #: includes/plugin/class-elderward-admin.php:577
-#: includes/plugin/class-elderward-admin.php:1655
+#: includes/plugin/class-elderward-admin.php:1657
 msgid "Keep"
 msgstr "Manter"
 
@@ -1348,17 +1348,17 @@ msgid "False positives"
 msgstr "Falsos positivos"
 
 #: includes/plugin/class-elderward-admin.php:1346
-#: includes/plugin/class-elderward-admin.php:1631
+#: includes/plugin/class-elderward-admin.php:1633
 msgid "Type"
 msgstr "Tipo"
 
 #: includes/plugin/class-elderward-admin.php:1347
-#: includes/plugin/class-elderward-admin.php:1632
+#: includes/plugin/class-elderward-admin.php:1634
 msgid "Where"
 msgstr "Onde"
 
 #: includes/plugin/class-elderward-admin.php:1348
-#: includes/plugin/class-elderward-admin.php:1633
+#: includes/plugin/class-elderward-admin.php:1635
 msgid "Details"
 msgstr "Detalhes"
 
@@ -1390,190 +1390,190 @@ msgstr "Marcado como falso positivo antes, mas o arquivo mudou desde que foi rev
 msgid "Marked as a false positive before, but the stored value has changed since it was reviewed, so it is reported again."
 msgstr "Marcado como falso positivo antes, mas o valor armazenado mudou desde que foi revisado, então volta a ser informado."
 
-#: includes/plugin/class-elderward-admin.php:1396
+#: includes/plugin/class-elderward-admin.php:1398
 msgid "Not a false positive"
 msgstr "Não é falso positivo"
 
-#: includes/plugin/class-elderward-admin.php:1398
+#: includes/plugin/class-elderward-admin.php:1400
 msgid "Mark as false positive"
 msgstr "Marcar como falso positivo"
 
-#: includes/plugin/class-elderward-admin.php:1401
+#: includes/plugin/class-elderward-admin.php:1403
 msgid "Download sample"
 msgstr "Baixar amostra"
 
-#: includes/plugin/class-elderward-admin.php:1424
+#: includes/plugin/class-elderward-admin.php:1426
 msgid "Download sample saves the file in a zip protected with the password \"infected\", plus a note of where it was found and why. Send it to a malware analyst or sandbox yourself: Elderward never uploads anything. The VirusTotal link sends only the file's hash, from your browser."
 msgstr "\"Baixar amostra\" salva o arquivo em um zip protegido com a senha \"infected\", junto com uma nota de onde ele foi encontrado e por quê. Envie você mesmo a um analista de malware ou a um sandbox: o Elderward nunca envia nada. O link do VirusTotal envia só o hash do arquivo, a partir do seu navegador."
 
-#: includes/plugin/class-elderward-admin.php:1426
+#: includes/plugin/class-elderward-admin.php:1428
 msgid "Download sample saves the file in a zip with a note of where it was found and why. This server's PHP cannot password-protect zips, so your antivirus may block the download. Elderward never uploads anything. The VirusTotal link sends only the file's hash, from your browser."
 msgstr "\"Baixar amostra\" salva o arquivo em um zip, junto com uma nota de onde ele foi encontrado e por quê. O PHP deste servidor não consegue proteger zips com senha, então seu antivírus pode bloquear o download. O Elderward nunca envia nada. O link do VirusTotal envia só o hash do arquivo, a partir do seu navegador."
 
-#: includes/plugin/class-elderward-admin.php:1440
+#: includes/plugin/class-elderward-admin.php:1442
 msgid "This page never changes files. Cleanup and restore run from the command line, where you can take a backup first and preview every change:"
 msgstr "Esta página nunca altera arquivos. A limpeza e a restauração rodam pela linha de comando, onde você pode fazer um backup antes e conferir cada alteração:"
 
-#: includes/plugin/class-elderward-admin.php:1441
+#: includes/plugin/class-elderward-admin.php:1443
 msgid "# Preview, then remove known malware from infected files"
 msgstr "# Conferir e depois remover malware conhecido dos arquivos infectados"
 
-#: includes/plugin/class-elderward-admin.php:1445
+#: includes/plugin/class-elderward-admin.php:1447
 msgid "# Preview, then restore modified WordPress, plugin and theme files"
 msgstr "# Conferir e depois restaurar arquivos modificados do WordPress, dos plugins e dos temas"
 
-#: includes/plugin/class-elderward-admin.php:1448
+#: includes/plugin/class-elderward-admin.php:1450
 msgid "No WP-CLI? The same scanners run with php bin/elderward.php from the plugin folder; see the readme."
 msgstr "Sem WP-CLI? As mesmas verificações rodam com php bin/elderward.php a partir da pasta do plugin; veja o readme."
 
-#: includes/plugin/class-elderward-admin.php:1485
-#: includes/plugin/class-elderward-admin.php:1488
+#: includes/plugin/class-elderward-admin.php:1487
+#: includes/plugin/class-elderward-admin.php:1490
 msgid "Run scans"
 msgstr "Executar varreduras"
 
-#: includes/plugin/class-elderward-admin.php:1489
+#: includes/plugin/class-elderward-admin.php:1491
 msgid "In the background (recommended)"
 msgstr "Em segundo plano (recomendado)"
 
-#: includes/plugin/class-elderward-admin.php:1490
+#: includes/plugin/class-elderward-admin.php:1492
 msgid "The scan keeps going after you leave this page."
 msgstr "A varredura continua depois que você sai desta página."
 
-#: includes/plugin/class-elderward-admin.php:1491
+#: includes/plugin/class-elderward-admin.php:1493
 msgid "Only while this page is open"
 msgstr "Só com esta página aberta"
 
-#: includes/plugin/class-elderward-admin.php:1492
+#: includes/plugin/class-elderward-admin.php:1494
 msgid "Use this if background scans never finish on your host."
 msgstr "Use se as varreduras em segundo plano nunca terminam na sua hospedagem."
 
-#: includes/plugin/class-elderward-admin.php:1496
+#: includes/plugin/class-elderward-admin.php:1498
 msgid "Background scans run in short steps through WP-Cron, WordPress's task runner. For that, the site must be able to make a request to its own wp-cron.php; Tools > Site Health reports it as \"loopback requests\". If the page notices that a background scan stopped moving, it carries on from your browser tab."
 msgstr "As varreduras em segundo plano rodam em pequenas etapas pelo WP-Cron, o executor de tarefas do WordPress. Para isso, o site precisa conseguir fazer uma requisição ao próprio wp-cron.php; Ferramentas > Saúde do site mostra isso como \"requisições de loopback\". Se a página perceber que uma varredura em segundo plano parou, ela continua a partir da aba do seu navegador."
 
-#: includes/plugin/class-elderward-admin.php:1497
+#: includes/plugin/class-elderward-admin.php:1499
 msgid "\"Only while this page is open\" runs the same steps from your browser tab instead. Closing the tab pauses the scan; opening the page again resumes it."
 msgstr "\"Só com esta página aberta\" roda as mesmas etapas a partir da aba do seu navegador. Fechar a aba pausa a varredura; abrir a página de novo a retoma."
 
-#: includes/plugin/class-elderward-admin.php:1503
+#: includes/plugin/class-elderward-admin.php:1505
 msgid "Automatic scans"
 msgstr "Varreduras automáticas"
 
-#: includes/plugin/class-elderward-admin.php:1511
+#: includes/plugin/class-elderward-admin.php:1513
 msgid "at"
 msgstr "às"
 
-#: includes/plugin/class-elderward-admin.php:1514
+#: includes/plugin/class-elderward-admin.php:1516
 msgid "on"
 msgstr "de"
 
 #. translators: %s: the site's timezone, for example UTC+2 or Europe/Lisbon
-#: includes/plugin/class-elderward-admin.php:1525
+#: includes/plugin/class-elderward-admin.php:1527
 #, php-format
 msgid "Scans on a schedule, without you starting them. Times use the site's time zone (%s)."
 msgstr "Varreduras programadas, sem que você precise iniciá-las. Os horários seguem o fuso horário do site (%s)."
 
 #. translators: %s: date and time of the next automatic scan
-#: includes/plugin/class-elderward-admin.php:1529
+#: includes/plugin/class-elderward-admin.php:1531
 #, php-format
 msgid "Next scan: %s."
 msgstr "Próxima varredura: %s."
 
-#: includes/plugin/class-elderward-admin.php:1535
+#: includes/plugin/class-elderward-admin.php:1537
 msgid "An automatic scan is the same scan as the Start scan button. It always runs in the background, checks the access logs set below, and is skipped if another scan is still in progress. Its results replace the ones on this page."
 msgstr "Uma varredura automática é a mesma do botão Iniciar varredura. Ela sempre roda em segundo plano, verifica os logs de acesso informados abaixo e é pulada se outra varredura ainda estiver em andamento. Os resultados dela substituem os desta página."
 
-#: includes/plugin/class-elderward-admin.php:1536
+#: includes/plugin/class-elderward-admin.php:1538
 msgid "WP-Cron starts tasks when someone visits the site, so on a quiet site a scan can start a little late. For exact times, have your host call wp-cron.php from a real cron job."
 msgstr "O WP-Cron inicia tarefas quando alguém visita o site, então, em um site com pouco movimento, uma varredura pode começar um pouco atrasada. Para horários exatos, peça à hospedagem para chamar o wp-cron.php por uma tarefa cron de verdade."
 
-#: includes/plugin/class-elderward-admin.php:1542
+#: includes/plugin/class-elderward-admin.php:1544
 #: includes/plugin/class-elderward-plugin.php:55
 #: includes/plugin/class-elderward-plugin.php:56
 msgid "Access logs"
 msgstr "Logs de acesso"
 
-#: includes/plugin/class-elderward-admin.php:1546
+#: includes/plugin/class-elderward-admin.php:1548
 msgid "Optional. A web server log file or folder, checked by every scan."
 msgstr "Opcional. Um arquivo ou pasta de logs do servidor web, verificado em toda varredura."
 
-#: includes/plugin/class-elderward-admin.php:1548
+#: includes/plugin/class-elderward-admin.php:1550
 msgid "This path does not exist or PHP cannot read it, so scans skip the logs."
 msgstr "Este caminho não existe ou o PHP não consegue lê-lo, então as varreduras pulam os logs."
 
-#: includes/plugin/class-elderward-admin.php:1553
+#: includes/plugin/class-elderward-admin.php:1555
 msgid "The logs show requests to web shells, login and upload attacks, and which files the attackers used. Scans read them only; they are never changed or sent anywhere."
 msgstr "Os logs mostram requisições a web shells, ataques ao login e aos uploads e quais arquivos os invasores usaram. As varreduras só os leem; eles nunca são alterados nem enviados a lugar nenhum."
 
-#: includes/plugin/class-elderward-admin.php:1554
+#: includes/plugin/class-elderward-admin.php:1556
 msgid "Common locations are /var/log/apache2, /var/log/nginx or a logs folder next to your site; your host's control panel or support can tell you. A folder includes rotated .log.1 and .gz files. The PHP user must be able to read them. Leave the field empty to skip this check."
 msgstr "Locais comuns são /var/log/apache2, /var/log/nginx ou uma pasta logs ao lado do site; o painel ou o suporte da hospedagem sabe dizer. Uma pasta inclui os arquivos rotacionados .log.1 e .gz. O usuário do PHP precisa conseguir lê-los. Deixe o campo vazio para pular esta verificação."
 
-#: includes/plugin/class-elderward-admin.php:1561
+#: includes/plugin/class-elderward-admin.php:1563
 msgid "DISABLE_WP_CRON is set on this site, so WordPress does not start WP-Cron on its own. Background and automatic scans only move forward when your server's cron job calls wp-cron.php (every minute or two is ideal)."
 msgstr "DISABLE_WP_CRON está definido neste site, então o WordPress não inicia o WP-Cron sozinho. As varreduras em segundo plano e as automáticas só avançam quando a tarefa cron do servidor chama o wp-cron.php (a cada um ou dois minutos é o ideal)."
 
-#: includes/plugin/class-elderward-admin.php:1563
+#: includes/plugin/class-elderward-admin.php:1565
 msgid "Save settings"
 msgstr "Salvar configurações"
 
-#: includes/plugin/class-elderward-admin.php:1577
+#: includes/plugin/class-elderward-admin.php:1579
 msgid "More about this"
 msgstr "Saiba mais"
 
 #. translators: 1: user display name, 2: date and time
-#: includes/plugin/class-elderward-admin.php:1600
+#: includes/plugin/class-elderward-admin.php:1602
 #, php-format
 msgid "Marked as a false positive by an AI assistant acting as %1$s on %2$s."
 msgstr "Marcado como falso positivo por um assistente de IA agindo como %1$s em %2$s."
 
 #. translators: 1: user display name, 2: date and time
-#: includes/plugin/class-elderward-admin.php:1603
+#: includes/plugin/class-elderward-admin.php:1605
 #, php-format
 msgid "Marked as a false positive by %1$s on %2$s."
 msgstr "Marcado como falso positivo por %1$s em %2$s."
 
-#: includes/plugin/class-elderward-admin.php:1623
+#: includes/plugin/class-elderward-admin.php:1625
 msgid "Saved false positives"
 msgstr "Falsos positivos salvos"
 
-#: includes/plugin/class-elderward-admin.php:1625
+#: includes/plugin/class-elderward-admin.php:1627
 msgid "Each one hides the same finding (same type, location and details) in later scans. For a finding about a file, it only applies while the file is exactly the one that was reviewed."
 msgstr "Cada um esconde o mesmo achado (mesmo tipo, local e detalhes) nas próximas varreduras. Para um achado sobre um arquivo, ele só vale enquanto o arquivo for exatamente o que foi revisado."
 
-#: includes/plugin/class-elderward-admin.php:1627
+#: includes/plugin/class-elderward-admin.php:1629
 msgid "None saved."
 msgstr "Nenhum salvo."
 
-#: includes/plugin/class-elderward-admin.php:1649
+#: includes/plugin/class-elderward-admin.php:1651
 msgid "Changed outside Elderward, so it is ignored. Keep it only if an administrator made this change."
 msgstr "Alterado fora do Elderward, por isso é ignorado. Mantenha-o só se um administrador fez essa alteração."
 
-#: includes/plugin/class-elderward-admin.php:1657
+#: includes/plugin/class-elderward-admin.php:1659
 msgid "Remove"
 msgstr "Remover"
 
-#: includes/plugin/class-elderward-admin.php:1662
+#: includes/plugin/class-elderward-admin.php:1664
 msgid "Forget all false positives"
 msgstr "Esquecer todos os falsos positivos"
 
-#: includes/plugin/class-elderward-admin.php:1672
+#: includes/plugin/class-elderward-admin.php:1674
 msgid "running"
 msgstr "em andamento"
 
-#: includes/plugin/class-elderward-admin.php:1674
+#: includes/plugin/class-elderward-admin.php:1676
 msgid "complete"
 msgstr "concluída"
 
-#: includes/plugin/class-elderward-admin.php:1676
+#: includes/plugin/class-elderward-admin.php:1678
 msgid "failed"
 msgstr "falhou"
 
-#: includes/plugin/class-elderward-admin.php:1678
+#: includes/plugin/class-elderward-admin.php:1680
 msgid "cancelled"
 msgstr "cancelada"
 
-#: includes/plugin/class-elderward-false-positives.php:197
+#: includes/plugin/class-elderward-false-positives.php:220
 msgid "Too many saved false positives. Remove some before adding more."
 msgstr "Há falsos positivos salvos demais. Remova alguns antes de adicionar outros."
 
@@ -1710,102 +1710,102 @@ msgid "Nginx"
 msgstr "Nginx"
 
 #. translators: %s: file path
-#: includes/plugin/class-elderward-hardening.php:454
+#: includes/plugin/class-elderward-hardening.php:464
 #, php-format
 msgid "%s cannot be written by PHP, so nothing was changed. Fix its permissions or add the rules by hand."
 msgstr "O PHP não consegue gravar %s, então nada foi alterado. Corrija as permissões ou adicione as regras à mão."
 
-#: includes/plugin/class-elderward-hardening.php:487
+#: includes/plugin/class-elderward-hardening.php:523
 msgid "The site stopped responding normally after the change (or a file could not be written), so every file was put back as it was. Your server probably does not allow one of these rules in .htaccess; try again without \"Turn off folder listings\" or \"Add security headers\"."
 msgstr "O site deixou de responder normalmente depois da alteração (ou um arquivo não pôde ser gravado), então cada arquivo voltou a ser como era. Provavelmente seu servidor não permite uma destas regras no .htaccess; tente de novo sem \"Desativar a listagem de pastas\" ou \"Adicionar cabeçalhos de segurança\"."
 
-#: includes/plugin/class-elderward-hardening.php:768
+#: includes/plugin/class-elderward-hardening.php:834
 msgid "This site could not reach itself over HTTP, so nothing could be checked. Tools > Site Health reports this as a loopback problem."
 msgstr "Este site não conseguiu acessar a si mesmo por HTTP, então nada pôde ser verificado. Ferramentas > Saúde do site mostra isso como um problema de loopback."
 
-#: includes/plugin/class-elderward-hardening.php:768
+#: includes/plugin/class-elderward-hardening.php:834
 msgid "The site did not answer the test request."
 msgstr "O site não respondeu à requisição de teste."
 
-#: includes/plugin/class-elderward-hardening.php:773
+#: includes/plugin/class-elderward-hardening.php:839
 msgid "PHP requests in uploads are refused."
 msgstr "Requisições de PHP nos uploads são recusadas."
 
-#: includes/plugin/class-elderward-hardening.php:773
+#: includes/plugin/class-elderward-hardening.php:839
 msgid "A PHP file in uploads would run."
 msgstr "Um arquivo PHP nos uploads seria executado."
 
-#: includes/plugin/class-elderward-hardening.php:775
+#: includes/plugin/class-elderward-hardening.php:841
 msgid "wp-includes and wp-admin/includes refuse direct PHP requests."
 msgstr "wp-includes e wp-admin/includes recusam requisições diretas de PHP."
 
-#: includes/plugin/class-elderward-hardening.php:775
+#: includes/plugin/class-elderward-hardening.php:841
 msgid "PHP files in wp-includes or wp-admin/includes can be requested directly."
 msgstr "Arquivos PHP em wp-includes ou wp-admin/includes podem ser pedidos diretamente."
 
-#: includes/plugin/class-elderward-hardening.php:777
+#: includes/plugin/class-elderward-hardening.php:843
 msgid "wp-config files and their copies are refused."
 msgstr "Arquivos wp-config e suas cópias são recusados."
 
-#: includes/plugin/class-elderward-hardening.php:777
+#: includes/plugin/class-elderward-hardening.php:843
 msgid "A copy such as wp-config.php.bak would be downloadable."
 msgstr "Uma cópia como wp-config.php.bak poderia ser baixada."
 
-#: includes/plugin/class-elderward-hardening.php:779
+#: includes/plugin/class-elderward-hardening.php:845
 msgid "Backup, dump and log files are refused."
 msgstr "Arquivos de backup, dumps e logs são recusados."
 
-#: includes/plugin/class-elderward-hardening.php:779
+#: includes/plugin/class-elderward-hardening.php:845
 msgid "Files such as .sql dumps, .bak copies and logs would be downloadable."
 msgstr "Arquivos como dumps .sql, cópias .bak e logs poderiam ser baixados."
 
-#: includes/plugin/class-elderward-hardening.php:781
+#: includes/plugin/class-elderward-hardening.php:847
 msgid "Hidden files and folders are refused."
 msgstr "Arquivos e pastas ocultos são recusados."
 
-#: includes/plugin/class-elderward-hardening.php:781
+#: includes/plugin/class-elderward-hardening.php:847
 msgid "Hidden files and folders such as .git or .env would be downloadable."
 msgstr "Arquivos e pastas ocultos, como .git ou .env, poderiam ser baixados."
 
-#: includes/plugin/class-elderward-hardening.php:783
+#: includes/plugin/class-elderward-hardening.php:849
 msgid "xmlrpc.php is refused."
 msgstr "O xmlrpc.php é recusado."
 
-#: includes/plugin/class-elderward-hardening.php:783
+#: includes/plugin/class-elderward-hardening.php:849
 msgid "xmlrpc.php answers requests."
 msgstr "O xmlrpc.php responde a requisições."
 
-#: includes/plugin/class-elderward-hardening.php:785
+#: includes/plugin/class-elderward-hardening.php:851
 msgid "Direct PHP requests in themes are refused."
 msgstr "Requisições diretas de PHP nos temas são recusadas."
 
-#: includes/plugin/class-elderward-hardening.php:785
+#: includes/plugin/class-elderward-hardening.php:851
 msgid "PHP files in themes can be requested directly."
 msgstr "Arquivos PHP dos temas podem ser pedidos diretamente."
 
-#: includes/plugin/class-elderward-hardening.php:787
+#: includes/plugin/class-elderward-hardening.php:853
 msgid "Direct PHP requests in plugins are refused."
 msgstr "Requisições diretas de PHP nos plugins são recusadas."
 
-#: includes/plugin/class-elderward-hardening.php:787
+#: includes/plugin/class-elderward-hardening.php:853
 msgid "PHP files in plugins can be requested directly."
 msgstr "Arquivos PHP dos plugins podem ser pedidos diretamente."
 
-#: includes/plugin/class-elderward-hardening.php:789
+#: includes/plugin/class-elderward-hardening.php:855
 msgid "The uploads folder is not listed."
 msgstr "A pasta de uploads não é listada."
 
-#: includes/plugin/class-elderward-hardening.php:789
+#: includes/plugin/class-elderward-hardening.php:855
 msgid "The uploads folder lists its files."
 msgstr "A pasta de uploads lista seus arquivos."
 
 #. translators: %s: list of HTTP header names
-#: includes/plugin/class-elderward-hardening.php:792
+#: includes/plugin/class-elderward-hardening.php:858
 msgid "All three security headers are sent."
 msgstr "Os três cabeçalhos de segurança são enviados."
 
 #. translators: %s: list of HTTP header names
-#: includes/plugin/class-elderward-hardening.php:792
+#: includes/plugin/class-elderward-hardening.php:858
 #, php-format
 msgid "Missing: %s."
 msgstr "Faltando: %s."
@@ -1909,7 +1909,7 @@ msgid "The PHP zip extension is not available, so the sample cannot be packaged.
 msgstr "A extensão zip do PHP não está disponível, então a amostra não pode ser empacotada. O SHA-256 dela aparece na página de achados."
 
 #: includes/plugin/class-elderward-sample.php:79
-#: includes/plugin/class-elderward-signatures.php:338
+#: includes/plugin/class-elderward-signatures.php:345
 msgid "The file could not be read."
 msgstr "Não foi possível ler o arquivo."
 
@@ -1972,18 +1972,30 @@ msgstr "Não há assinatura personalizada com esse nome."
 msgid "Each condition line must start with \"text:\" or \"regex:\" (got: %s)."
 msgstr "Cada linha de condição precisa começar com \"text:\" ou \"regex:\" (recebido: %s)."
 
-#: includes/plugin/class-elderward-signatures.php:327
+#: includes/plugin/class-elderward-signatures.php:334
 msgid "Give a readable file inside the WordPress folder."
 msgstr "Informe um arquivo legível dentro da pasta do WordPress."
 
-#: includes/plugin/class-elderward-signatures.php:332
+#: includes/plugin/class-elderward-signatures.php:339
 msgid "wp-config files hold the database password and cannot be tested."
 msgstr "Arquivos wp-config guardam a senha do banco de dados e não podem ser testados."
 
-#: includes/plugin/class-elderward-signatures.php:335
+#: includes/plugin/class-elderward-signatures.php:342
 msgid "The file is larger than 2 MB, which the file scanner skips too."
 msgstr "O arquivo tem mais de 2 MB, tamanho que a varredura de arquivos também pula."
 
-#: includes/plugin/class-elderward-signatures.php:349
+#: includes/plugin/class-elderward-signatures.php:356
 msgid "Cleanup signature (removes the injected code in a cleanup run)"
 msgstr "Assinatura de limpeza (remove o código injetado em uma limpeza)"
+
+#: includes/plugin/class-elderward-admin-hardening.php:299
+msgid "Apply without the safety check"
+msgstr "Aplicar sem a verificação de segurança"
+
+#: includes/plugin/class-elderward-admin-hardening.php:300
+msgid "This site cannot reach itself over HTTP, so Elderward cannot check it after writing the rules. If your server refuses one of them, the whole site, this page included, shows an error until you delete the lines between \"# BEGIN Elderward\" and \"# END Elderward\" in the .htaccess files over FTP or your host's file manager."
+msgstr "Este site não consegue acessar a si mesmo por HTTP, então o Elderward não pode verificá-lo depois de gravar as regras. Se o servidor recusar alguma delas, o site inteiro, inclusive esta página, mostrará um erro até que você apague as linhas entre \"# BEGIN Elderward\" e \"# END Elderward\" nos arquivos .htaccess, por FTP ou pelo gerenciador de arquivos da hospedagem."
+
+#: includes/plugin/class-elderward-hardening.php:492
+msgid "This site cannot reach itself over HTTP, so Elderward could not check it after the change or undo a breakage. Nothing was changed. To write the rules anyway, tick \"Apply without the safety check\" and keep FTP or file manager access at hand, or add the rules shown in the preview by hand."
+msgstr "Este site não consegue acessar a si mesmo por HTTP, então o Elderward não poderia verificá-lo depois da alteração nem desfazer uma quebra. Nada foi alterado. Para gravar as regras mesmo assim, marque \"Aplicar sem a verificação de segurança\" e tenha acesso por FTP ou pelo gerenciador de arquivos à mão, ou adicione manualmente as regras mostradas na prévia."
