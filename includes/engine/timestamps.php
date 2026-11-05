@@ -154,8 +154,8 @@ class TimestampScanner extends Scanner
             foreach ($cluster as $entry) {
                 $severity = is_php_file($entry['path']) ? 'MEDIUM' : 'LOW';
                 $this->report($severity, 'TIMESTAMP_OUTLIER', $entry['path'],
-                    $group_label . ': modified ' . date('Y-m-d H:i', $entry['mtime'])
-                    . ' but ' . count($dominant) . ' of ' . $entry_count . ' files cluster around ' . date('Y-m-d H:i', $dominant_time));
+                    $group_label . ': modified ' . local_time('Y-m-d H:i', $entry['mtime'])
+                    . ' but ' . count($dominant) . ' of ' . $entry_count . ' files cluster around ' . local_time('Y-m-d H:i', $dominant_time));
                 $totals['OUTLIER']++;
             }
         }
@@ -178,8 +178,8 @@ class TimestampScanner extends Scanner
                     continue;
                 }
                 $this->report('MEDIUM', 'TIMESTAMP_TIMESTOMP', $entry['path'],
-                    $group_label . ': content claims to be from ' . date('Y-m-d H:i', $entry['mtime'])
-                    . ' but the inode changed ' . date('Y-m-d H:i', $entry['ctime']) . ' - the mtime may have been faked (touch -t)');
+                    $group_label . ': content claims to be from ' . local_time('Y-m-d H:i', $entry['mtime'])
+                    . ' but the inode changed ' . local_time('Y-m-d H:i', $entry['ctime']) . ' - the mtime may have been faked (touch -t)');
                 $totals['TIMESTOMP']++;
             }
         }

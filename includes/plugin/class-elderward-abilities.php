@@ -41,6 +41,9 @@ final class Elderward_Abilities
 
     public static function register_category()
     {
+        if (!function_exists('wp_register_ability_category')) {
+            return;
+        }
         wp_register_ability_category(self::CATEGORY, array(
             'label'       => __('Elderward security', 'elderward'),
             'description' => __('Malware scanning and incident response with Elderward.', 'elderward'),

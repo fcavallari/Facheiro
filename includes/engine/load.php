@@ -8,8 +8,10 @@
 // Loaded by the plugin (ABSPATH defined), the standalone CLI, or the
 // key-protected recovery page (ELDERWARD_RECOVERY); never
 // served directly over the web.
-if (!defined('ABSPATH') && !defined('ELDERWARD_RECOVERY') && PHP_SAPI !== 'cli') {
-    exit;
+if (!defined('ABSPATH')) {
+    if (!defined('ELDERWARD_RECOVERY') && PHP_SAPI !== 'cli') {
+        exit;
+    }
 }
 
 if (!defined('ELDERWARD_ENGINE_LOADED')) {

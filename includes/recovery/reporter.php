@@ -7,8 +7,11 @@ namespace Elderward\Recovery;
 
 use Elderward\Engine\BaseReporter;
 
-if (!defined('ELDERWARD_RECOVERY')) {
-    exit;
+// Outside WordPress only the recovery page, after sign-in, may load the file.
+if (!defined('ABSPATH')) {
+    if (!defined('ELDERWARD_RECOVERY')) {
+        exit;
+    }
 }
 
 class CollectReporter extends BaseReporter
