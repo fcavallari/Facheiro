@@ -1,0 +1,6 @@
+<?php
+class Auth_Middleware {
+    public function __invoke( $handler ) {
+        return function ( $request ) use ( $handler ) { return $handler( $request ); };
+    }
+}

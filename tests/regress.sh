@@ -24,6 +24,10 @@ FAIL=0
 SKIP=0
 
 git -C "$REPO" show "$OLD_REF:elderward.php" > "$OLD" || { echo "cannot extract $OLD_REF:elderward.php"; exit 1; }
+# The old script names $http_response_header, which PHP 8.5 deprecates at
+# compile time; its notices are not part of the output contract being
+# compared (E_ALL & ~E_DEPRECATED, old script only).
+OLD_INI="-d error_reporting=24575"
 
 ###############
 # Fixtures
@@ -91,7 +95,7 @@ compare() {
         [ "$mode" = json ] && extra=(format=json)
         local o_out n_out o_rc n_rc
         # ${extra[@]+...}: an empty array is "unbound" to bash 3.2 (macOS) under set -u.
-        (cd "$WORK" && php "$OLD" "$@" ${extra[@]+"${extra[@]}"} > "$WORK/o.out" 2>/dev/null); o_rc=$?
+        (cd "$WORK" && php $OLD_INI "$OLD" "$@" ${extra[@]+"${extra[@]}"} > "$WORK/o.out" 2>/dev/null); o_rc=$?
         # noselfcheck=1: the old script had no self-check stage (that
         # stage has its own test, tests/checksums.sh).
         (cd "$WORK" && php "$NEW" "$@" ${extra[@]+"${extra[@]}"} noselfcheck=1 > "$WORK/n.out" 2>/dev/null); n_rc=$?
@@ -146,7 +150,7 @@ fi
 # Real cleanup: both must leave the same bytes on disk.
 ##############
 cp -r "$SITE" "$WORK/clean-old"; cp -r "$SITE" "$WORK/clean-new"
-php "$OLD" "scandirectory=$WORK/clean-old" >/dev/null 2>&1; o_rc=$?
+php $OLD_INI "$OLD" "scandirectory=$WORK/clean-old" >/dev/null 2>&1; o_rc=$?
 php "$NEW" "scandirectory=$WORK/clean-new" >/dev/null 2>&1; n_rc=$?
 if diff -r "$WORK/clean-old" "$WORK/clean-new" >/dev/null && [ "$o_rc" == "$n_rc" ] && ! grep -q ndsw "$WORK/clean-new/ndsw.js"; then
     PASS=$((PASS+1)); echo "PASS  real cleanup: identical trees, payload removed, exit=$n_rc"
@@ -161,7 +165,7 @@ fi
 ##############
 SIGSITE="$WORK/sigsite"
 mkdir -p "$SIGSITE"
-printf '<?php // acme_loader\n$x = $_POST["c"]; eval($x);\n' > "$SIGSITE/hit.php"
+printf '<?php // acme_loader\n$x = get_option("c"); eval($x);\n' > "$SIGSITE/hit.php"
 printf '<?php echo "hello";\n' > "$SIGSITE/clean.php"
 cat > "$WORK/sigs.json" <<'JSON'
 {"elderward_signatures":1,"signatures":[{"id":"acme-loader","target":"file","severity":"MEDIUM","description":"ACME loader","match":[{"string":"acme_loader"},{"regex":"/eval\\s*\\(\\s*\\$/"}]}]}
@@ -192,6 +196,80 @@ else
 fi
 sig_check "custom signature matches empty"  1 'empty' '' dryrun=1 "signatures=$WORK/sigs-bad.json" "scandirectory=$SIGSITE"
 sig_check "custom signature file missing"   1 'sigs-nope' '' dryrun=1 "signatures=$WORK/sigs-nope.json" "scandirectory=$SIGSITE"
+
+###############
+# Files the signature scan cannot check are findings, never a silent skip
+# (new rule, no old-script counterpart). A JavaScript bundle over the size
+# cap is INFO (core ships several); PHP that large, or a file that cannot be
+# read, is an ERROR. A dangling symlink holds nothing and stays quiet.
+##############
+BIGJS="$WORK/big-js"; BIGPHP="$WORK/big-php"; UNREAD="$WORK/unreadable"
+mkdir -p "$BIGJS" "$BIGPHP" "$UNREAD"
+head -c 2200000 /dev/zero | tr '\0' 'a' > "$BIGJS/bundle.js"
+{ printf '<?php\n/*'; head -c 2200000 /dev/zero | tr '\0' 'a'; printf '*/\n'; } > "$BIGPHP/padded.php"
+printf '<?php echo 1;\n' > "$UNREAD/locked.php"; chmod 000 "$UNREAD/locked.php"
+ln -s "$WORK/nonexistent.php" "$UNREAD/dangling.php"
+sig_check "oversized js is INFO"            0 'INFO,FILE_TOO_LARGE,.*bundle\.js,larger than the 2 MB' '' dryrun=1 "scandirectory=$BIGJS"
+sig_check "oversized php is ERROR"          2 'ERROR,FILE_TOO_LARGE,.*padded\.php,.*review it by hand' '' dryrun=1 "scandirectory=$BIGPHP"
+sig_check "oversized json event"            2 '"type":"FILE_TOO_LARGE"' '' dryrun=1 format=json "scandirectory=$BIGPHP"
+if [ -r "$UNREAD/locked.php" ]; then
+    SKIP=$((SKIP+1)); echo "SKIP  unreadable file case (running as root: chmod 000 does not stop reads)"
+else
+    sig_check "unreadable file is ERROR"    2 'ERROR,FILE_UNREADABLE,.*locked\.php' 'dangling' dryrun=1 "scandirectory=$UNREAD"
+fi
+chmod 644 "$UNREAD/locked.php"
+
+###############
+# Built-in detection signatures (new set, no old-script counterpart). The
+# fixtures in tests/fixtures/detection are stored as .txt so a git checkout
+# of the plugin never holds a reachable .php backdoor; they get their real
+# extension in the work dir. pos--RULE[--variant].EXT must report exactly
+# MALWARE_FOUND for RULE, neg--* (clean code shaped like a rule, mostly
+# taken from false positives seen on real plugins) must report nothing, every
+# rule must have a positive, and a real (non-dry) run must change nothing.
+##############
+DET="$WORK/detect"
+mkdir -p "$DET"
+for f in "$REPO"/tests/fixtures/detection/*.txt; do cp "$f" "$DET/$(basename "$f" .txt)"; done
+det_before="$(cd "$DET" && cat -- * | shasum)"
+det_out="$(cd "$WORK" && php "$NEW" dryrun=1 noselfcheck=1 "scandirectory=$DET" 2>/dev/null)"
+det_fail=""; det_pos=0; det_neg=0
+for f in "$DET"/pos--*; do
+    b="$(basename "$f")"; rule="${b#pos--}"; rule="${rule%%.*}"; rule="${rule%%--*}"; det_pos=$((det_pos+1))
+    printf '%s\n' "$det_out" | grep -qF ",MALWARE_FOUND,$DET/$b,$rule: " || det_fail="$det_fail $b"
+done
+for f in "$DET"/neg--*; do
+    b="$(basename "$f")"; det_neg=$((det_neg+1))
+    printf '%s\n' "$det_out" | grep -qF "$DET/$b," && det_fail="$det_fail $b"
+done
+if [ -z "$det_fail" ]; then
+    PASS=$((PASS+1)); echo "PASS  detection fixtures: $det_pos positives reported, $det_neg negatives quiet"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  detection fixtures:$det_fail"; printf '%s\n' "$det_out" | grep MALWARE_FOUND | head -40
+fi
+det_missing=""
+for rule in $(php -r 'require $argv[1] . "/includes/engine/load.php"; echo implode(" ", array_keys(Elderward\Engine\Signatures::builtin_detection()));' "$REPO"); do
+    found=0
+    for x in "$DET"/pos--"$rule".* "$DET"/pos--"$rule"--*; do [ -e "$x" ] && found=1; done
+    [ "$found" = 1 ] || det_missing="$det_missing $rule"
+done
+if [ -z "$det_missing" ]; then
+    PASS=$((PASS+1)); echo "PASS  every detection signature has a positive fixture"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  detection signatures without a positive fixture:$det_missing"
+fi
+if printf '%s\n' "$det_out" | grep -qF "pos--php_variable_function_name--split.php,php_variable_function_name: " \
+   && printf '%s\n' "$det_out" | grep -F "pos--php_variable_function_name--split.php," | grep -q 'after joining split strings'; then
+    PASS=$((PASS+1)); echo "PASS  split strings are joined for the second look"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  the split-string fixture was not caught by the second look"
+fi
+(cd "$WORK" && php "$NEW" noselfcheck=1 "scandirectory=$DET" >/dev/null 2>&1)
+if [ "$det_before" == "$(cd "$DET" && cat -- * | shasum)" ]; then
+    PASS=$((PASS+1)); echo "PASS  detection signatures never modify files (real run)"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  a real run modified a detection fixture"
+fi
 
 ###############
 # Restore safety (new rules, no old-script counterpart): a verified package

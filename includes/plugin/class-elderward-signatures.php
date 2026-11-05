@@ -291,6 +291,13 @@ final class Elderward_Signatures
                 $hits[] = array('id' => $name, 'source' => 'built-in', 'target' => 'file', 'severity' => 'HIGH', 'enabled' => true);
             }
         }
+        // The detection set, with the same second look the scan gives it.
+        $normalized = Signatures::normalize_code($text);
+        foreach (Signatures::builtin_detection() as $name => $signature) {
+            if (SignatureScanner::signature_matches($text, $signature) || ($normalized !== $text && SignatureScanner::signature_matches($normalized, $signature))) {
+                $hits[] = array('id' => $name, 'source' => 'built-in', 'target' => 'file', 'severity' => $signature['action']['detect'], 'enabled' => true);
+            }
+        }
         foreach (array('db_option' => Signatures::builtin_db_options(), 'db_post' => Signatures::builtin_db_posts()) as $target => $set) {
             foreach ($set as $signature) {
                 if (1 === preg_match($signature['pattern'], $text)) {
@@ -347,6 +354,10 @@ final class Elderward_Signatures
         foreach (Signatures::builtin_cleanup() as $name => $signature) {
             $conditions = array_merge(array($signature['prefilter']), $signature['triggers']);
             $list[] = array('id' => $name, 'target' => 'file', 'severity' => 'HIGH', 'description' => __('Cleanup signature (removes the injected code in a cleanup run)', 'elderward'), 'conditions' => self::conditions_text(array('match' => $conditions)));
+        }
+        foreach (Signatures::builtin_detection() as $name => $signature) {
+            $conditions = array_merge(array($signature['prefilter']), $signature['triggers']);
+            $list[] = array('id' => $name, 'target' => 'file', 'severity' => $signature['action']['detect'], 'description' => $signature['action']['description'], 'conditions' => self::conditions_text(array('match' => $conditions)));
         }
         foreach (array('db_option' => Signatures::builtin_db_options(), 'db_post' => Signatures::builtin_db_posts()) as $target => $set) {
             foreach ($set as $signature) {

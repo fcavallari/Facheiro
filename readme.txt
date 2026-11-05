@@ -22,7 +22,7 @@ Elderward helps you find out whether a WordPress site has been compromised, how,
 * **Crontab** - the current user's crontab checked for known persistence patterns.
 * **Database** - read-only: an inventory of administrator accounts with recently created ones highlighted, non-administrator roles that were granted takeover capabilities, PHP or hidden iframes or obfuscated JavaScript in options and posts, `siteurl`/`home` hijacks, and `active_plugins` tampering. Values are pattern-matched only and never unserialized.
 * **Access logs** (optional) - point it at an access log file or directory (rotated `.log.N` and `.gz` files included) to see known attack traffic: webshell requests, exploit attempts against known-vulnerable plugins, `.env` probes, code injection, brute force floods. Files modified within minutes of flagged requests are linked to that traffic.
-* **Malware signatures** - signature-based detection of known injections such as the `ndsw`/`ndsx` and `wqpq` JavaScript campaigns, run in dry-run mode from the admin page.
+* **Malware signatures** - signature-based detection of known injections such as the `ndsw`/`ndsx` and `wqpq` JavaScript campaigns, plus about 30 report-only rules for common webshell and backdoor shapes (code or commands from the request, password-gated shells, known shell families, obfuscated eval, PHP hidden behind image headers), run in dry-run mode from the admin page.
 
 Anything that blocks a check - an unreadable file, a failed query, a missing PHP extension - is itself reported as an `ERROR` finding, never skipped. A clean report means every scanner actually looked.
 
@@ -152,6 +152,7 @@ AI assistants connect to your site through the separate MCP Adapter plugin, usin
 = 1.0.0 =
 * First release as a WordPress plugin: admin page with a report-only scan that runs in the background through WP-Cron (or from the browser tab), scheduled scans, WP-CLI commands, and the standalone CLI.
 * False-positive marks bound to the reviewed file content, and encrypted sample downloads for manual analysis.
+* Built-in detection of common webshell and backdoor shapes (report only), and files the signature scan cannot read or that exceed its 2 MB limit reported instead of skipped.
 * Signature editor for custom, detection-only signatures, with a tester and JSON import/export (also usable by the standalone CLI through `signatures=`).
 * Hardening for Apache/LiteSpeed (`.htaccess`, applied with an automatic health check and rollback) and Nginx (downloadable configuration), with Recommended and Strict templates and a live check.
 * Recovery mode: a key-protected page that shows what broke the site and runs the full scan without loading WordPress.

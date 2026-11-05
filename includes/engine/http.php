@@ -38,7 +38,7 @@ class CurlHttp implements Http
             ));
             $body = curl_exec($ch);
             $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+            self::close_curl($ch);
             return array((false === $body) ? 0 : $status, (string) $body);
         }
 
@@ -47,8 +47,16 @@ class CurlHttp implements Http
             'user_agent'    => 'elderward',
             'ignore_errors' => true,
         )));
-        $body = @file_get_contents($url, false, $context);
-        $status = isset($http_response_header) ? self::status_from_response_headers($http_response_header) : 0;
+        // fopen rather than file_get_contents: the stream's wrapper_data
+        // holds the response headers on every PHP version, while the magic
+        // $http_response_header is deprecated in 8.5.
+        $fh = @fopen($url, 'r', false, $context);
+        if (false === $fh) {
+            return array(0, '');
+        }
+        $status = self::status_from_stream($fh);
+        $body = @stream_get_contents($fh);
+        fclose($fh);
         return array($status, (false === $body) ? '' : $body);
     }
 
@@ -73,7 +81,7 @@ class CurlHttp implements Http
             ));
             $ok = curl_exec($ch);
             $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+            self::close_curl($ch);
             fclose($fh);
             return ((false !== $ok) ? $status : 0);
         }
@@ -88,7 +96,7 @@ class CurlHttp implements Http
         if (false === $src) {
             return (0);
         }
-        $status = isset($http_response_header) ? self::status_from_response_headers($http_response_header) : 0;
+        $status = self::status_from_stream($src);
         $dst = @fopen($dest, 'w');
         if (false === $dst) {
             fclose($src);
@@ -98,6 +106,23 @@ class CurlHttp implements Http
         fclose($src);
         fclose($dst);
         return ((false === $copied) ? 0 : $status);
+    }
+
+    private static function close_curl($ch)
+    {
+        // A no-op since PHP 8.0 (the handle is freed with its last
+        // reference) and deprecated in 8.5; still needed before 8.0.
+        if (PHP_VERSION_ID < 80000) {
+            curl_close($ch);
+        }
+    }
+
+    private static function status_from_stream($fh)
+    {
+        // For the http wrapper, wrapper_data is the list of response header
+        // lines, every redirect's block included.
+        $meta = @stream_get_meta_data($fh);
+        return (self::status_from_response_headers(isset($meta['wrapper_data']) ? $meta['wrapper_data'] : null));
     }
 
     public static function status_from_response_headers($headers)
