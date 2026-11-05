@@ -235,7 +235,7 @@ final class Elderward_Abilities
         }
         $counts = array('HIGH' => 0, 'ERROR' => 0, 'MEDIUM' => 0, 'LOW' => 0, 'INFO' => 0, 'false_positives' => 0);
         $table = Elderward_Plugin::findings_table();
-        // phpcs:ignore WordPress.DB -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
+        // phpcs:ignore WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
         $rows = $wpdb->get_results($wpdb->prepare("SELECT severity, fp, COUNT(*) AS n FROM `{$table}` WHERE job_id = %s GROUP BY severity, fp", $job['id']));
         foreach ((array) $rows as $row) {
             if (Elderward_False_Positives::MATCHED === (int) $row->fp) {
@@ -331,13 +331,13 @@ final class Elderward_Abilities
         $limit = isset($input['limit']) ? max(1, min(self::MAX_FINDINGS, (int) $input['limit'])) : 50;
         $offset = isset($input['offset']) ? max(0, (int) $input['offset']) : 0;
         $table = Elderward_Plugin::findings_table();
-        // phpcs:disable WordPress.DB -- the plugin's own table (name from the base prefix); the WHERE clause is built from fixed fragments, values go through prepare(); must not be cached.
+        // phpcs:disable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter -- the plugin's own table (name from the base prefix); the WHERE clause is built from fixed fragments, values go through prepare(); must not be cached.
         $total = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$table}` WHERE {$where}", $params));
         $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT id, severity, type, path, detail, context, sha256, fingerprint, fp FROM `{$table}` WHERE {$where} ORDER BY FIELD(severity,'HIGH','ERROR','MEDIUM','LOW','INFO'), id LIMIT %d OFFSET %d",
             array_merge($params, array($limit, $offset))
         ));
-        // phpcs:enable WordPress.DB
+        // phpcs:enable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $findings = array();
         foreach ((array) $rows as $row) {
             $findings[] = self::finding_array($row, false);

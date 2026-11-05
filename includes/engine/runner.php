@@ -9,6 +9,8 @@ namespace Elderward\Engine;
 // quickscan, scandb, and the default signature scan ("signatures").
 //////////////
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- an exception message is data, not output: the entry layer that catches it (CLI, WP-CLI, admin page, recovery page) escapes it for the place it shows it.
+
 final class Runner
 {
     const MODES = 'scanall,selfcheck,scancron,scanlog,scanintegrity,scantimes,quickscan,scandb';
@@ -92,6 +94,8 @@ final class Runner
     public static function scanall_context(Context $ctx)
     {
         $root = require_wordpress_root($ctx->root());
+        // Before any stage runs, not when the signature stage gets there.
+        require_outside_tool($ctx, $root);
         if ($ctx->has('restore')) {
             $ctx->reporter->progress("scanall is report-only: ignoring restore=1 (run scanintegrity=1 restore=1 separately)\n");
         }

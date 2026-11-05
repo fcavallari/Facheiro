@@ -119,7 +119,7 @@ final class Elderward_Cron
         if ($limit > 0 && $limit < 300 && function_exists('set_time_limit')) {
             $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
             if (!in_array('set_time_limit', $disabled, true)) {
-                @set_time_limit(300); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- some hosts refuse; the current limit is re-read below.
+                @set_time_limit(300); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, Squiz.PHP.DiscouragedFunctions.Discouraged -- a background scan chunk needs more than the default 30 seconds; some hosts refuse, so the current limit is re-read below.
                 $limit = (int) ini_get('max_execution_time');
             }
         }

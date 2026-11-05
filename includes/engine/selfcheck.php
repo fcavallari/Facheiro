@@ -115,7 +115,7 @@ class SelfCheckScanner extends IntegrityScanner
         $name = 'Elderward' . (null === $version ? '' : ' ' . $version);
         $present = array();
         $unlisted = array();
-        foreach (list_files_recursive($dir, $dir) as $relative_path) {
+        foreach ($this->package_files($dir, $dir, $name, $totals) as $relative_path) {
             $top = strtok($relative_path, '/');
             if (in_array($top, self::$unlisted, true) && $top !== $relative_path) {
                 $unlisted[$top][] = $relative_path;

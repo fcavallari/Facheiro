@@ -24,6 +24,8 @@ namespace Elderward\Engine;
 // finding (CONTENT_DIR) so the report says where it looked.
 //////////////
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- an exception message is data, not output: the entry layer that catches it (CLI, WP-CLI, admin page, recovery page) escapes it for the place it shows it.
+
 final class Layout
 {
     // Content folders to scan: the one WordPress loads first, then
@@ -181,7 +183,7 @@ final class Layout
     // more privileges than the web user. Only an option the operator (or
     // WordPress itself, through the plugin) gave can take it there.
     //////////////
-    private static function may_write(Context $ctx)
+    public static function may_write(Context $ctx)
     {
         if ($ctx->has('dryrun')) {
             return (false);

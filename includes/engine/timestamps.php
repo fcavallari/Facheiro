@@ -62,11 +62,13 @@ class TimestampScanner extends Scanner
             // would flag on almost every site.
             //////////////
             $core_files = array();
+            $unreadable = array();
             foreach (array('wp-admin', 'wp-includes') as $core_dir) {
                 if (is_dir($root . '/' . $core_dir)) {
-                    $core_files = array_merge($core_files, list_files_absolute($root . '/' . $core_dir));
+                    $core_files = array_merge($core_files, list_files_absolute($root . '/' . $core_dir, $unreadable));
                 }
             }
+            $this->report_unreadable($unreadable);
             foreach ((array) @glob($root . '/*.php') as $root_file) {
                 if ('wp-config.php' !== basename($root_file)) {
                     $core_files[] = $root_file;
@@ -74,9 +76,18 @@ class TimestampScanner extends Scanner
             }
             $this->analyze_group('core', $core_files, $state['totals']);
         } else {
-            $this->analyze_group($unit['label'], list_files_absolute($unit['package']), $state['totals']);
+            $unreadable = array();
+            $this->analyze_group($unit['label'], list_files_absolute($unit['package'], $unreadable), $state['totals']);
+            $this->report_unreadable($unreadable);
         }
         return (null);
+    }
+
+    private function report_unreadable(array $folders)
+    {
+        foreach ($folders as $folder) {
+            $this->report('ERROR', 'FILE_UNREADABLE', $folder, 'cannot list the folder: the files inside were NOT checked for timestamp anomalies');
+        }
     }
 
     public function finish(array &$state)

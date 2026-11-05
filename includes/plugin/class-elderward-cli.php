@@ -34,7 +34,7 @@ class Elderward_CLI
      * : Pre-downloaded manifests/packages instead of the network (offline integrity check).
      *
      * [--locale=<locale>]
-     * : Core locale for the checksum lookup (default en_US).
+     * : Core locale for the checksum lookup (default: the one wp-includes/version.php names, else en_US).
      *
      * [--format=<format>]
      * : text (default) or json.
@@ -124,7 +124,7 @@ class Elderward_CLI
      * : Pre-downloaded manifests/packages instead of the network.
      *
      * [--locale=<locale>]
-     * : Core locale for the checksum lookup (default en_US).
+     * : Core locale for the checksum lookup (default: the one wp-includes/version.php names, else en_US).
      *
      * [--format=<format>]
      * : text (default) or json.

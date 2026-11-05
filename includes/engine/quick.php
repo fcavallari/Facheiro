@@ -9,7 +9,9 @@ namespace Elderward\Engine;
 // Units: the files directly in the WordPress root, then each top-level
 // directory (the content folder split into its own subdirectories, since
 // uploads alone can be the bulk of a site), then any content or plugin
-// folder that lives outside the root.
+// folder that lives outside the root. A symbolic link to a folder is a
+// unit too when the walk may go there (TreeWalk): a linked uploads folder
+// holds the same dropped webshells as a real one.
 //////////////
 
 class QuickScanner extends Scanner
@@ -30,9 +32,9 @@ class QuickScanner extends Scanner
         $layout = Layout::of($this->ctx);
         Layout::report_notes($this->ctx, true);
         $units = array(array('files' => $root));
-        foreach (self::subdirs($root) as $dir) {
+        foreach ($this->subdirs($root) as $dir) {
             if ($layout->is_content_dir($dir)) {
-                self::content_units($dir, $units);
+                $this->content_units($dir, $units);
                 continue;
             }
             $units[] = array('dir' => $dir);
@@ -41,7 +43,7 @@ class QuickScanner extends Scanner
         // is never reached from the root walk.
         foreach ($layout->outside_root as $dir) {
             if ($layout->is_content_dir($dir)) {
-                self::content_units($dir, $units);
+                $this->content_units($dir, $units);
             } else {
                 $units[] = array('dir' => $dir);
             }
@@ -49,24 +51,42 @@ class QuickScanner extends Scanner
         return ($units);
     }
 
-    private static function content_units($dir, array &$units)
+    private function content_units($dir, array &$units)
     {
         $units[] = array('files' => $dir);
-        foreach (self::subdirs($dir) as $sub) {
+        foreach ($this->subdirs($dir) as $sub) {
             $units[] = array('dir' => $sub);
         }
     }
 
-    private static function subdirs($dir)
+    // The folders every unit together already covers: a link into one of
+    // them is not walked a second time.
+    private function covered()
+    {
+        return (array_merge(array($this->ctx->root()), Layout::of($this->ctx)->outside_root));
+    }
+
+    private function subdirs($dir)
     {
         $dirs = array();
-        foreach ((array) @scandir($dir) as $entry) {
+        $entries = @scandir($dir);
+        if (false === $entries) {
+            $this->report('ERROR', 'FILE_UNREADABLE', $dir, 'cannot list the folder: the files inside were NOT checked by the quick scan');
+            return ($dirs);
+        }
+        $dir_real = TreeWalk::real($dir);
+        foreach ($entries as $entry) {
             if ('.' === $entry || '..' === $entry) {
                 continue;
             }
-            if (is_dir($dir . '/' . $entry) && !is_link($dir . '/' . $entry)) {
-                $dirs[] = $dir . '/' . $entry;
+            $path = $dir . '/' . $entry;
+            if (!is_dir($path)) {
+                continue;
             }
+            if (is_link($path) && (null === $dir_real || null === TreeWalk::enterable($path, $dir_real, $this->covered()))) {
+                continue;
+            }
+            $dirs[] = $path;
         }
         return ($dirs);
     }
@@ -77,7 +97,8 @@ class QuickScanner extends Scanner
         $layout = Layout::of($this->ctx);
         $counts = &$state['counts'];
         if (isset($unit['files'])) {
-            // Only the files directly inside this directory.
+            // Only the files directly inside this directory. A folder that
+            // cannot be listed was reported when the units were planned.
             foreach ((array) @scandir($unit['files']) as $entry) {
                 $path = $unit['files'] . '/' . $entry;
                 if ('.' === $entry || '..' === $entry || !is_file($path)) {
@@ -88,12 +109,14 @@ class QuickScanner extends Scanner
             return (null);
         }
 
-        foreach (recursive_file_iterator($unit['dir']) as $file) {
+        $walk = new TreeWalk($unit['dir'], true, $this->covered());
+        foreach ($walk as $file) {
             if (!$file->isFile()) {
                 continue;
             }
             $this->check_file($root, $layout, $file->getPathname(), $file->getFilename(), $counts);
         }
+        $this->report_walk($walk, 'NOT checked by the quick scan');
         return (null);
     }
 

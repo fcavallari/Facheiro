@@ -45,6 +45,23 @@ abstract class Scanner
         $this->ctx->reporter->finding($severity, $type, $path, $detail, $context, $meta);
     }
 
+    ///////////////
+    // What a folder walk could not cover is a finding, never a silent
+    // skip. $not_done says what the files inside missed, for example "NOT
+    // checked for malware signatures".
+    //////////////
+    protected function report_walk(TreeWalk $walk, $not_done)
+    {
+        foreach ($walk->unreadable as $folder) {
+            $this->report('ERROR', 'FILE_UNREADABLE', $folder, 'cannot list the folder: the files inside were ' . $not_done);
+        }
+        foreach ($walk->refused as $link => $target) {
+            $this->report('ERROR', 'SYMLINK_NOT_FOLLOWED', $link, 'symbolic link to the folder ' . $target
+                . ': a run that can modify files does not follow it, so the files behind it were ' . $not_done
+                . ' - scan that folder on its own (scandirectory=' . $target . ') or add dryrun=1 to only report');
+        }
+    }
+
     protected function progress($text)
     {
         $this->ctx->reporter->progress($text);

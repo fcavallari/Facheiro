@@ -12,6 +12,11 @@
 // - PHP 5.6 syntax, like the engine: a broken site may run old PHP.
 //////////////
 
+// WordPress is not loaded on this page, so none of its helpers exist here.
+// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- App::h() (htmlspecialchars with ENT_QUOTES) is this page's escaping function and every value shown goes through it, alone or inside App::e(); JSON goes through json_encode().
+// phpcs:disable WordPress.Security.ValidatedSanitizedInput -- no WordPress, so nothing adds slashes to the input and there is no sanitize_*(): each value is cast, then compared with an allowlist or a hash, or resolved with realpath() before it is used.
+// phpcs:disable WordPress.Security.NonceVerification -- no WordPress nonces here: sign-in is checked against the key, and every other POST needs a token bound to the signed session (App::csrf()).
+
 namespace Elderward\Recovery;
 
 use Elderward\Engine\BaseReporter;
@@ -439,6 +444,21 @@ final class App
         return is_array($data) ? $data : array();
     }
 
+    /**
+     * JSON for a response, the export or a state file. json_encode() gives
+     * false for a string that is not valid UTF-8 (a file name, a log line);
+     * a cleaned copy is encoded then, with the engine's cleaner when the
+     * engine is loaded (findings only exist after it is).
+     */
+    private static function encode($data)
+    {
+        $json = json_encode($data); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here.
+        if (false === $json && class_exists('Elderward\\Engine\\BaseReporter', false)) {
+            $json = json_encode(BaseReporter::clean_utf8_deep($data)); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here.
+        }
+        return $json;
+    }
+
     private static function write_state($name, array $data)
     {
         if (null === self::$state_dir) {
@@ -446,7 +466,12 @@ final class App
         }
         $file = self::$state_dir . '/' . $name . '.php';
         $tmp = $file . '.' . bin2hex(self::random(4)) . '.tmp';
-        if (false === @file_put_contents($tmp, self::GUARD . "\n" . json_encode($data), LOCK_EX)) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents, WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here; its own exit-guarded state file, written to a temp name and renamed; failure is returned.
+        // No JSON, no write: the guard line alone would wipe the state.
+        $json = self::encode($data);
+        if (false === $json) {
+            return false;
+        }
+        if (false === @file_put_contents($tmp, self::GUARD . "\n" . $json, LOCK_EX)) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- no WordPress here; its own exit-guarded state file, written to a temp name and renamed; failure is returned.
             return false;
         }
         return @rename($tmp, $file); // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- atomic replace of its own state file.
@@ -691,7 +716,7 @@ final class App
             return self::status_payload($job);
         }
         self::load_engine();
-        @set_time_limit(60); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- may be disabled by the host; the step budget stays within the default limit anyway.
+        @set_time_limit(60); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, Squiz.PHP.DiscouragedFunctions.Discouraged -- one scan step; may be disabled by the host, and the step budget stays within the default limit anyway.
         $deadline = microtime(true) + self::budget();
         $reporter = new CollectReporter(isset($job['counts']) ? (array) $job['counts'] : array());
         try {
@@ -829,7 +854,10 @@ final class App
         header('Content-Type: application/x-ndjson; charset=utf-8');
         header('Content-Disposition: attachment; filename="elderward-recovery-' . gmdate('Ymd-His') . '.json"');
         foreach (isset($job['findings']) ? $job['findings'] : array() as $finding) {
-            echo json_encode(array_merge(array('event' => 'finding'), $finding)) . "\n"; // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here; JSON responses of the recovery page.
+            $line = self::encode(array_merge(array('event' => 'finding'), (array) $finding));
+            if (false !== $line) {
+                echo $line . "\n";
+            }
         }
         exit;
     }
@@ -860,7 +888,7 @@ final class App
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here; NDJSON export.
+        echo (string) self::encode($data);
         exit;
     }
 

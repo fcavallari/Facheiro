@@ -110,7 +110,7 @@ final class Elderward_Job
         if (null !== $existing) {
             self::remove_work_dir(self::work_dir($existing['id']));
         }
-        $wpdb->query('DELETE FROM `' . Elderward_Plugin::findings_table() . '`'); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- the plugin's own table; one report is kept.
+        $wpdb->query('DELETE FROM `' . Elderward_Plugin::findings_table() . '`'); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- the plugin's own table (name from the base prefix, never user input); one report is kept.
 
         $options['scanall'] = 1;
         $options['scandirectory'] = untrailingslashit(ABSPATH);
@@ -197,11 +197,13 @@ final class Elderward_Job
                     $job['state'] = $scanner->init_state();
                     $job['queue'] = $scanner->plan($job['state']);
                     $job['message'] = $reporter->last_progress();
+                    self::require_stored($reporter);
                 }
 
                 if (0 === count($job['queue'])) {
                     $ctx->deadline = null;
                     $scanner->finish($job['state']);
+                    self::require_stored($reporter);
                     $job['states'][$stage] = $job['state'];
                     $job['summaries'] = array_merge($job['summaries'], $reporter->summaries());
                     $job['stage_index']++;
@@ -225,6 +227,7 @@ final class Elderward_Job
                 self::$in_flight = $job;
                 array_shift($job['queue']);
                 $next = $scanner->run($unit, $job['state']);
+                self::require_stored($reporter);
                 if (null !== $next) {
                     $job['queue'] = array_merge(Elderward\Engine\Scanner::as_unit_list($next), $job['queue']);
                 }
@@ -253,6 +256,23 @@ final class Elderward_Job
         self::$in_flight = null;
         self::release_lock();
         return $job;
+    }
+
+    /**
+     * A finding the table refused twice (the table is missing, the database
+     * is failing) is one the report will not show: the scan stops as failed
+     * instead of finishing with a report that looks cleaner than the site.
+     * The message is engine-style English, like every stored scan error.
+     */
+    private static function require_stored(Elderward_Store_Reporter $reporter)
+    {
+        global $wpdb;
+        if ($reporter->not_stored() > 0) {
+            $message = $reporter->not_stored() . ' finding(s) could not be saved to ' . Elderward_Plugin::findings_table()
+                . ('' === (string) $wpdb->last_error ? '' : ' (' . Elderward\Engine\BaseReporter::clean_utf8(substr((string) $wpdb->last_error, 0, 300)) . ')')
+                . ' - the report would be incomplete. Deactivate and activate Elderward to recreate its table, or run wp elderward scanall';
+            throw new Elderward\Engine\Fatal($message); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- an exception message is data: step() stores it on the job and the admin page escapes it where it prints it.
+        }
     }
 
     private static function finish_failed(array $job)

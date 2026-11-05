@@ -7,6 +7,8 @@ namespace Elderward\Engine;
 // instead of silently never matching.
 //////////////
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- an exception message is data, not output: the entry layer that catches it (CLI, WP-CLI, admin page, recovery page) escapes it for the place it shows it.
+
 final class Signatures
 {
     // Files larger than this are skipped by the signature scanner (and the

@@ -9,9 +9,15 @@
 // hand): without one it answers 404 and does nothing else.
 //
 // Report-only: it reads files and the database and never changes anything.
+//
+// This file is meant to be requested directly: that is the whole point of
+// a page that works when WordPress does not. What protects it is the key,
+// not WordPress. Loaded from inside WordPress it does nothing.
 //////////////
 
-define('ELDERWARD_RECOVERY_ENTRY', true);
-require __DIR__ . '/includes/recovery/app.php';
+if (!defined('ABSPATH')) {
+    define('ELDERWARD_RECOVERY_ENTRY', true);
+    require __DIR__ . '/includes/recovery/app.php';
 
-\Elderward\Recovery\App::run(__DIR__);
+    \Elderward\Recovery\App::run(__DIR__);
+}

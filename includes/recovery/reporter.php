@@ -29,9 +29,13 @@ class CollectReporter extends BaseReporter
     {
         $this->track($severity);
         $this->counts[$severity] = isset($this->counts[$severity]) ? $this->counts[$severity] + 1 : 1;
-        $finding = array('severity' => $severity, 'type' => $type, 'path' => $path, 'detail' => $detail);
+        // The job file is JSON, which refuses a string that is not valid
+        // UTF-8 (a file name, a log line, a database value cut in the
+        // middle of a character): one such finding would lose the whole
+        // scan state. Invalid bytes become U+FFFD.
+        $finding = array('severity' => $severity, 'type' => $type, 'path' => self::clean_utf8($path), 'detail' => self::clean_utf8($detail));
         if (!empty($context)) {
-            $finding['context'] = array_slice(array_map('strval', (array) $context), 0, 20);
+            $finding['context'] = array_slice(array_map(array(__CLASS__, 'clean_utf8'), (array) $context), 0, 20);
         }
         $this->findings[] = $finding;
     }
@@ -42,12 +46,12 @@ class CollectReporter extends BaseReporter
 
     public function progress($text)
     {
-        $this->last = trim((string) $text, "= \n");
+        $this->last = self::clean_utf8(trim((string) $text, "= \n"));
     }
 
     public function fatal($message)
     {
-        $this->last = (string) $message;
+        $this->last = self::clean_utf8($message);
     }
 
     /**
