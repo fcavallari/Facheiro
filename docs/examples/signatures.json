@@ -9,7 +9,7 @@
       "enabled": true,
       "match": [
         {"string": "acme_loader"},
-        {"regex": "/eval\\s*\\(\\s*base64_decode\\s*\\(\\s*\\$/i"}
+        {"regex": "/file_put_contents\\s*\\([^;]{0,100}\\.php['\"]\\s*,/i"}
       ]
     },
     {

