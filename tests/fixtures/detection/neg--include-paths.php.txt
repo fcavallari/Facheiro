@@ -1,0 +1,7 @@
+<?php
+$img = plugins_url( "include/images/clear.png", __FILE__ );
+echo "<img src=\"" . $base . "/include-exclude/tag-manager.png\">";
+// Note: AJAX requests do not include $_GET["key"]; filters check it later.
+// Values may come as $_POST["values"] (assoc array) or a JSON string.
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner.

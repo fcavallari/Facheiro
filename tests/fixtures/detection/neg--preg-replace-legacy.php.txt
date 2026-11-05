@@ -1,0 +1,8 @@
+<?php
+// Shapes from vBulletin 3, PHPMailer 5 and PEAR, which shipped /e before PHP 7.
+$bbcode = preg_replace("#\[img\](.*)\[/img\]#esiU", "\$this->handle_bbcode_img_match(\x27\\1\x27)", $bbcode);
+$encoded = preg_replace("/([\000-\010\013\014\016-\037\075\177-\377])/e", "\x27=\x27.sprintf(\x27%02X\x27, ord(\x27\\1\x27))", $encoded);
+$name = preg_replace("/(^|_)([a-z])/e", "strtoupper(\x27\\2\x27)", $name);
+$query = preg_replace("/(\w+)/e", "stripslashes(str_replace(\x27 \x27, \x27*\x27, \x27\\0\x27))", $query_text);
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner.

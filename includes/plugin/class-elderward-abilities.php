@@ -466,7 +466,7 @@ final class Elderward_Abilities
         return array(
             'builtin' => $builtin,
             'custom'  => Elderward_Signatures::all(),
-            'notes'   => 'Built-in cleanup signatures clean files in a command-line cleanup run. Built-in detection signatures (generic webshell and backdoor shapes, reported as MALWARE_FOUND) and custom signatures (SIGNATURE_MATCH) only report. Built-ins are tried first and the first match wins, one finding per file. File signatures only see files with the usual code/web extensions and under 2 MB (larger files report FILE_TOO_LARGE). Findings name custom signatures custom.<id>.',
+            'notes'   => 'Built-in cleanup signatures clean files in a command-line cleanup run. Built-in detection signatures (generic webshell and backdoor shapes, reported as MALWARE_FOUND) and custom signatures (SIGNATURE_MATCH) only report. Built-ins are tried first and the first match wins, one finding per file. File signatures only see files with the usual code/web extensions and under 2 MB (larger files report FILE_TOO_LARGE); a regex the PCRE engine gives up on for a file reports SIGNATURE_ERROR naming the signature. Findings name custom signatures custom.<id>.',
         );
     }
 
