@@ -119,23 +119,50 @@ class SignatureScanner extends Scanner
 
     private function scan_file($target_file)
     {
-        // Files over the size cap are skipped; the read is capped too.
+        // Gone since the walk, or a symlink pointing nowhere: nothing to read.
+        if (!is_file($target_file)) {
+            return;
+        }
         $filesize = @filesize($target_file);
-        if ($filesize > Signatures::FILESIZE_LIMIT) {
+        if (false !== $filesize && $filesize > Signatures::FILESIZE_LIMIT) {
+            $this->report_too_large($target_file, $filesize);
             return;
         }
         $fh = @fopen($target_file, 'r');
         if (false === $fh) {
-            $this->progress('Error reading ' . $target_file . "\n");
+            $this->report('ERROR', 'FILE_UNREADABLE', $target_file, 'cannot open the file: NOT checked for malware signatures');
             return;
         }
-        $buffer = @fread($fh, Signatures::FILESIZE_LIMIT);
+        // One byte past the cap tells a file that grew since the stat from
+        // one that fits: a cleanup must never write back a truncated read.
+        $buffer = @fread($fh, Signatures::FILESIZE_LIMIT + 1);
         @fclose($fh);
         if (false === $buffer) {
-            $this->progress('Error reading ' . $target_file . "\n");
+            $this->report('ERROR', 'FILE_UNREADABLE', $target_file, 'cannot read the file: NOT checked for malware signatures');
+            return;
+        }
+        if (strlen($buffer) > Signatures::FILESIZE_LIMIT) {
+            $this->report_too_large($target_file, strlen($buffer));
             return;
         }
         $this->cleanup($buffer, $target_file);
+    }
+
+    private function report_too_large($target_file, $size)
+    {
+        ///////////////
+        // Never a silent skip. Large JavaScript bundles are normal (core's
+        // own wp-includes/js/dist has several), so those stay INFO; PHP this
+        // large is rare and is where a padded backdoor hides, so it is an
+        // ERROR like any other check that could not run.
+        //////////////
+        $limit_mb = (int) (Signatures::FILESIZE_LIMIT / 1048576);
+        $detail = 'larger than the ' . $limit_mb . ' MB signature scan limit (' . $size . ' bytes): NOT checked for malware signatures';
+        if (is_php_file($target_file)) {
+            $this->report('ERROR', 'FILE_TOO_LARGE', $target_file, $detail . ' - PHP this large is unusual, review it by hand');
+            return;
+        }
+        $this->report('INFO', 'FILE_TOO_LARGE', $target_file, $detail);
     }
 
     private function cleanup($file_buffer, $file_path)
@@ -186,7 +213,7 @@ class SignatureScanner extends Scanner
 
         if (isset($action['remove_regex'])) {
             // $file_buffer already holds the whole file: files larger than
-            // the read cap are skipped before ever being scanned.
+            // the read cap are reported as FILE_TOO_LARGE, never scanned.
             $cleared_file = preg_replace($action['remove_regex'], '', $file_buffer);
             if ($cleared_file === null || (strlen($file_buffer) === strlen($cleared_file))) {
                 $this->report('ERROR', 'CLEANUP_FAILED', $file_path, $signature_name . ': cleanup regex removed nothing: ' . $action['remove_regex']);

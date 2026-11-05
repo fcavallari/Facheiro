@@ -24,6 +24,10 @@ FAIL=0
 SKIP=0
 
 git -C "$REPO" show "$OLD_REF:elderward.php" > "$OLD" || { echo "cannot extract $OLD_REF:elderward.php"; exit 1; }
+# The old script names $http_response_header, which PHP 8.5 deprecates at
+# compile time; its notices are not part of the output contract being
+# compared (E_ALL & ~E_DEPRECATED, old script only).
+OLD_INI="-d error_reporting=24575"
 
 ###############
 # Fixtures
@@ -91,7 +95,7 @@ compare() {
         [ "$mode" = json ] && extra=(format=json)
         local o_out n_out o_rc n_rc
         # ${extra[@]+...}: an empty array is "unbound" to bash 3.2 (macOS) under set -u.
-        (cd "$WORK" && php "$OLD" "$@" ${extra[@]+"${extra[@]}"} > "$WORK/o.out" 2>/dev/null); o_rc=$?
+        (cd "$WORK" && php $OLD_INI "$OLD" "$@" ${extra[@]+"${extra[@]}"} > "$WORK/o.out" 2>/dev/null); o_rc=$?
         # noselfcheck=1: the old script had no self-check stage (that
         # stage has its own test, tests/checksums.sh).
         (cd "$WORK" && php "$NEW" "$@" ${extra[@]+"${extra[@]}"} noselfcheck=1 > "$WORK/n.out" 2>/dev/null); n_rc=$?
@@ -146,7 +150,7 @@ fi
 # Real cleanup: both must leave the same bytes on disk.
 ##############
 cp -r "$SITE" "$WORK/clean-old"; cp -r "$SITE" "$WORK/clean-new"
-php "$OLD" "scandirectory=$WORK/clean-old" >/dev/null 2>&1; o_rc=$?
+php $OLD_INI "$OLD" "scandirectory=$WORK/clean-old" >/dev/null 2>&1; o_rc=$?
 php "$NEW" "scandirectory=$WORK/clean-new" >/dev/null 2>&1; n_rc=$?
 if diff -r "$WORK/clean-old" "$WORK/clean-new" >/dev/null && [ "$o_rc" == "$n_rc" ] && ! grep -q ndsw "$WORK/clean-new/ndsw.js"; then
     PASS=$((PASS+1)); echo "PASS  real cleanup: identical trees, payload removed, exit=$n_rc"
@@ -192,6 +196,28 @@ else
 fi
 sig_check "custom signature matches empty"  1 'empty' '' dryrun=1 "signatures=$WORK/sigs-bad.json" "scandirectory=$SIGSITE"
 sig_check "custom signature file missing"   1 'sigs-nope' '' dryrun=1 "signatures=$WORK/sigs-nope.json" "scandirectory=$SIGSITE"
+
+###############
+# Files the signature scan cannot check are findings, never a silent skip
+# (new rule, no old-script counterpart). A JavaScript bundle over the size
+# cap is INFO (core ships several); PHP that large, or a file that cannot be
+# read, is an ERROR. A dangling symlink holds nothing and stays quiet.
+##############
+BIGJS="$WORK/big-js"; BIGPHP="$WORK/big-php"; UNREAD="$WORK/unreadable"
+mkdir -p "$BIGJS" "$BIGPHP" "$UNREAD"
+head -c 2200000 /dev/zero | tr '\0' 'a' > "$BIGJS/bundle.js"
+{ printf '<?php\n/*'; head -c 2200000 /dev/zero | tr '\0' 'a'; printf '*/\n'; } > "$BIGPHP/padded.php"
+printf '<?php echo 1;\n' > "$UNREAD/locked.php"; chmod 000 "$UNREAD/locked.php"
+ln -s "$WORK/nonexistent.php" "$UNREAD/dangling.php"
+sig_check "oversized js is INFO"            0 'INFO,FILE_TOO_LARGE,.*bundle\.js,larger than the 2 MB' '' dryrun=1 "scandirectory=$BIGJS"
+sig_check "oversized php is ERROR"          2 'ERROR,FILE_TOO_LARGE,.*padded\.php,.*review it by hand' '' dryrun=1 "scandirectory=$BIGPHP"
+sig_check "oversized json event"            2 '"type":"FILE_TOO_LARGE"' '' dryrun=1 format=json "scandirectory=$BIGPHP"
+if [ -r "$UNREAD/locked.php" ]; then
+    SKIP=$((SKIP+1)); echo "SKIP  unreadable file case (running as root: chmod 000 does not stop reads)"
+else
+    sig_check "unreadable file is ERROR"    2 'ERROR,FILE_UNREADABLE,.*locked\.php' 'dangling' dryrun=1 "scandirectory=$UNREAD"
+fi
+chmod 644 "$UNREAD/locked.php"
 
 ###############
 # Restore safety (new rules, no old-script counterpart): a verified package
