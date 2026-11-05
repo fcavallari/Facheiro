@@ -416,6 +416,7 @@ Description: Script in post content that redirects visitors coming from search e
 - The signature is disabled.
 - A built-in signature matched the same file first ([one finding per file](#files-file)): look for a `MALWARE_FOUND` finding on it.
 - The file's extension is not scanned, or it is over 2 MB and reported as `FILE_TOO_LARGE` ([section 4](#4-what-each-target-sees)).
+- The regex engine gave up on that file: the scan reports `SIGNATURE_ERROR` naming your signature and the limit it hit. Nested repeats (`(a+)+`, `(\w+\s?)*`) and long unbounded runs (`.*` across a big one-line file) are the usual cause. Bound the repeats (`{0,200}`) or make them possessive (`++`, `*+`).
 - The file was marked as a false positive and has not changed since: look under **False positives**.
 - For posts: the text is in the title or in post meta, which are not scanned.
 - For options: it is `siteurl`, `home`, `active_plugins` or the user roles option.

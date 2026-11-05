@@ -1,0 +1,4 @@
+<?php
+function load_lib( $lib_class_name, $args ) {
+    return new $lib_class_name( $args );
+}

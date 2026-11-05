@@ -1,0 +1,7 @@
+<?php
+$start = chr(0).chr(1).chr(2).chr(3).chr(4).chr(5).chr(6).chr(7).chr(8);
+$from = chr(192) . chr(193) . chr(194) . chr(195) . chr(196) . chr(197) . chr(224) . chr(225);
+$gif = "\x47\x49\x46\x38\x37\x61";
+$magic = "\x42\x41\x43\x4b\x57\x50\x55\x50";
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner.

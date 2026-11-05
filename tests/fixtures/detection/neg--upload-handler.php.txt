@@ -1,0 +1,8 @@
+<?php
+// A plugin upload handler: capability and nonce checked, name sanitized.
+if ( current_user_can( "manage_options" ) && check_admin_referer( "import" ) ) {
+    $target = $dir . "/" . basename( $_FILES["import"]["name"] );
+    move_uploaded_file( $_FILES["import"]["tmp_name"], $target );
+}
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner.

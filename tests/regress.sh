@@ -220,6 +220,29 @@ fi
 chmod 644 "$UNREAD/locked.php"
 
 ###############
+# A regex the engine gives up on is a finding, never a silent "no match"
+# (new rule, no old-script counterpart): a custom signature that backtracks
+# without end on one file reports SIGNATURE_ERROR (exit 2). A 540 KB
+# one-line chr() chain, which ran the PCRE JIT stack out under the first
+# version of php_chr_chain, is detected with no engine error.
+##############
+REGEX="$WORK/regex-limit"; LONGCHR="$WORK/long-chr"
+mkdir -p "$REGEX" "$LONGCHR"
+{ printf '<?php // backtrack_me\n$s = "'; head -c 30000 /dev/zero | tr '\0' 'a'; printf '";\n'; } > "$REGEX/heavy.php"
+cat > "$WORK/sigs-heavy.json" <<'JSON'
+{"elderward_signatures":1,"signatures":[{"id":"heavy","target":"file","severity":"LOW","description":"backtracks","match":[{"string":"backtrack_me"},{"regex":"/(?:a+)+$/"}]}]}
+JSON
+php -r 'echo "<?php\n\$x = " . str_repeat("chr(101).", 60000) . "chr(59);\n";' > "$LONGCHR/one-line.php"
+sig_check "regex engine error is ERROR"     2 'ERROR,SIGNATURE_ERROR,.*heavy\.php,.*custom\.heavy' 'SIGNATURE_MATCH' dryrun=1 "signatures=$WORK/sigs-heavy.json" "scandirectory=$REGEX"
+sig_check "regex engine error json event"   2 '"type":"SIGNATURE_ERROR"' '' dryrun=1 format=json "signatures=$WORK/sigs-heavy.json" "scandirectory=$REGEX"
+sig_check "long one-line chr chain"         2 'MALWARE_FOUND,.*one-line\.php,php_chr_chain' 'SIGNATURE_ERROR' dryrun=1 "scandirectory=$LONGCHR"
+# The WordPress-guard check of the looser upload rule reads the whole file:
+# a 1.9 MB file with the uploader at the very end must still be caught.
+BIGUP="$WORK/big-upload"; mkdir -p "$BIGUP"
+php -r '$c = "\$a = \$_POST[\"x\"]; if (\$f) { \$g(\$h); } // note\n"; echo "<?php\n", str_repeat($c, (int) (1900000 / strlen($c))), "move_uploaded_file(\$_FILES[\"f\"][\"tmp_name\"], \$d . basename(\$_FILES[\"f\"][\"name\"]));\n";' > "$BIGUP/big.php"
+sig_check "uploader at the end of 1.9 MB"   3 'MALWARE_FOUND,.*big\.php,php_upload_client_name' 'SIGNATURE_ERROR' dryrun=1 "scandirectory=$BIGUP"
+
+###############
 # Built-in detection signatures (new set, no old-script counterpart). The
 # fixtures in tests/fixtures/detection are stored as .txt so a git checkout
 # of the plugin never holds a reachable .php backdoor; they get their real

@@ -167,9 +167,18 @@ class SignatureScanner extends Scanner
 
     private function cleanup($file_buffer, $file_path)
     {
+        // Signatures whose regex the engine could not finish on this file.
+        $failed = array();
+        self::take_regex_error();
+
         // First confirmed signature wins: apply its action, then stop.
         foreach (Signatures::cleanup() as $signature_name => $signature) {
-            if (self::signature_matches($file_buffer, $signature)) {
+            $matched = self::signature_matches($file_buffer, $signature);
+            $error = self::take_regex_error();
+            if (0 !== $error) {
+                $failed[$signature_name] = $error;
+            }
+            if ($matched) {
                 $this->apply_action($file_buffer, $file_path, $signature_name, $signature['action']);
                 return;
             }
@@ -180,15 +189,65 @@ class SignatureScanner extends Scanner
         // only, like the rest of that set; custom signatures see raw bytes,
         // as documented.
         $normalized = Signatures::normalize_code($file_buffer);
-        if ($normalized === $file_buffer) {
-            return;
-        }
-        foreach (Signatures::builtin_detection() as $signature_name => $signature) {
-            if (self::signature_matches($normalized, $signature)) {
-                $this->report_detection($file_path, $signature_name, $signature['action'], ' after joining split strings and decoding escapes');
-                return;
+        if ($normalized !== $file_buffer) {
+            foreach (Signatures::builtin_detection() as $signature_name => $signature) {
+                $matched = self::signature_matches($normalized, $signature);
+                $error = self::take_regex_error();
+                if (0 !== $error && !isset($failed[$signature_name])) {
+                    $failed[$signature_name] = $error;
+                }
+                if ($matched) {
+                    $this->report_detection($file_path, $signature_name, $signature['action'], ' after joining split strings and decoding escapes');
+                    return;
+                }
             }
         }
+        $this->report_regex_errors($file_path, $failed);
+    }
+
+    private function report_regex_errors($file_path, array $failed)
+    {
+        ///////////////
+        // A regex the engine gives up on (backtrack, recursion or JIT stack
+        // limit) is a check that did not run, not a clean result: say so,
+        // like FILE_TOO_LARGE, instead of letting "no match" stand.
+        //////////////
+        if (array() === $failed) {
+            return;
+        }
+        $parts = array();
+        foreach ($failed as $signature_name => $error) {
+            $parts[] = $signature_name . ' (' . self::regex_error_text($error) . ')';
+        }
+        $this->report('ERROR', 'SIGNATURE_ERROR', $file_path, 'the regex engine gave up on ' . implode(', ', $parts) . ': this file was NOT checked by those signatures - review it by hand');
+    }
+
+    private static function regex_error_text($error)
+    {
+        if (PREG_BACKTRACK_LIMIT_ERROR === $error) {
+            return ('backtrack limit, pcre.backtrack_limit');
+        }
+        if (PREG_RECURSION_LIMIT_ERROR === $error) {
+            return ('recursion limit, pcre.recursion_limit');
+        }
+        if (defined('PREG_JIT_STACKLIMIT_ERROR') && constant('PREG_JIT_STACKLIMIT_ERROR') === $error) {
+            return ('JIT stack limit');
+        }
+        if (PREG_BAD_UTF8_ERROR === $error || PREG_BAD_UTF8_OFFSET_ERROR === $error) {
+            return ('the file is not valid UTF-8 for a /u pattern');
+        }
+        return ('regex engine error ' . (int) $error);
+    }
+
+    // The engine error of the last regex condition that failed to run since
+    // the previous call (0 for none), then reset.
+    private static $regex_error = 0;
+
+    public static function take_regex_error()
+    {
+        $error = self::$regex_error;
+        self::$regex_error = 0;
+        return ($error);
     }
 
     private function report_detection($file_path, $signature_name, $action, $how)
@@ -199,14 +258,30 @@ class SignatureScanner extends Scanner
 
     public static function pattern_matches($condition, $file_buffer)
     {
-        // A condition is array('string' => needle) or array('regex' => pattern).
+        // A condition is array('string' => needle), array('regex' => pattern)
+        // or, built-in only, array('absent' => needles).
         if (isset($condition['string'])) {
             return (false !== strpos($file_buffer, $condition['string']));
+        }
+        if (isset($condition['absent']) && is_array($condition['absent']) && array() !== $condition['absent']) {
+            // Built-in only: true when none of the strings occurs.
+            foreach ($condition['absent'] as $needle) {
+                if ('' === $needle || false !== strpos($file_buffer, $needle)) {
+                    return (false);
+                }
+            }
+            return (true);
         }
         if (isset($condition['regex'])) {
             // preg_match returns false on engine errors (e.g. backtrack limit);
             // only an explicit 1 counts as a match so errors never flag a file.
-            return (preg_match($condition['regex'], $file_buffer) === 1);
+            // The error is kept so the scan can report the file as unchecked.
+            $result = preg_match($condition['regex'], $file_buffer);
+            if (false === $result) {
+                $error = preg_last_error();
+                self::$regex_error = (PREG_NO_ERROR === $error) ? PREG_INTERNAL_ERROR : $error;
+            }
+            return (1 === $result);
         }
         // Unknown condition types never match, so a typo'd signature fails
         // closed instead of flagging files.
