@@ -390,6 +390,158 @@ fi
 sig_check "cleanup: rescan finds only the link" 3 'MALWARE_FOUND.*linked\.js' 'lib\.min\.js\|twice-' dryrun=1 "scandirectory=$CSITE"
 sig_check "cleanup: the link target is cleaned" 3 'MALWARE_CLEANED.*shared\.js' 'CLEANUP_FAILED' "scandirectory=$CLINK"
 
+###############
+# "Clean" must mean "looked" (new rules, no old-script counterpart).
+#
+# The tool uploaded next to the site (bin/ and includes/ in the home folder,
+# the site in public_html below it) would skip every file as its own: that
+# is refused with the way out, and works once the tool has its own folder.
+##############
+check() {
+    local name="$1" want_rc="$2" want="$3" refuse="$4" rc="$5" out="$6"
+    if [ "$rc" == "$want_rc" ] && printf '%s' "$out" | grep -q -- "$want" && { [ -z "$refuse" ] || ! printf '%s' "$out" | grep -q -- "$refuse"; }; then
+        PASS=$((PASS+1)); printf 'PASS  %-39s exit=%s\n' "$name" "$rc"
+    else
+        FAIL=$((FAIL+1)); printf 'FAIL  %-39s exit=%s (want %s)\n' "$name" "$rc" "$want_rc"; printf '%s\n' "$out" | head -10
+    fi
+}
+LOOSE="$WORK/loose-home"
+mkdir -p "$LOOSE/public_html" "$LOOSE/bin" "$LOOSE/includes"
+cp "$REPO/bin/elderward.php" "$LOOSE/bin/"; cp -r "$REPO/includes/engine" "$LOOSE/includes/engine"
+printf '%s\n' "$C_NDSW" > "$LOOSE/public_html/bad.js"
+out="$(cd "$WORK" && php "$LOOSE/bin/elderward.php" dryrun=1 "scandirectory=$LOOSE/public_html" 2>/dev/null)"; rc=$?
+check "tool beside the site is refused"     1 'inside the folder Elderward runs from' 'MALWARE_' "$rc" "$out"
+out="$(cd "$LOOSE" && php "$LOOSE/bin/elderward.php" dryrun=1 2>/dev/null)"; rc=$?
+check "tool folder as scan folder refused"  1 'inside the folder Elderward runs from' 'MALWARE_' "$rc" "$out"
+mkdir "$LOOSE/elderward"; mv "$LOOSE/bin" "$LOOSE/includes" "$LOOSE/elderward/"
+out="$(cd "$WORK" && php "$LOOSE/elderward/bin/elderward.php" dryrun=1 "scandirectory=$LOOSE/public_html" 2>/dev/null)"; rc=$?
+check "tool in its own folder scans"        3 'MALWARE_FOUND,.*public_html/bad\.js' '' "$rc" "$out"
+
+###############
+# A symbolic link to a folder is followed by report-only runs (a linked
+# uploads folder would otherwise hide everything in it), never back up the
+# tree, to the filesystem root or twice; a run that can modify files does
+# not follow it and says so.
+##############
+LWP="$WORK/link-wp"; LEXT="$WORK/link-shared-uploads"
+mkdir -p "$LWP/wp-includes" "$LWP/wp-content/plugins" "$LEXT/2026"
+printf '<?php\n$wp_version = '"'"'6.5.2'"'"';\n' > "$LWP/wp-includes/version.php"
+printf '<?php echo 1;\n' > "$LEXT/2026/shell.php"
+printf '%s\n' "$C_NDSW" > "$LEXT/2026/bad.js"
+ln -s "$LEXT" "$LWP/wp-content/uploads"
+ln -s "$LWP" "$LEXT/back-to-site"
+ln -s / "$LEXT/to-fs-root"
+ln -s .. "$LEXT/2026/parent"
+sig_check "quickscan follows linked uploads"   3 'HIGH,UPLOADS_PHP,.*wp-content/uploads/2026/shell\.php' 'back-to-site/\|to-fs-root/\|parent/' quickscan=1 "scandirectory=$LWP"
+sig_check "signatures follow linked uploads"   3 'MALWARE_FOUND,.*wp-content/uploads/2026/bad\.js' 'back-to-site/\|to-fs-root/\|parent/' dryrun=1 "scandirectory=$LWP"
+# A second link to the same folder: whichever is listed first is followed.
+ln -s "$LEXT/2026" "$LWP/wp-content/again"
+link_hits="$(cd "$WORK" && php "$NEW" dryrun=1 noselfcheck=1 "scandirectory=$LWP" 2>/dev/null | grep -c 'bad\.js')"
+if [ "$link_hits" = 1 ]; then
+    PASS=$((PASS+1)); echo "PASS  a folder reached through two links is read once"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  the linked file was reported $link_hits times"
+fi
+link_before="$(sha256sum "$LEXT/2026/bad.js")"
+rm "$LWP/wp-content/again"
+sig_check "cleanup does not follow the link"   2 'ERROR,SYMLINK_NOT_FOLLOWED,.*wp-content/uploads,.*NOT checked for malware signatures' 'MALWARE_' "scandirectory=$LWP"
+if [ "$link_before" == "$(sha256sum "$LEXT/2026/bad.js")" ]; then
+    PASS=$((PASS+1)); echo "PASS  cleanup left the file behind the link alone"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  cleanup wrote through a linked folder"
+fi
+
+###############
+# A folder that cannot be listed is an ERROR finding: it used to stop the
+# quick scan with an uncaught exception at the top level and to be skipped
+# without a word further down.
+##############
+UWP="$WORK/unlistable-wp"
+mkdir -p "$UWP/wp-includes/locked" "$UWP/wp-content/uploads" "$UWP/lost+found" "$UWP/wp-content/cache/deep"
+printf '<?php\n$wp_version = '"'"'6.5.2'"'"';\n' > "$UWP/wp-includes/version.php"
+chmod 000 "$UWP/lost+found" "$UWP/wp-content/cache/deep" "$UWP/wp-includes/locked"
+if [ -r "$UWP/lost+found" ]; then
+    SKIP=$((SKIP+1)); echo "SKIP  unlistable folder cases (running as root: chmod 000 does not stop reads)"
+else
+    sig_check "quickscan: unlistable top folder"   2 'ERROR,FILE_UNREADABLE,.*/lost+found,cannot list the folder' 'Uncaught' quickscan=1 "scandirectory=$UWP"
+    sig_check "quickscan: unlistable nested one"   2 'ERROR,FILE_UNREADABLE,.*/cache/deep,cannot list the folder' '' quickscan=1 "scandirectory=$UWP"
+    sig_check "signatures: unlistable folders"     2 'ERROR,FILE_UNREADABLE,.*/cache/deep,cannot list the folder.*NOT checked for malware signatures' '' dryrun=1 "scandirectory=$UWP"
+    sig_check "scantimes: unlistable core folder"  2 'ERROR,FILE_UNREADABLE,.*/wp-includes/locked,cannot list the folder' '' scantimes=1 "scandirectory=$UWP"
+fi
+chmod 755 "$UWP/lost+found" "$UWP/wp-content/cache/deep" "$UWP/wp-includes/locked"
+
+###############
+# A finding with bytes that are not valid UTF-8 is still one JSON event per
+# line (it used to print an empty line): a log line here, and a file name
+# where the filesystem accepts one.
+##############
+ULOG="$WORK/utf8-logs"; mkdir -p "$ULOG"
+printf '203.0.113.5 - - [20/Sep/2026:10:05:01 +0000] "POST /wp-content/uploads/2026/09/caf\xe9-cache.php HTTP/1.1" 200 312 "-" "python-requests/2.31"\n' > "$ULOG/access.log"
+json_events() {
+    php -r '$n = 0; foreach (file("php://stdin") as $l) { $e = json_decode($l, true); if (!is_array($e) || !isset($e["event"])) { exit(1); } if ("finding" === $e["event"]) { $n++; } } exit($n > 0 ? 0 : 1);'
+}
+if (cd "$WORK" && php "$NEW" "scanlog=$ULOG/access.log" format=json noselfcheck=1 2>/dev/null) | json_events; then
+    PASS=$((PASS+1)); echo "PASS  invalid UTF-8 in a log line is still a JSON finding"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  invalid UTF-8 in a log line broke the JSON output"
+fi
+UNAME="$WORK/utf8-names"; mkdir -p "$UNAME"
+if { printf '%s\n' "$C_NDSW" > "$UNAME/$(printf 'bad\xff').js"; } 2>/dev/null; then
+    if (cd "$WORK" && php "$NEW" dryrun=1 format=json noselfcheck=1 "scandirectory=$UNAME" 2>/dev/null) | json_events; then
+        PASS=$((PASS+1)); echo "PASS  invalid UTF-8 in a file name is still a JSON finding"
+    else
+        FAIL=$((FAIL+1)); echo "FAIL  invalid UTF-8 in a file name broke the JSON output"
+    fi
+else
+    SKIP=$((SKIP+1)); echo "SKIP  invalid UTF-8 file name (this filesystem refuses the name)"
+fi
+
+###############
+# A reference that should have been there and could not be used is an
+# ERROR (the package was not verified); one that is simply not in
+# checksumdir= stays INFO, which the old-vs-new cases above cover.
+##############
+BADSUMS="$WORK/bad-sums"; mkdir -p "$BADSUMS"
+printf 'not json' > "$BADSUMS/core-6.5.2.json"
+printf '{"files":false}' > "$BADSUMS/plugin-hello-dolly-1.7.2.json"
+sig_check "broken core manifest is ERROR"      2 'ERROR,INTEGRITY_NO_REFERENCE,.*core 6\.5\.2 (en_US): no reference checksums available (error) - core files were NOT verified' '' scanintegrity=1 "checksumdir=$BADSUMS" "scandirectory=$WP"
+sig_check "broken plugin manifest is ERROR"    2 'ERROR,INTEGRITY_NO_REFERENCE,.*plugin hello-dolly 1\.7\.2: could not fetch reference checksums - its files were NOT verified' '' scanintegrity=1 "checksumdir=$BADSUMS" "scandirectory=$WP"
+
+###############
+# The core locale comes from the install itself: a localized package says
+# so in wp-includes/version.php, and its translated core files only match
+# that locale's checksums. locale= still wins, and a value that does not
+# look like a locale is not used.
+##############
+LOCWP="$WORK/locale-wp"; LOCSUMS="$WORK/locale-sums"
+mkdir -p "$LOCWP/wp-includes" "$LOCWP/wp-content" "$LOCSUMS"
+printf '<?php\n$wp_version = '"'"'6.5.2'"'"';\n$wp_local_package = '"'"'pt_BR'"'"';\n' > "$LOCWP/wp-includes/version.php"
+php -r 'file_put_contents($argv[2] . "/core-6.5.2.json", json_encode(array("checksums" => array("wp-includes/version.php" => md5_file($argv[1] . "/wp-includes/version.php")))));' "$LOCWP" "$LOCSUMS"
+sig_check "core locale read from version.php"  0 'Checking core 6\.5\.2 pt_BR (1 files)' 'INTEGRITY_M' scanintegrity=1 "checksumdir=$LOCSUMS" "scandirectory=$LOCWP"
+sig_check "locale= option wins"                0 'Checking core 6\.5\.2 (1 files)' 'pt_BR' scanintegrity=1 locale=en_US "checksumdir=$LOCSUMS" "scandirectory=$LOCWP"
+printf '<?php\n$wp_version = '"'"'6.5.2'"'"';\n$wp_local_package = '"'"'../../x'"'"';\n' > "$LOCWP/wp-includes/version.php"
+sig_check "odd locale value is not used"       3 'Checking core 6\.5\.2 (1 files)' '\.\./\.\./x' scanintegrity=1 "checksumdir=$LOCSUMS" "scandirectory=$LOCWP"
+
+###############
+# A multisite network is recognised from wp-config.php (the database scan
+# then says which tables it did not read; that finding needs the MariaDB
+# fixture, TESTPLAN E). A commented-out define does not count.
+##############
+MSITE="$WORK/multisite-config"; mkdir -p "$MSITE/on" "$MSITE/off"
+MS_BASE='<?php
+define("DB_NAME", "wp"); define("DB_USER", "u"); define("DB_PASSWORD", "p"); define("DB_HOST", "localhost");
+$table_prefix = "wp_";
+'
+printf '%s%s\n' "$MS_BASE" "define( 'MULTISITE', true );" > "$MSITE/on/wp-config.php"
+printf '%s%s\n' "$MS_BASE" "// define( 'MULTISITE', true );
+define( 'WP_ALLOW_MULTISITE', true );" > "$MSITE/off/wp-config.php"
+ms_flag() { php -r 'require $argv[1] . "/includes/engine/load.php"; $c = Elderward\Engine\MysqliDb::parse_wp_config($argv[2]); echo (is_array($c) && $c["multisite"]) ? "yes" : "no";' "$REPO" "$1"; }
+if [ "$(ms_flag "$MSITE/on")" = yes ] && [ "$(ms_flag "$MSITE/off")" = no ]; then
+    PASS=$((PASS+1)); echo "PASS  multisite is read from wp-config.php"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  multisite detection: on=$(ms_flag "$MSITE/on") off=$(ms_flag "$MSITE/off")"
+fi
+
 echo
 echo "passed=$PASS failed=$FAIL skipped=$SKIP  (work dir: $WORK)"
 [ "$FAIL" = 0 ]

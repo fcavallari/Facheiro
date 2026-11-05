@@ -14,6 +14,8 @@ namespace Elderward\Engine;
 // resumes after, so a paused unit continues where it stopped.
 //////////////
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- an exception message is data, not output: the entry layer that catches it (CLI, WP-CLI, admin page, recovery page) escapes it for the place it shows it.
+
 class DatabaseScanner extends Scanner
 {
     // An administrator registered this recently on a compromised site is the
@@ -91,6 +93,17 @@ class DatabaseScanner extends Scanner
         // unknown (inside scanall the quick scan already did).
         Layout::report_notes($this->ctx, false);
         $this->progress('Scanning database ' . $this->ctx->db->name() . ' (prefix ' . $this->ctx->db->prefix() . ") - read-only\n");
+        ///////////////
+        // A network keeps each other site's options and posts in tables of
+        // its own ({prefix}{id}_options ...), which this scan does not read:
+        // an injected option on site 7 would go unseen. Said as an ERROR so
+        // "nothing found" is not taken to cover them.
+        //////////////
+        if ($this->ctx->db->multisite()) {
+            $this->report('ERROR', 'DB_MULTISITE_PARTIAL', 'db:' . $this->ctx->db->table('options'),
+                'multisite network: only the tables with the prefix ' . $this->ctx->db->prefix()
+                . ' were scanned - the options and posts of the other sites, their administrators and the network\'s super admin list were NOT scanned');
+        }
         return array(
             array('table' => 'admins', 'after' => 0),
             array('table' => 'options', 'after' => 0),

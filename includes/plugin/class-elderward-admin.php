@@ -924,14 +924,14 @@ final class Elderward_Admin
             return 0;
         }
         $table = Elderward_Plugin::findings_table();
-        // phpcs:disable WordPress.DB -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
+        // phpcs:disable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
         $count = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM `{$table}` WHERE job_id = %s AND type IN ('INTEGRITY_MODIFIED', 'INTEGRITY_EXTRA') AND severity IN ('HIGH', 'MEDIUM') AND fp <> %d AND path LIKE %s",
             $job['id'],
             Elderward_False_Positives::MATCHED,
             $wpdb->esc_like(untrailingslashit(str_replace('\\', '/', $dir)) . '/') . '%'
         ));
-        // phpcs:enable WordPress.DB
+        // phpcs:enable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
         return $count;
     }
 
@@ -1097,7 +1097,7 @@ final class Elderward_Admin
         global $wpdb;
         $table = Elderward_Plugin::findings_table();
         $known = array('HIGH', 'ERROR', 'MEDIUM', 'LOW', 'INFO');
-        // phpcs:disable WordPress.DB -- the plugin's own table (name from the base prefix, never user input); values go through prepare(); results must not be cached.
+        // phpcs:disable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter -- the plugin's own table (name from the base prefix, never user input); values go through prepare(); results must not be cached.
         foreach (array_merge($known, array(null)) as $severity) {
             $last = 0;
             while (true) {
@@ -1122,7 +1122,7 @@ final class Elderward_Admin
                 }
             }
         }
-        // phpcs:enable WordPress.DB
+        // phpcs:enable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
     }
 
     private static function decode_context($json)
@@ -1204,7 +1204,7 @@ final class Elderward_Admin
         $counts = array_fill_keys($severities, 0);
         $total = 0;
         $fp_total = 0;
-        // phpcs:disable WordPress.DB -- the plugin's own table (name from the base prefix, never user input); values go through prepare(); results must not be cached.
+        // phpcs:disable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter -- the plugin's own table (name from the base prefix, never user input); values go through prepare(); results must not be cached.
         if (null !== $job) {
             $rows = $wpdb->get_results($wpdb->prepare("SELECT severity, fp, COUNT(*) AS n FROM `{$table}` WHERE job_id = %s GROUP BY severity, fp", $job['id']));
             foreach ((array) $rows as $row) {
@@ -1237,7 +1237,7 @@ final class Elderward_Admin
                 $params
             ));
         }
-        // phpcs:enable WordPress.DB
+        // phpcs:enable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
         $export_base = wp_nonce_url(admin_url('admin-post.php?action=elderward_export'), self::NONCE_EXPORT);
         $settings = Elderward_Settings::get();

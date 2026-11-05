@@ -36,6 +36,7 @@ final class Elderward_Plugin
      */
     public static function load_textdomain()
     {
+        // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- the plugin ships its own pt_BR catalogue in languages/, which the WordPress versions it supports (6.0 and later) only find through this call; a language pack from wordpress.org still takes precedence.
         load_plugin_textdomain('elderward', false, dirname(plugin_basename(ELDERWARD_FILE)) . '/languages');
     }
 

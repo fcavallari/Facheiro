@@ -11,6 +11,8 @@ namespace Elderward\Engine;
 // WordPress HTTP API; the standalone CLI uses CurlHttp below.
 //////////////
 
+// phpcs:disable WordPress.WP.AlternativeFunctions -- CurlHttp is the adapter for running without WordPress (standalone CLI, recovery mode), where the HTTP API and WP_Filesystem do not exist; inside WordPress the plugin passes Elderward_WP_Http, which uses the HTTP API. TLS verification is never disabled.
+
 interface Http
 {
     // Returns array($status, $body); status 0 on transport failure.

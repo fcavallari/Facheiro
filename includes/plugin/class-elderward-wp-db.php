@@ -70,6 +70,11 @@ class Elderward_WP_Db implements Elderward\Engine\Db
         return null;
     }
 
+    public function multisite()
+    {
+        return is_multisite();
+    }
+
     /**
      * Iterate rows in primary-key order, a bounded slice of the table per
      * query.
@@ -95,7 +100,7 @@ class Elderward_WP_Db implements Elderward\Engine\Db
         try {
             // The fragments come from the engine's own fixed queries, never
             // from user input; the only variable parts are integers.
-            // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- fixed SELECTs built by the engine; results must not be cached.
+            // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- fixed SELECTs built by the engine; results must not be cached.
             $max = $wpdb->get_var('SELECT MAX(' . $query['pk'] . ') FROM ' . $query['from']);
             if ('' !== $wpdb->last_error) {
                 return array('done' => false, 'last' => $last, 'error' => $wpdb->last_error, 'early' => false);
@@ -144,7 +149,7 @@ class Elderward_WP_Db implements Elderward\Engine\Db
                     return array('done' => false, 'last' => $last, 'error' => null, 'early' => false);
                 }
             }
-            // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
         } finally {
             $wpdb->suppress_errors($previous_suppress);
         }

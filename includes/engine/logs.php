@@ -11,6 +11,9 @@ namespace Elderward\Engine;
 // one log file plus a byte offset, so a huge file can be resumed.
 //////////////
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- an exception message is data, not output: the entry layer that catches it (CLI, WP-CLI, admin page, recovery page) escapes it for the place it shows it.
+// phpcs:disable WordPress.WP.AlternativeFunctions -- the engine also runs without WordPress (standalone CLI, recovery mode), where WP_Filesystem does not exist; it streams files and handles every failure itself.
+
 class LogScanner extends Scanner
 {
     const LINES_PER_TIME_CHECK = 1000;
@@ -55,7 +58,8 @@ class LogScanner extends Scanner
         // than per rotation. Error logs have a different format: skipped.
         //////////////
         $units = array();
-        foreach (recursive_file_iterator($this->target) as $file) {
+        $walk = new TreeWalk($this->target);
+        foreach ($walk as $file) {
             $basename = $file->getFilename();
             if (preg_match('@error@i', $basename)) {
                 continue;
@@ -65,6 +69,7 @@ class LogScanner extends Scanner
             }
             $units[] = array('file' => $file->getPathname(), 'offset' => 0, 'announce' => 1);
         }
+        $this->report_walk($walk, 'NOT scanned for access logs');
         $state['logs'] = count($units);
         if (0 === count($units)) {
             $this->progress('No access log files found in ' . $this->target . "\n");
@@ -325,50 +330,52 @@ class CorrelateScanner extends Scanner
         if (!is_dir($this->root) || !is_readable($this->root)) {
             throw new Fatal('cannot open correlation directory ' . $this->root);
         }
+        require_outside_tool($this->ctx, $this->root);
 
         if (rtrim($this->root, '/') === $this->ctx->root() && is_wordpress_root($this->root)) {
             Layout::report_notes($this->ctx, false);
         }
         $correlated = 0;
-        foreach (scan_roots($this->ctx, $this->root) as $walk_root) {
-            foreach (recursive_file_iterator($walk_root) as $file) {
-                if (!is_scannable_file($this->ctx, $file)) {
-                    continue;
-                }
-
-                // filemtime, not SplFileInfo::getMTime - the latter throws (even
-                // through @) when the file vanishes between listing and stat.
-                $mtime = @filemtime($file->getPathname());
-                if (false === $mtime) {
-                    continue;
-                }
-
-                // Walk the minute buckets covering [mtime - window, mtime + window].
-                $in_window = array('count' => 0, 'names' => array(), 'example' => '');
-                $start = ($mtime - $window) - (($mtime - $window) % 60);
-                for ($minute = $start; $minute <= ($mtime + $window); $minute += 60) {
-                    if (!isset($flagged_minutes[$minute])) {
-                        continue;
-                    }
-                    $in_window['count'] += $flagged_minutes[$minute]['count'];
-                    $in_window['names'] += $flagged_minutes[$minute]['names'];
-                    if ('' === $in_window['example']) {
-                        $in_window['example'] = $flagged_minutes[$minute]['example'];
-                    }
-                }
-                if (0 === $in_window['count']) {
-                    continue;
-                }
-
-                $path = $file->getPathname();
-                $severity = is_php_file($path) ? 'HIGH' : 'MEDIUM';
-                $this->report($severity, 'LOG_FILE_CORRELATION', $path,
-                    'modified ' . local_time('Y-m-d H:i:s', $mtime) . ' within ' . $window . 's of flagged traffic: '
-                    . implode(' ', array_keys($in_window['names'])) . ' (' . $in_window['count'] . ' flagged requests in window)',
-                    array('e.g. ' . $in_window['example']));
-                $correlated++;
+        // Report-only, so linked folders are followed.
+        $walk = new TreeWalk(scan_roots($this->ctx, $this->root));
+        foreach ($walk as $file) {
+            if (!is_scannable_file($this->ctx, $file)) {
+                continue;
             }
+
+            // filemtime, not SplFileInfo::getMTime - the latter throws (even
+            // through @) when the file vanishes between listing and stat.
+            $mtime = @filemtime($file->getPathname());
+            if (false === $mtime) {
+                continue;
+            }
+
+            // Walk the minute buckets covering [mtime - window, mtime + window].
+            $in_window = array('count' => 0, 'names' => array(), 'example' => '');
+            $start = ($mtime - $window) - (($mtime - $window) % 60);
+            for ($minute = $start; $minute <= ($mtime + $window); $minute += 60) {
+                if (!isset($flagged_minutes[$minute])) {
+                    continue;
+                }
+                $in_window['count'] += $flagged_minutes[$minute]['count'];
+                $in_window['names'] += $flagged_minutes[$minute]['names'];
+                if ('' === $in_window['example']) {
+                    $in_window['example'] = $flagged_minutes[$minute]['example'];
+                }
+            }
+            if (0 === $in_window['count']) {
+                continue;
+            }
+
+            $path = $file->getPathname();
+            $severity = is_php_file($path) ? 'HIGH' : 'MEDIUM';
+            $this->report($severity, 'LOG_FILE_CORRELATION', $path,
+                'modified ' . local_time('Y-m-d H:i:s', $mtime) . ' within ' . $window . 's of flagged traffic: '
+                . implode(' ', array_keys($in_window['names'])) . ' (' . $in_window['count'] . ' flagged requests in window)',
+                array('e.g. ' . $in_window['example']));
+            $correlated++;
         }
+        $this->report_walk($walk, 'NOT compared with the flagged log traffic');
 
         $this->summary('correlate', array('correlated' => $correlated, 'window_seconds' => $window),
             'Correlation complete: ' . $correlated . ' file(s) modified within ' . $window

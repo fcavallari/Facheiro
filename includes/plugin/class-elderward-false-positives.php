@@ -181,7 +181,7 @@ final class Elderward_False_Positives
             return null;
         }
         $table = Elderward_Plugin::findings_table();
-        // phpcs:ignore WordPress.DB -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
+        // phpcs:ignore WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
         $row = $wpdb->get_row($wpdb->prepare("SELECT id, severity, type, path, detail, sha256, value_sha256, fp" . ($with_context ? ', context' : '') . " FROM `{$table}` WHERE id = %d AND job_id = %s", (int) $id, $job['id']));
         return $row ? $row : null;
     }
@@ -257,7 +257,7 @@ final class Elderward_False_Positives
             return array();
         });
         $table = Elderward_Plugin::findings_table();
-        // phpcs:ignore WordPress.DB -- the plugin's own table (name from the base prefix); no values.
+        // phpcs:ignore WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter -- the plugin's own table (name from the base prefix); no values.
         $wpdb->query("UPDATE `{$table}` SET fp = 0 WHERE fp <> 0");
     }
 
@@ -270,7 +270,7 @@ final class Elderward_False_Positives
         global $wpdb;
         $table = Elderward_Plugin::findings_table();
         $rules = self::rules();
-        // phpcs:disable WordPress.DB -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
+        // phpcs:disable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter -- the plugin's own table (name from the base prefix); values go through prepare(); must not be cached.
         if (!isset($rules[$fingerprint])) {
             $wpdb->query($wpdb->prepare("UPDATE `{$table}` SET fp = 0 WHERE fingerprint = %s", $fingerprint));
             return;
@@ -281,7 +281,7 @@ final class Elderward_False_Positives
             $value_sha256 = (null === $row->value_sha256 || '' === $row->value_sha256) ? null : $row->value_sha256;
             $wpdb->update($table, array('fp' => self::classify($fingerprint, $sha256, $value_sha256)), array('id' => (int) $row->id), array('%d'), array('%d'));
         }
-        // phpcs:enable WordPress.DB
+        // phpcs:enable WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
     }
 
     private static function clean_note($note)

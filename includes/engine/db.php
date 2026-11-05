@@ -13,6 +13,8 @@ namespace Elderward\Engine;
 // primary key. Both iterate in primary-key order so the output is the same.
 //////////////
 
+// phpcs:disable WordPress.DB.RestrictedFunctions -- MysqliDb is the adapter for running without WordPress (standalone CLI, recovery mode), where there is no $wpdb; inside WordPress the plugin passes Elderward_WP_Db, which uses $wpdb.
+
 interface Db
 {
     // Prepare the connection. Returns null on success or an error message.
@@ -24,6 +26,9 @@ interface Db
     public function table($short);
     // Where the credentials came from (the wp-config.php path), or null.
     public function config_path();
+    // True when the install is a multisite network: the scan reads the
+    // tables of one site only, and has to say so.
+    public function multisite();
     ///////////////
     // Iterate SELECT {columns} FROM {from} [WHERE {where}] ORDER BY {pk},
     // resuming after primary key $after. The pk must be the first selected
@@ -76,6 +81,11 @@ class MysqliDb implements Db
     public function config_path()
     {
         return (null === $this->config) ? null : $this->config['path'];
+    }
+
+    public function multisite()
+    {
+        return (null !== $this->config && !empty($this->config['multisite']));
     }
 
     public function each(array $query, $callback, $after = 0)
@@ -168,6 +178,9 @@ class MysqliDb implements Db
         if (preg_match('/\$table_prefix\s*=\s*[\'"]([A-Za-z0-9_]+)[\'"]/', $content, $matches)) {
             $config['prefix'] = $matches[1];
         }
+        // define('MULTISITE', true): a network, whose other sites keep their
+        // options and posts in tables of their own.
+        $config['multisite'] = (preg_match('/define\s*\(\s*[\'"]MULTISITE[\'"]\s*,\s*(?:true|1|[\'"]1[\'"])\s*\)/i', $content) === 1);
 
         if (!isset($config['DB_NAME'], $config['DB_USER'], $config['DB_PASSWORD'], $config['DB_HOST'])) {
             return (null);

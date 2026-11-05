@@ -20,11 +20,17 @@ namespace Elderward\Engine;
 //   {"event":"summary","scan":...,...counts...}
 //   {"event":"error","detail":...}
 // Fields carry raw values (json_encode escapes them safely) and progress
-// text moves to STDERR, so stdout is pure machine-readable events.
+// text moves to STDERR, so stdout is pure machine-readable events. A value
+// that is not valid UTF-8 (a file name, a log line, a database value cut
+// in the middle of a character) cannot be JSON: its invalid bytes become
+// U+FFFD so the finding is still reported. Text mode prints the raw bytes.
 //
 // The exit code reflects the worst finding: 0 clean (or INFO only),
 // 1 usage/fatal error, 2 LOW/MEDIUM/ERROR findings, 3 HIGH findings.
 //////////////
+
+// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- TextReporter and JsonReporter print a plain-text or JSON report on a terminal (standalone CLI, WP-CLI), never HTML: attacker-controlled fields are percent-encoded by sanitize_field() or encoded by json_encode().
+// phpcs:disable WordPress.WP.AlternativeFunctions -- the engine also runs without WordPress (standalone CLI, recovery mode), where WP_Filesystem does not exist; it streams files and handles every failure itself.
 
 ///////////////
 // $meta carries facts for the entry layer that are not part of the output
@@ -69,6 +75,47 @@ abstract class BaseReporter implements Reporter
         return preg_replace_callback('/[\x00-\x1F\x7F]/', function ($match) {
             return sprintf('%%%02X', ord($match[0]));
         }, $text);
+    }
+
+    ///////////////
+    // Valid UTF-8 from any bytes: sequences that are well formed stay as
+    // they are, every other byte becomes U+FFFD. JSON output and database
+    // rows refuse invalid UTF-8 outright, and a finding must never be lost
+    // because the attacker (or a multibyte value cut short) put one there.
+    // No mbstring or iconv needed: locked-down hosts may have neither.
+    //////////////
+    public static function clean_utf8($text)
+    {
+        $text = (string) $text;
+        if ('' === $text || preg_match('//u', $text) === 1) {
+            return ($text);
+        }
+        $valid = '[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}'
+            . '|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2}';
+        $clean = preg_replace_callback('/((?:' . $valid . ')++)|./s', function ($match) {
+            return (isset($match[1]) && '' !== $match[1]) ? $match[1] : "\xEF\xBF\xBD";
+        }, $text);
+        if (!is_string($clean)) {
+            // PCRE gave up (limits): keep the ASCII, which is always valid.
+            $clean = preg_replace('/[^\x00-\x7F]/', '?', $text);
+        }
+        return (is_string($clean) ? $clean : '');
+    }
+
+    // clean_utf8() for every string in a value, array keys included.
+    public static function clean_utf8_deep($value)
+    {
+        if (is_string($value)) {
+            return (self::clean_utf8($value));
+        }
+        if (!is_array($value)) {
+            return ($value);
+        }
+        $clean = array();
+        foreach ($value as $key => $item) {
+            $clean[is_string($key) ? self::clean_utf8($key) : $key] = self::clean_utf8_deep($item);
+        }
+        return ($clean);
     }
 
     public static function format_text_finding($finding)
@@ -145,6 +192,27 @@ class TextReporter extends BaseReporter
 
 class JsonReporter extends BaseReporter
 {
+    // One event as a JSON line. json_encode() returns false for a string
+    // that is not valid UTF-8; the event is then encoded from a cleaned
+    // copy, so the line is never empty.
+    public static function encode(array $event)
+    {
+        $json = json_encode($event);
+        if (false === $json) {
+            $json = json_encode(self::clean_utf8_deep($event));
+        }
+        if (false === $json) {
+            $json = json_encode(array(
+                'event'    => isset($event['event']) ? $event['event'] : 'error',
+                'severity' => 'ERROR',
+                'type'     => 'REPORT_FAILED',
+                'path'     => '',
+                'detail'   => 'an event could not be encoded as JSON and was dropped',
+            ));
+        }
+        return ($json . "\n");
+    }
+
     public function finding($severity, $type, $path, $detail, $context = array(), $meta = array())
     {
         $this->track($severity);
@@ -152,12 +220,12 @@ class JsonReporter extends BaseReporter
         if (!empty($context)) {
             $event['context'] = $context;
         }
-        echo json_encode($event) . "\n";
+        echo self::encode($event);
     }
 
     public function summary($scan, $data, $text)
     {
-        echo json_encode(array_merge(array('event' => 'summary', 'scan' => $scan), $data)) . "\n";
+        echo self::encode(array_merge(array('event' => 'summary', 'scan' => $scan), $data));
     }
 
     public function progress($text)
@@ -171,7 +239,7 @@ class JsonReporter extends BaseReporter
 
     public function fatal($message)
     {
-        echo json_encode(array('event' => 'error', 'detail' => $message)) . "\n";
+        echo self::encode(array('event' => 'error', 'detail' => $message));
         if (defined('STDERR')) {
             fwrite(STDERR, 'Error: ' . $message . "\n");
         }

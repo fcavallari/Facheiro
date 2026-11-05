@@ -15,6 +15,9 @@ namespace Elderward\Engine;
 // single-file plugins; totals accumulate in $state.
 //////////////
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- an exception message is data, not output: the entry layer that catches it (CLI, WP-CLI, admin page, recovery page) escapes it for the place it shows it.
+// phpcs:disable WordPress.WP.AlternativeFunctions -- the engine also runs without WordPress (standalone CLI, recovery mode), where WP_Filesystem does not exist; it streams files and handles every failure itself.
+
 class IntegrityScanner extends Scanner
 {
     public function name()
@@ -78,7 +81,7 @@ class IntegrityScanner extends Scanner
             $this->check_plugin($unit['plugin'], $totals);
         } elseif (isset($unit['themes_unavailable'])) {
             $content = Layout::of($this->ctx)->content_dir();
-            $this->report('INFO', 'INTEGRITY_NO_REFERENCE', (null === $content ? $root . '/wp-content' : $content) . '/themes', 'themes: PHP zip extension not available, cannot verify themes');
+            $this->report('ERROR', 'INTEGRITY_NO_REFERENCE', (null === $content ? $root . '/wp-content' : $content) . '/themes', 'themes: PHP zip extension not available, themes were NOT verified');
             $totals['NO_REFERENCE']++;
         } elseif (isset($unit['theme'])) {
             $this->check_theme($unit['theme'], $totals);
@@ -117,8 +120,10 @@ class IntegrityScanner extends Scanner
         // root-level PHP files (a classic dropper spot) except wp-config.php.
         //////////////
         $version_file = $root . '/wp-includes/version.php';
+        // A real version.php is under 2 KB; never slurp an unbounded file.
+        $version_php = (string) @file_get_contents($version_file, false, null, 0, 65536);
         $wp_version = null;
-        if (preg_match('/\$wp_version\s*=\s*\'([^\']+)\'/', (string) @file_get_contents($version_file), $matches)) {
+        if (preg_match('/\$wp_version\s*=\s*\'([^\']+)\'/', $version_php, $matches)) {
             $wp_version = $matches[1];
         }
         if (null === $wp_version || !self::is_safe_version($wp_version)) {
@@ -127,18 +132,29 @@ class IntegrityScanner extends Scanner
             return;
         }
 
-        $locale = $this->ctx->get('locale', 'en_US');
+        $locale = self::core_locale($this->ctx, $version_php);
         list($status, $data) = $this->fetch_reference_checksums(
             'https://api.wordpress.org/core/checksums/1.0/?version=' . rawurlencode($wp_version) . '&locale=' . rawurlencode($locale),
             'core-' . $wp_version . '.json'
         );
         if ('ok' !== $status || empty($data['checksums']) || !is_array($data['checksums'])) {
-            $this->report('INFO', 'INTEGRITY_NO_REFERENCE', $root, 'core ' . $wp_version . ' (' . $locale . '): no reference checksums available (' . $status . ')');
+            ///////////////
+            // A manifest that is simply not in checksumdir= is the operator's
+            // choice of what to verify: INFO. Everything else means core was
+            // meant to be verified and was not (no network, a broken answer,
+            // or wordpress.org knowing no such version and locale, which is
+            // also what an edited version.php produces): ERROR, so it shows
+            // in the exit code.
+            //////////////
+            $why = ('ok' === $status) ? 'wordpress.org has no checksums for this version and locale' : $status;
+            $this->report('notfound' === $status ? 'INFO' : 'ERROR', 'INTEGRITY_NO_REFERENCE', $root,
+                'core ' . $wp_version . ' (' . $locale . '): no reference checksums available (' . $why . ')'
+                . ('notfound' === $status ? '' : ' - core files were NOT verified'));
             $totals['NO_REFERENCE']++;
             return;
         }
 
-        $this->progress('Checking core ' . $wp_version . ' (' . count($data['checksums']) . " files)\n");
+        $this->progress('Checking core ' . $wp_version . ('en_US' === $locale ? '' : ' ' . $locale) . ' (' . count($data['checksums']) . " files)\n");
         $manifest = array();
         foreach ($data['checksums'] as $relative_path => $expected) {
             if (0 === strpos($relative_path, 'wp-content/')) {
@@ -150,7 +166,7 @@ class IntegrityScanner extends Scanner
         $present = array();
         foreach (array('wp-admin', 'wp-includes') as $core_dir) {
             if (is_dir($root . '/' . $core_dir)) {
-                $present = array_merge($present, list_files_recursive($root . '/' . $core_dir, $root));
+                $present = array_merge($present, $this->package_files($root . '/' . $core_dir, $root, 'core ' . $wp_version, $totals));
             }
         }
         foreach ((array) @glob($root . '/*.php') as $root_file) {
@@ -196,7 +212,9 @@ class IntegrityScanner extends Scanner
             return;
         }
         if ('ok' !== $status || empty($data['files']) || !is_array($data['files'])) {
-            $this->report('INFO', 'INTEGRITY_NO_REFERENCE', $plugin_dir, 'plugin ' . $slug . ' ' . $version . ': could not fetch reference checksums');
+            // Not "no such plugin" (that was the branch above): the lookup
+            // itself failed, so the plugin was not verified.
+            $this->report('ERROR', 'INTEGRITY_NO_REFERENCE', $plugin_dir, 'plugin ' . $slug . ' ' . $version . ': could not fetch reference checksums - its files were NOT verified');
             $totals['NO_REFERENCE']++;
             return;
         }
@@ -206,7 +224,8 @@ class IntegrityScanner extends Scanner
         foreach ($data['files'] as $relative_path => $sums) {
             $manifest[$relative_path] = isset($sums['md5']) ? $sums['md5'] : null;
         }
-        $restorable = $this->verify_against_manifest($plugin_dir, $manifest, 'plugin ' . $slug . ' ' . $version, list_files_recursive($plugin_dir, $plugin_dir), $totals);
+        $restorable = $this->verify_against_manifest($plugin_dir, $manifest, 'plugin ' . $slug . ' ' . $version,
+            $this->package_files($plugin_dir, $plugin_dir, 'plugin ' . $slug . ' ' . $version, $totals), $totals);
         if ($this->ctx->has('restore') && count($restorable) > 0) {
             $this->restore_package_files($plugin_dir,
                 'https://downloads.wordpress.org/plugin/' . rawurlencode($slug) . '.' . rawurlencode($version) . '.zip',
@@ -240,18 +259,19 @@ class IntegrityScanner extends Scanner
             return;
         }
         if ('ok' !== $status) {
-            $this->report('INFO', 'INTEGRITY_NO_REFERENCE', $theme_dir, 'theme ' . $slug . ' ' . $version . ': could not fetch the official theme package');
+            $this->report('ERROR', 'INTEGRITY_NO_REFERENCE', $theme_dir, 'theme ' . $slug . ' ' . $version . ': could not fetch the official theme package - its files were NOT verified');
             $totals['NO_REFERENCE']++;
             return;
         }
 
         $manifest = self::manifest_from_zip($zip_path, $slug . '/');
         if (null === $manifest || 0 === count($manifest)) {
-            $this->report('INFO', 'INTEGRITY_NO_REFERENCE', $theme_dir, 'theme ' . $slug . ' ' . $version . ': could not read the official theme package');
+            $this->report('ERROR', 'INTEGRITY_NO_REFERENCE', $theme_dir, 'theme ' . $slug . ' ' . $version . ': could not read the official theme package - its files were NOT verified');
             $totals['NO_REFERENCE']++;
         } else {
             $this->progress('Checking theme ' . $slug . ' ' . $version . ' (' . count($manifest) . " files)\n");
-            $restorable = $this->verify_against_manifest($theme_dir, $manifest, 'theme ' . $slug . ' ' . $version, list_files_recursive($theme_dir, $theme_dir), $totals);
+            $restorable = $this->verify_against_manifest($theme_dir, $manifest, 'theme ' . $slug . ' ' . $version,
+                $this->package_files($theme_dir, $theme_dir, 'theme ' . $slug . ' ' . $version, $totals), $totals);
             if ($this->ctx->has('restore') && count($restorable) > 0) {
                 $this->restore_items_from_zip($zip_path, $slug . '/', $theme_dir, $restorable, 'theme ' . $slug . ' ' . $version);
             }
@@ -259,6 +279,40 @@ class IntegrityScanner extends Scanner
         if ($is_temp) {
             @unlink($zip_path);
         }
+    }
+
+    ///////////////
+    // The locale of the core package: the locale= option, else what the
+    // install says about itself. A localized package sets $wp_local_package
+    // in wp-includes/version.php and ships translated copies of a few core
+    // files, which only match that locale's checksums; an en_US core with a
+    // language pack does not set it, and the en_US checksums are right. The
+    // value comes from a file on the scanned host, so it is only used when
+    // it has the shape of a locale.
+    //////////////
+    public static function core_locale(Context $ctx, $version_php)
+    {
+        if ($ctx->has('locale')) {
+            return ((string) $ctx->get('locale'));
+        }
+        if (preg_match('/\$wp_local_package\s*=\s*[\'"]([^\'"]+)[\'"]/', $version_php, $matches) === 1
+            && preg_match('/^[a-z]{2,3}(?:_[A-Z]{2})?(?:_[a-z0-9]{1,12})?$/', $matches[1]) === 1) {
+            return ($matches[1]);
+        }
+        return ('en_US');
+    }
+
+    // The files in a package folder. A folder that cannot be listed leaves
+    // its files unverified, and says so.
+    protected function package_files($dir, $base, $label, array &$totals)
+    {
+        $unreadable = array();
+        $files = list_files_recursive($dir, $base, $unreadable);
+        foreach ($unreadable as $folder) {
+            $this->report('ERROR', 'INTEGRITY_UNREADABLE', $folder, $label . ': cannot list the folder, so the files inside were NOT verified');
+            $totals['UNREADABLE']++;
+        }
+        return ($files);
     }
 
     protected function fetch_reference_checksums($url, $offline_name)

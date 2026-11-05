@@ -11,6 +11,9 @@ namespace Elderward\Engine;
 // unless dryrun is set, in which case nothing on disk changes.
 //////////////
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- an exception message is data, not output: the entry layer that catches it (CLI, WP-CLI, admin page, recovery page) escapes it for the place it shows it.
+// phpcs:disable WordPress.WP.AlternativeFunctions -- the engine also runs without WordPress (standalone CLI, recovery mode), where WP_Filesystem does not exist; it streams files and handles every failure itself.
+
 class SignatureScanner extends Scanner
 {
     const CHUNK_FILES = 200;
@@ -33,6 +36,7 @@ class SignatureScanner extends Scanner
         if (!is_dir($this->scan_dir) || !is_readable($this->scan_dir)) {
             throw new Fatal('cannot open scan directory ' . $this->scan_dir);
         }
+        require_outside_tool($this->ctx, $this->scan_dir);
         if (is_wordpress_root($this->scan_dir)) {
             Layout::report_notes($this->ctx, false);
         }
@@ -65,18 +69,22 @@ class SignatureScanner extends Scanner
             throw new Fatal('cannot write the work file ' . $list_path);
         }
 
-        foreach (scan_roots($this->ctx, $this->scan_dir) as $dir) {
-            $files = recursive_file_iterator($dir);
-            foreach ($files as $file) {
-                // Skip the tool itself and anything outside the risky-extension
-                // list (allfiles=1 overrides) - shared with the correlate walk.
-                if (!is_scannable_file($this->ctx, $file)) {
-                    continue;
-                }
-                fwrite($fh, base64_encode($file->getPathname()) . "\n"); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- one path per line, whatever bytes the filename holds.
+        // A run that can modify files stays inside the folders it was given:
+        // a symbolic link can be planted by the web user, and the operator
+        // may run the cleanup with more privileges. A report-only run
+        // follows them, or everything behind a linked uploads folder would
+        // go unread.
+        $files = new TreeWalk(scan_roots($this->ctx, $this->scan_dir), !Layout::may_write($this->ctx));
+        foreach ($files as $file) {
+            // Skip the tool itself and anything outside the risky-extension
+            // list (allfiles=1 overrides) - shared with the correlate walk.
+            if (!is_scannable_file($this->ctx, $file)) {
+                continue;
             }
+            fwrite($fh, base64_encode($file->getPathname()) . "\n"); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- one path per line, whatever bytes the filename holds.
         }
         fclose($fh);
+        $this->report_walk($files, 'NOT checked for malware signatures');
 
         $state['list'] = $list_path;
         return array('from' => 0);
