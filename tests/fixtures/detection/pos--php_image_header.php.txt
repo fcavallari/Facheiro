@@ -1,0 +1,4 @@
+GIF89a;
+<?php echo 'hello'; ?>
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. 

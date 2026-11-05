@@ -1,0 +1,5 @@
+<?php
+$GLOBALS['_a1_'] = array('base64_decode', 'aGVsbG8=');
+$v = $GLOBALS['_a1_'][0]('aGVsbG8=');
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. 

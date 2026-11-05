@@ -165,7 +165,7 @@ fi
 ##############
 SIGSITE="$WORK/sigsite"
 mkdir -p "$SIGSITE"
-printf '<?php // acme_loader\n$x = $_POST["c"]; eval($x);\n' > "$SIGSITE/hit.php"
+printf '<?php // acme_loader\n$x = get_option("c"); eval($x);\n' > "$SIGSITE/hit.php"
 printf '<?php echo "hello";\n' > "$SIGSITE/clean.php"
 cat > "$WORK/sigs.json" <<'JSON'
 {"elderward_signatures":1,"signatures":[{"id":"acme-loader","target":"file","severity":"MEDIUM","description":"ACME loader","match":[{"string":"acme_loader"},{"regex":"/eval\\s*\\(\\s*\\$/"}]}]}
@@ -218,6 +218,58 @@ else
     sig_check "unreadable file is ERROR"    2 'ERROR,FILE_UNREADABLE,.*locked\.php' 'dangling' dryrun=1 "scandirectory=$UNREAD"
 fi
 chmod 644 "$UNREAD/locked.php"
+
+###############
+# Built-in detection signatures (new set, no old-script counterpart). The
+# fixtures in tests/fixtures/detection are stored as .txt so a git checkout
+# of the plugin never holds a reachable .php backdoor; they get their real
+# extension in the work dir. pos--RULE[--variant].EXT must report exactly
+# MALWARE_FOUND for RULE, neg--* (clean code shaped like a rule, mostly
+# taken from false positives seen on real plugins) must report nothing, every
+# rule must have a positive, and a real (non-dry) run must change nothing.
+##############
+DET="$WORK/detect"
+mkdir -p "$DET"
+for f in "$REPO"/tests/fixtures/detection/*.txt; do cp "$f" "$DET/$(basename "$f" .txt)"; done
+det_before="$(cd "$DET" && cat -- * | shasum)"
+det_out="$(cd "$WORK" && php "$NEW" dryrun=1 noselfcheck=1 "scandirectory=$DET" 2>/dev/null)"
+det_fail=""; det_pos=0; det_neg=0
+for f in "$DET"/pos--*; do
+    b="$(basename "$f")"; rule="${b#pos--}"; rule="${rule%%.*}"; rule="${rule%%--*}"; det_pos=$((det_pos+1))
+    printf '%s\n' "$det_out" | grep -qF ",MALWARE_FOUND,$DET/$b,$rule: " || det_fail="$det_fail $b"
+done
+for f in "$DET"/neg--*; do
+    b="$(basename "$f")"; det_neg=$((det_neg+1))
+    printf '%s\n' "$det_out" | grep -qF "$DET/$b," && det_fail="$det_fail $b"
+done
+if [ -z "$det_fail" ]; then
+    PASS=$((PASS+1)); echo "PASS  detection fixtures: $det_pos positives reported, $det_neg negatives quiet"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  detection fixtures:$det_fail"; printf '%s\n' "$det_out" | grep MALWARE_FOUND | head -40
+fi
+det_missing=""
+for rule in $(php -r 'require $argv[1] . "/includes/engine/load.php"; echo implode(" ", array_keys(Elderward\Engine\Signatures::builtin_detection()));' "$REPO"); do
+    found=0
+    for x in "$DET"/pos--"$rule".* "$DET"/pos--"$rule"--*; do [ -e "$x" ] && found=1; done
+    [ "$found" = 1 ] || det_missing="$det_missing $rule"
+done
+if [ -z "$det_missing" ]; then
+    PASS=$((PASS+1)); echo "PASS  every detection signature has a positive fixture"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  detection signatures without a positive fixture:$det_missing"
+fi
+if printf '%s\n' "$det_out" | grep -qF "pos--php_variable_function_name--split.php,php_variable_function_name: " \
+   && printf '%s\n' "$det_out" | grep -F "pos--php_variable_function_name--split.php," | grep -q 'after joining split strings'; then
+    PASS=$((PASS+1)); echo "PASS  split strings are joined for the second look"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  the split-string fixture was not caught by the second look"
+fi
+(cd "$WORK" && php "$NEW" noselfcheck=1 "scandirectory=$DET" >/dev/null 2>&1)
+if [ "$det_before" == "$(cd "$DET" && cat -- * | shasum)" ]; then
+    PASS=$((PASS+1)); echo "PASS  detection signatures never modify files (real run)"
+else
+    FAIL=$((FAIL+1)); echo "FAIL  a real run modified a detection fixture"
+fi
 
 ###############
 # Restore safety (new rules, no old-script counterpart): a verified package

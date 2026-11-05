@@ -1,0 +1,5 @@
+<?php
+$f = "\x62\x61\x73\x65\x36\x34\x5f\x64\x65\x63\x6f\x64\x65";
+$s = $f('aGVsbG8=');
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. 

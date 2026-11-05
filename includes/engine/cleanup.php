@@ -174,6 +174,27 @@ class SignatureScanner extends Scanner
                 return;
             }
         }
+
+        // Nothing matched the raw bytes: the built-in detection set gets a
+        // second look with split strings joined and escapes decoded. Report
+        // only, like the rest of that set; custom signatures see raw bytes,
+        // as documented.
+        $normalized = Signatures::normalize_code($file_buffer);
+        if ($normalized === $file_buffer) {
+            return;
+        }
+        foreach (Signatures::builtin_detection() as $signature_name => $signature) {
+            if (self::signature_matches($normalized, $signature)) {
+                $this->report_detection($file_path, $signature_name, $signature['action'], ' after joining split strings and decoding escapes');
+                return;
+            }
+        }
+    }
+
+    private function report_detection($file_path, $signature_name, $action, $how)
+    {
+        $how = ('' === $how) ? '' : 'matched' . $how . '; ';
+        $this->report($action['detect'], 'MALWARE_FOUND', $file_path, $signature_name . ': ' . $action['description'] . ' (' . $how . 'detection only: never cleaned automatically, review the file)');
     }
 
     public static function pattern_matches($condition, $file_buffer)
@@ -243,6 +264,13 @@ class SignatureScanner extends Scanner
                 return;
             }
             $this->report('HIGH', 'MALWARE_CLEANED', $file_path, $signature_name . ' (file deleted)');
+            return;
+        }
+
+        if (isset($action['detect'])) {
+            // Built-in detection set: report only, in dry and real runs
+            // alike. A generic shape names no bytes to remove.
+            $this->report_detection($file_path, $signature_name, $action, '');
             return;
         }
 

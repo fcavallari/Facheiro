@@ -1,0 +1,2 @@
+var s = String.fromCharCode(72, 105);
+var data = JSON.parse(text);

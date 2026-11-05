@@ -234,7 +234,10 @@ final class Signatures
 
     public static function cleanup()
     {
-        return array_merge(self::builtin_cleanup(), self::$custom['cleanup']);
+        // Order matters: the first signature that matches a file wins, so
+        // the ones that can clean come first, then the built-in detection
+        // set (strongest evidence first), then the custom set.
+        return array_merge(self::builtin_cleanup(), self::builtin_detection(), self::$custom['cleanup']);
     }
 
     public static function db_options()
@@ -270,6 +273,8 @@ final class Signatures
     //   array('delete_file' => true)       Delete the whole file.
     //   array('report' => SEVERITY)        Report SIGNATURE_MATCH only, never
     //                                      modify (custom signatures).
+    //   array('detect' => SEVERITY,        Report MALWARE_FOUND only, never
+    //         'description' => text)       modify (built-in detection set).
     //////////////
     public static function builtin_cleanup()
     {
@@ -289,6 +294,310 @@ final class Signatures
                 'action'    => array('remove_regex' => '/if\((typeof)?\s*\w+.?===.?undefined.?\)[^\n]+;\s*\}\s*\}\s*\(\s*\)\s*\);\s*\};/s'),
             ),
         );
+    }
+
+    ////////////////
+    // Built-in detection signatures: generic webshell and backdoor shapes,
+    // modelled on the detections that php-malware-finder, AMWScan,
+    // signature-base (gen_webshells), scr34m/php-malware-scanner and Linux
+    // Malware Detect have in common. They are re-expressed here, not copied.
+    //
+    // They only report (MALWARE_FOUND with their own severity), in dry and
+    // real runs alike: a generic shape says "this is a backdoor", not which
+    // bytes are the injection, so removing it is the operator's call.
+    //
+    // HIGH means a dangerous sink fed straight from the request, a password
+    // gate or a known shell family: no legitimate plugin does that. MEDIUM
+    // means obfuscation that legitimate code almost never needs (some
+    // commercial licence checks do it); verify before removing.
+    //
+    // Shapes are bounded ({0,N}) so no pattern can backtrack across a whole
+    // file, and every prefilter is cheap. Each one has a positive case and
+    // clean-code negatives in tests/regress.sh.
+    //////////////
+    public static function builtin_detection()
+    {
+        // Built once per process: the scan asks for the set for every file.
+        static $set = null;
+        if (null !== $set) {
+            return ($set);
+        }
+        // Request input: indexed superglobals in their direct and indirect
+        // spellings, request headers, and the raw request body. Bare names
+        // ("we require $_GET") are prose in comments, not input.
+        $req = '(?:\$_(?:GET|POST|REQUEST|COOKIE)\s*[\[{]|\$_SERVER\s*\[\s*[\'"]HTTP_|\$\{\s*[\'"]_(?:GET|POST|REQUEST|COOKIE)[\'"]\s*\}'
+            . '|\$GLOBALS\s*\[\s*[\'"]_(?:GET|POST|REQUEST|COOKIE)[\'"]\s*\]|file_get_contents\s*\(\s*[\'"]php://input[\'"]\s*\)|getallheaders\s*\(\s*\))';
+        // Up to four decoding wrappers between a sink and its input.
+        $dec = '(?:@?\s*(?:base64_decode|gzinflate|gzuncompress|gzdecode|str_rot13|strrev|stripslashes|urldecode|rawurldecode|hex2bin|convert_uudecode|trim)\s*\(\s*){0,4}';
+        // A function call, not a method ($x->eval(), X::eval()) or a longer
+        // name ending the same way (curl_exec).
+        $fn = '(?<![\w>:$])';
+        $code_sinks = '(?:eval|assert|create_function|system|exec|shell_exec|passthru|popen|proc_open|pcntl_exec)';
+        $req_prefilter = array('regex' => '~_(?:GET|POST|REQUEST|COOKIE|SERVER)\b|php://input|getallheaders~');
+
+        $set = array(
+            'php_eval_request' => array(
+                'prefilter' => array('regex' => '~(?:eval|assert|create_function)\s*\(~i'),
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . '(?:(?:eval|assert|create_function)\s*\(|create_function\s*\([^,;)]{0,60},)\s*' . $dec . '@?\s*' . $req . '~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'code from the request is evaluated (eval/assert/create_function on request input)'),
+            ),
+            'php_exec_request' => array(
+                'prefilter' => $req_prefilter,
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . '(?:system|exec|shell_exec|passthru|popen|proc_open|pcntl_exec)\s*\(\s*' . $dec . '@?\s*' . $req . '~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'a shell command from the request is executed'),
+            ),
+            'php_sink_request_variable' => array(
+                'prefilter' => $req_prefilter,
+                'triggers'  => array(
+                    array('regex' => '~\$(\w{1,40})\s*=\s*' . $dec . '@?\s*' . $req . '[^;]{0,200};[\s\S]{0,3000}?' . $fn . $code_sinks . '\s*\(\s*' . $dec . '@?\s*[\'"]?\$\1\b~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'request input is copied to a variable that is then evaluated or executed'),
+            ),
+            'php_request_callback' => array(
+                'prefilter' => $req_prefilter,
+                'triggers'  => array(
+                    array('regex' => '~(?:\$_(?:GET|POST|REQUEST|COOKIE)|\$\{\s*[\'"]_(?:GET|POST|REQUEST|COOKIE)[\'"]\s*\})\s*\[[^\]]{1,40}\]\s*\('
+                        . '|' . $fn . '(?:call_user_func(?:_array)?|array_map|register_shutdown_function|register_tick_function|forward_static_call(?:_array)?|ob_start|iterator_apply)\s*\(\s*' . $dec . '@?\s*' . $req
+                        . '|' . $fn . '(?:array_filter|array_walk(?:_recursive)?|usort|uasort|uksort|array_reduce|preg_replace_callback|array_diff_ukey|array_udiff|array_intersect_ukey)\s*\([^,;()]{1,200},\s*' . $dec . '@?\s*' . $req
+                        . '|' . $fn . '(?:usort|uasort|uksort|array_diff_ukey|array_diff_uassoc|array_udiff(?:_u?assoc)?|array_intersect_ukey|array_intersect_uassoc|array_uintersect(?:_assoc)?)\s*\([^;]{0,300}?,\s*@?\s*' . $req . '[^,;()]{0,60}\)\s*;~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'a function named by the request is called (request input used as a callback)'),
+            ),
+            'php_dangerous_callback_name' => array(
+                'prefilter' => array('regex' => '~[\'"](?:assert|eval|create_function|system|shell_exec|passthru|exec|popen|proc_open|pcntl_exec)[\'"]~i'),
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . '(?:call_user_func(?:_array)?|array_map|register_shutdown_function|register_tick_function|forward_static_call(?:_array)?|ob_start|iterator_apply)\s*\(\s*[\'"](?:assert|eval|create_function|system|shell_exec|passthru|exec|popen|proc_open|pcntl_exec)[\'"]'
+                        . '|' . $fn . '(?:array_filter|array_walk(?:_recursive)?|usort|uasort|uksort|array_reduce|preg_replace_callback)\s*\([^,;()]{1,200},\s*[\'"](?:assert|create_function|system|shell_exec|passthru|exec|popen|proc_open)[\'"]~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'a code or command function is passed by name as a callback (hidden eval/exec)'),
+            ),
+            'php_variable_function_name' => array(
+                'prefilter' => array('regex' => '~[\'"](?:assert|create_function|system|shell_exec|passthru|exec|popen|proc_open|pcntl_exec)[\'"]~i'),
+                'triggers'  => array(
+                    array('regex' => '~\$(\w{1,40})\s*=\s*[\'"](?:assert|create_function|system|shell_exec|passthru|exec|popen|proc_open|pcntl_exec)[\'"]\s*;[\s\S]{0,3000}?(?<![\w>:$\\\\])\$\1\s*\(~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'a code or command function name is stored in a variable and called through it'),
+            ),
+            'php_extract_request_call' => array(
+                'prefilter' => array('regex' => '~extract\s*\(~i'),
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . 'extract\s*\(\s*\$_(?:GET|POST|REQUEST|COOKIE)\s*\)~i'),
+                    array('regex' => '~(?<![\w>:$\\\\])\$\w{1,40}\s*\(\s*\$\w{1,40}\s*\)~'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'request input is turned into variables (extract) and a variable is called as a function'),
+            ),
+            'php_request_alias_call' => array(
+                'prefilter' => $req_prefilter,
+                'triggers'  => array(
+                    array('regex' => '~\$(\w{1,40})\s*=\s*\$_(?:GET|POST|REQUEST|COOKIE)\s*;[\s\S]{0,600}?\$\1\s*\[[^\]]{1,40}\]\s*\(~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'a copy of the request array is called through one of its entries'),
+            ),
+            'php_include_request' => array(
+                'prefilter' => $req_prefilter,
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . '(?:include|require)(?:_once)?\b\s*\(?\s*' . $dec . '@?\s*' . $req . '~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'a file named by the request is included and run'),
+            ),
+            'php_request_file_write' => array(
+                'prefilter' => $req_prefilter,
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . '(?:file_put_contents|copy)\s*\(\s*' . $dec . '@?\s*' . $req
+                        . '|' . $fn . 'fopen\s*\(\s*@?\s*' . $req . '[^;]{0,80},\s*[\'"][waxc]'
+                        . '|' . $fn . 'copy\s*\([^,;()]{1,200},\s*@?\s*' . $req . '~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'a file named by the request is written (dropper or file manager backdoor)'),
+            ),
+            'php_raw_upload' => array(
+                'prefilter' => array('string' => 'move_uploaded_file'),
+                'triggers'  => array(
+                    array('regex' => '~move_uploaded_file\s*\(\s*\$_FILES\s*\[[^\]]{1,40}\]\s*\[\s*[\'"]tmp_name[\'"]\s*\]\s*,\s*@?\s*(?:\$_FILES\s*\[[^\]]{1,40}\]\s*\[\s*[\'"]name[\'"]\s*\]|' . $req . ')~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'an uploaded file is saved under the name the client chose (uploader shell)'),
+            ),
+            'php_password_gate' => array(
+                'prefilter' => $req_prefilter,
+                'triggers'  => array(
+                    array('regex' => '~(?:md5|sha1|crc32)\s*\(\s*@?\s*' . $req . '[^)]{0,60}\)\s*(?:===?|!==?)\s*[\'"][0-9a-f]{8,64}[\'"]'
+                        . '|hash\s*\(\s*[\'"]\w{3,12}[\'"]\s*,\s*@?\s*' . $req . '[^)]{0,60}\)\s*(?:===?|!==?)\s*[\'"][0-9a-f]{8,64}[\'"]'
+                        . '|[\'"][0-9a-f]{8,64}[\'"]\s*(?:===?|!==?)\s*(?:md5|sha1|crc32)\s*\(\s*@?\s*' . $req . '~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'access is gated by a hard-coded password hash compared with request input (shell login)'),
+            ),
+            'php_webshell_family' => array(
+                'prefilter' => array('regex' => '~\b(?:FilesMan|WSOsetcookie|WSOstripslashes|wso_version|b374k|c99shell|c99_buff_prepare|c99sh_|r57shell|IndoXploit|ALFA_DATA|AlfaTeam|Alfa_Shell|0byt3m1n1|Ani-Shell|AnonymousFox)\b~'),
+                'triggers'  => array(
+                    array('regex' => '~(?:eval|assert|system|shell_exec|passthru|exec|popen|proc_open|move_uploaded_file|file_put_contents)\s*\(~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'marker of a known web shell family (WSO/FilesMan, b374k, c99, r57, IndoXploit, Alfa, AnonymousFox)'),
+            ),
+            'php_image_header' => array(
+                'prefilter' => array('regex' => '~\A(?:GIF8[79]a|\x89PNG\r\n|\xFF\xD8\xFF)~'),
+                'triggers'  => array(
+                    array('regex' => '~<\?php~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'PHP code behind an image header (disguised to pass upload checks)'),
+            ),
+            'php_escaped_include' => array(
+                'prefilter' => array('regex' => '~(?:include|require)~i'),
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . '(?:include|require)(?:_once)?\b\s*\(?\s*[\'"][^\'"]{0,20}?\\\\(?:x[0-9a-f]{2}|[0-7]{3})(?:[^\'"]{0,30}?\\\\(?:x[0-9a-f]{2}|[0-7]{3})){3,}~i'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'a file is included through a path written in escape codes (hidden loader)'),
+            ),
+            'php_wp_vcd' => array(
+                'prefilter' => array('regex' => '~\b(?:wp_vcd|div_code_name|wp-vcd\.php)\b~'),
+                'triggers'  => array(
+                    array('regex' => '~\$tmpcontent|wp-tmp\.php|theme_temp_setup|class\.theme-modules\.php|\$wp_auth_key~'),
+                ),
+                'action'    => array('detect' => 'HIGH', 'description' => 'WP-VCD backdoor (spread through nulled themes and plugins)'),
+            ),
+            'php_obfuscated_eval' => array(
+                'prefilter' => array('regex' => '~(?:eval|assert)\s*\(~i'),
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . '(?:eval|assert)\s*\(\s*(?:[\'"]\?>[\'"]\s*\.\s*)?(?:@?\s*(?:base64_decode|gzinflate|gzuncompress|gzdecode|str_rot13|strrev|convert_uudecode|hex2bin|urldecode|rawurldecode)\s*\(\s*)+~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'decoded data is evaluated (eval of base64/gzinflate/rot13 output)'),
+            ),
+            'php_preg_replace_eval' => array(
+                'prefilter' => array('string' => 'preg_replace'),
+                'triggers'  => array(
+                    array('regex' => '~preg_replace\s*\(\s*([\'"])([^\w\s\\\\])(?:(?!\1).){0,300}?\2[imsxuADSUXJ]*e[imsxuADSUXJ]*\1\s*,~'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'preg_replace with the /e modifier evaluates the replacement as PHP (removed in PHP 7; only old shells still use it)'),
+            ),
+            'php_encoded_blob' => array(
+                'prefilter' => array('string' => 'base64_decode'),
+                'triggers'  => array(
+                    array('regex' => '~(?:gzinflate|gzuncompress|gzdecode|str_rot13|strrev)\s*\(\s*base64_decode\s*\(\s*[\'"][A-Za-z0-9+/=]{500,}~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'a large base64 blob is decompressed or unscrambled in code (packed payload)'),
+            ),
+            'php_scrambled_function_names' => array(
+                'prefilter' => array('regex' => '~(?:strrev|str_rot13)\s*\(~i'),
+                'triggers'  => array(
+                    array('regex' => '~[\'"](?:edoced_46esab|etalfnizg|sserpmocnuzg|edocedzg|tressa|metsys|cexe_llehs|urhtssap|noitcnuf_etaerc|lave|riny|onfr64_qrpbqr|tmvasyngr|tmhapbzcerff|flfgrz|nffreg|furyy_rkrp|cnffgueh|perngr_shapgvba)[\'"]~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'a dangerous function name is hidden reversed or rot13-encoded'),
+            ),
+            'php_escaped_function_name' => array(
+                'prefilter' => array('string' => '\\'),
+                'triggers'  => array(
+                    array('regex' => '~[\'"](?:\\\\x(?:3[0-9]|4[1-9a-f]|5[0-9af]|6[1-9a-f]|7[0-9a])|\\\\0(?:6[0-7]|7[01])|\\\\1(?:0[1-7]|[1-2][0-7]|3[0-2]|37|4[1-7]|[56][0-7]|7[0-2])){6,}[\'"]~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'a name is written entirely in hex or octal escapes (hidden function name)'),
+            ),
+            'php_chr_chain' => array(
+                'prefilter' => array('regex' => '~chr\s*\(~i'),
+                'triggers'  => array(
+                    array('regex' => '~(?:chr\s*\(\s*\d{1,3}\s*\)\s*\.\s*){8,}~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'a string is built from a long chain of chr() calls (hidden code)'),
+            ),
+            'php_globals_call' => array(
+                'prefilter' => array('regex' => '~\$(?:GLOBALS|\{)~'),
+                'triggers'  => array(
+                    array('regex' => '~\$GLOBALS\s*\[\s*[\'"][^\'"]{1,40}[\'"]\s*\]\s*\[\s*\d{1,4}\s*\]\s*\(|\$\{\s*[\'"](?:\\\\x47|\\\\107)~'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'functions are called through an index into $GLOBALS (array obfuscator)'),
+            ),
+            'php_shell_console' => array(
+                'prefilter' => array('regex' => '~uname\s+-a|\bwhoami\b|/etc/passwd|\bnetstat\s+-~'),
+                'triggers'  => array(
+                    array('regex' => '~(?<![\w>:$\\\\])(?:system|passthru|shell_exec|exec|popen|proc_open)\s*\(\s*["\']?\$\w{1,40}~i'),
+                    array('regex' => '~' . $req . '~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'a command console: runs commands held in variables, reads request input and probes the server (uname, whoami, /etc/passwd)'),
+            ),
+            'php_tiny_dynamic_call' => array(
+                'prefilter' => array('regex' => '~\A(?=[\s\S]{0,800}\z)(?![\s\S]{0,800}?\b(?:class|trait|interface|namespace)\s)[\s\S]{0,800}?<\?~i'),
+                'triggers'  => array(
+                    array('regex' => '~(?<![\w>:$\\\\])\$\w{1,40}\s*\(\s*@?\$(?:_(?:GET|POST|REQUEST|COOKIE|SERVER|SESSION)\s*\[|\w{1,40}\s*[\[)])~'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'a tiny PHP file (under 800 bytes, no class) that calls a variable as a function (one-line backdoor)'),
+            ),
+            'php_indexed_variable_call' => array(
+                'prefilter' => array('regex' => '~\]\s*\(\s*\$~'),
+                'triggers'  => array(
+                    array('regex' => '~(?<![\w>:$\\\\])\$(\w{1,40})\s*\[\s*\d{1,2}\s*\]\s*\(\s*\$\1\s*\[\s*\d{1,2}\s*\]\s*\)~'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'an array calls one of its own entries with another ($x[0]($x[1]): unpacked payload)'),
+            ),
+            'php_eval_indexed' => array(
+                'prefilter' => array('regex' => '~(?:eval|assert)\s*\(~i'),
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . '(?:eval|assert)\s*\(\s*\$\w{1,40}\s*\[\s*\$\w{1,40}\s*\[~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'code looked up through nested array indexes is evaluated (obfuscated eval)'),
+            ),
+            'php_binary_identifiers' => array(
+                'prefilter' => array('regex' => '~\$[\x80-\xff]{2}~'),
+                'triggers'  => array(
+                    array('regex' => '~(?:\$[a-z_]*[\x80-\xff][^=;]{0,40}=[^;]{0,200};[\s\S]{0,200}?){4,}~i'),
+                    array('regex' => '~(?:eval|base64_decode|gzinflate|str_rot13|create_function)\s*\(~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'variables named with non-printable bytes next to a decoder (machine obfuscation)'),
+            ),
+            'php_include_image' => array(
+                'prefilter' => array('regex' => '~(?:include|require)~i'),
+                'triggers'  => array(
+                    array('regex' => '~' . $fn . '(?:include|require)(?:_once)?\b\s*\(?[^;\n]{0,200}?\.(?:ico|png|jpe?g|gif|bmp|webp)\s*[\'"]\s*\)?\s*;~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'an image or icon file is included as PHP (payload hidden in a media file)'),
+            ),
+            'javascript_charcode_payload' => array(
+                'prefilter' => array('string' => 'fromCharCode'),
+                'triggers'  => array(
+                    array('regex' => '~String\.fromCharCode\s*\(\s*(?:\d{2,3}\s*,\s*){40,}~'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'a script is assembled from a long list of character codes (injected loader)'),
+            ),
+            'javascript_obfuscated_eval' => array(
+                'prefilter' => array('string' => 'eval'),
+                'triggers'  => array(
+                    array('regex' => '~\beval\s*\(\s*(?:window\.)?(?:atob\s*\(|(?:unescape|decodeURIComponent)\s*\(\s*[\'"]%[0-9a-f]{2}%)~i'),
+                ),
+                'action'    => array('detect' => 'MEDIUM', 'description' => 'decoded data is evaluated in a script (eval of atob/unescape output)'),
+            ),
+        );
+        return ($set);
+    }
+
+    ////////////////
+    // The second look the detection set gets at a file nothing matched:
+    // the cheap normalisation Manul, AMWScan and Shell Detector do before
+    // matching. Block comments go (eval/**/(), letters, digits and path
+    // characters written as \xNN or octal escapes are decoded, and string
+    // fragments joined with "." are glued ('ev'.'al' becomes 'eval').
+    // The result is only matched, never written anywhere; a failing regex
+    // returns the input unchanged, so the second look is simply skipped.
+    //////////////
+    public static function normalize_code($buffer)
+    {
+        $out = preg_replace('~/\*.{0,4096}?\*/~s', '', $buffer);
+        if (null === $out) {
+            return ($buffer);
+        }
+        $decoded = preg_replace_callback('~\\\\(?:x([0-9a-f]{2})|([0-7]{3}))~i', array(__CLASS__, 'decode_escape'), $out);
+        if (null === $decoded) {
+            return ($buffer);
+        }
+        $joined = preg_replace('~[\'"]\s*\.\s*[\'"]~', '', $decoded);
+        return ((null === $joined) ? $buffer : $joined);
+    }
+
+    public static function decode_escape($m)
+    {
+        $code = ('' !== $m[1]) ? hexdec($m[1]) : octdec($m[2]);
+        $char = chr($code);
+        // Only characters that spell names and paths: decoding a quote or a
+        // control byte could only change the code's shape, never reveal it.
+        return ((1 === preg_match('~^[A-Za-z0-9_./-]$~', $char)) ? $char : $m[0]);
     }
 
     // Crontab persistence patterns: name => pattern pairs.
@@ -507,6 +816,9 @@ final class Signatures
         foreach (self::cleanup() as $name => $signature) {
             if (!isset($signature['prefilter'], $signature['triggers'], $signature['action']) || !is_array($signature['prefilter'])) {
                 throw new Fatal('invalid cleanup signature ' . $name . ': prefilter, triggers and action are required');
+            }
+            if (isset($signature['action']['detect']) && (!in_array($signature['action']['detect'], array('HIGH', 'MEDIUM', 'LOW'), true) || !isset($signature['action']['description']))) {
+                throw new Fatal('invalid detection signature ' . $name . ': detect needs HIGH, MEDIUM or LOW and a description');
             }
 
             $conditions = array_merge(array($signature['prefilter'], $signature['action']), $signature['triggers']);
