@@ -67,7 +67,7 @@
     "dev": {
         ".claude/launch.json": "01cf073f25d91d4e7008f06685c089f435775c99921488322e99ab1153e4e338",
         ".distignore": "c6059dfacf8c553fafe70134867b95f7081971d20386571875d81deb317b9900",
-        ".gitignore": "9253648c65c9db48c5bfc294a2ef68b1c871d869eccb6543ac499f3595f67f6c",
+        ".gitignore": "7e0640d4ffad7c2f643e48589778dc7f13f607ddae654138dfc93fb73ed61ff7",
         ".wordpress-org/banner-1544x500.png": "274acc152332720f3827ad5b3235469b7e9284547c5fc2f86bced85e820d3c62",
         ".wordpress-org/banner-772x250.png": "dbc530065ad27696c5586cbc9d7ed3fe7e6ef1c0d2f4669ced1ba31d0daac19a",
         ".wordpress-org/icon-128x128.png": "a8ea8a75feffa68714c03da0487081b3d97634ffb43c904e411a8ee2f55ad64a",
