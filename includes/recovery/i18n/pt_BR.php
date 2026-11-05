@@ -6,8 +6,11 @@
 // placeholders (%s, %d, %1$s...) exactly as in the English text.
 //////////////
 
-if (!defined('ELDERWARD_RECOVERY_ENTRY')) {
-    exit;
+// Outside WordPress only recovery.php may load the file.
+if (!defined('ABSPATH')) {
+    if (!defined('ELDERWARD_RECOVERY_ENTRY')) {
+        exit;
+    }
 }
 
 return array(

@@ -5,6 +5,22 @@ namespace Elderward\Engine;
 // Filesystem helpers shared by the scanners.
 //////////////
 
+// Same rule as load.php: WordPress, the CLI or the recovery page, never a
+// direct web request.
+if (!defined('ABSPATH')) {
+    if (!defined('ELDERWARD_RECOVERY') && PHP_SAPI !== 'cli') {
+        exit;
+    }
+}
+
+// File times are shown in the server's time zone on purpose: it is what
+// `ls -l` and the access log show, so a finding lines up with them. Inside
+// WordPress that zone is UTC, because WordPress sets it.
+function local_time($format, $timestamp)
+{
+    return (date($format, $timestamp)); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date -- the server's time zone on purpose, see above.
+}
+
 function recursive_file_iterator($dir)
 {
     // CATCH_GET_CHILD: an unreadable subdirectory is skipped instead of

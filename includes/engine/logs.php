@@ -363,7 +363,7 @@ class CorrelateScanner extends Scanner
                 $path = $file->getPathname();
                 $severity = is_php_file($path) ? 'HIGH' : 'MEDIUM';
                 $this->report($severity, 'LOG_FILE_CORRELATION', $path,
-                    'modified ' . date('Y-m-d H:i:s', $mtime) . ' within ' . $window . 's of flagged traffic: '
+                    'modified ' . local_time('Y-m-d H:i:s', $mtime) . ' within ' . $window . 's of flagged traffic: '
                     . implode(' ', array_keys($in_window['names'])) . ' (' . $in_window['count'] . ' flagged requests in window)',
                     array('e.g. ' . $in_window['example']));
                 $correlated++;

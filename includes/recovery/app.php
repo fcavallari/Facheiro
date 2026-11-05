@@ -23,8 +23,12 @@ use Elderward\Engine\Runner;
 use Elderward\Engine\Scanner;
 use Elderward\Engine\Signatures;
 
-if (!defined('ELDERWARD_RECOVERY_ENTRY')) {
-    exit;
+// Outside WordPress only recovery.php, which defines this constant, may load
+// the file. A direct request stops here.
+if (!defined('ABSPATH')) {
+    if (!defined('ELDERWARD_RECOVERY_ENTRY')) {
+        exit;
+    }
 }
 
 final class App
@@ -1026,52 +1030,14 @@ final class App
             $strings[$text] = self::t($text);
         }
         $json = json_encode($strings, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here; inline script data, HTML-safe flags.
-        return 'var ELDERWARD_L = ' . $json . ';' . <<<'JS'
-(function () {
-	var L = function (text) { return ELDERWARD_L[text] || text; };
-	var box = document.getElementById('scan');
-	if (!box) { return; }
-	var token = box.getAttribute('data-token');
-	var start = document.getElementById('start');
-	var cancel = document.getElementById('cancel');
-	var progress = document.getElementById('progress');
-	var fill = progress.querySelector('.fill');
-	var status = document.getElementById('status');
-	var stopped = false;
-	function post(action, extra) {
-		var body = new URLSearchParams();
-		body.append('do', action);
-		body.append('token', token);
-		Object.keys(extra || {}).forEach(function (k) { body.append(k, extra[k]); });
-		return fetch(location.pathname, { method: 'POST', credentials: 'same-origin', body: body }).then(function (r) { return r.json(); });
-	}
-	function show(data) {
-		fill.style.width = (data.percent || 0) + '%';
-		status.textContent = data.stage ? (L('Scanning: ') + data.stage + (data.message ? ' — ' + data.message : '')) : (data.message || L('Working…'));
-	}
-	function loop() {
-		if (stopped) { return; }
-		post('step').then(function (data) {
-			if (!data.ok) { status.textContent = data.message || L('Error.'); return; }
-			show(data);
-			if (data.status === 'running') { setTimeout(loop, 200); } else { location.reload(); }
-		}).catch(function () { status.textContent = L('Lost contact with the server; retrying…'); setTimeout(loop, 3000); });
-	}
-	start.addEventListener('click', function () {
-		start.disabled = true; cancel.disabled = false; progress.hidden = false; stopped = false;
-		status.textContent = L('Starting…');
-		post('start', { log: document.getElementById('log').value }).then(function (data) {
-			if (!data.ok) { status.textContent = data.message || L('Could not start.'); start.disabled = false; cancel.disabled = true; return; }
-			show(data); loop();
-		});
-	});
-	cancel.addEventListener('click', function () {
-		stopped = true;
-		post('cancel').then(function () { location.reload(); });
-	});
-	if (box.getAttribute('data-running') === '1') { loop(); }
-})();
-JS;
+        // The script lives in app.js so it can be read and linted as JavaScript.
+        // It is still sent inline: the page must work when the web server
+        // refuses static files from the plugin folder.
+        $code = @file_get_contents(__DIR__ . '/app.js'); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- no WordPress here; its own script file, checked on the next line.
+        if (false === $code) {
+            $code = '';
+        }
+        return ('var ELDERWARD_L = ' . $json . ';' . $code);
     }
 
     private static function css()
