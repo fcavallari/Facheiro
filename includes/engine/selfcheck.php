@@ -30,7 +30,7 @@ class SelfCheckScanner extends IntegrityScanner
     // checkout has them: their tracked files are listed under "dev" in
     // checksums.json and verified when present; nothing is skipped.
     private static $dev_only = array(
-        '.git', '.github', '.gitignore', '.distignore', '.wordpress-org', '.claude',
+        '.git', '.github', '.gitignore', '.gitattributes', '.distignore', '.wordpress-org', '.claude',
         'CLAUDE.md', 'TESTPLAN.md', 'composer.json', 'composer.lock', 'phpcs.xml.dist',
         'tests', 'vendor', 'node_modules', 'build', 'site', 'dist',
     );

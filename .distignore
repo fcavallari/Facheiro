@@ -15,3 +15,4 @@ build
 site
 .claude
 dist
+.gitattributes

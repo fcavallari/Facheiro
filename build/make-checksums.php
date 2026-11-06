@@ -32,6 +32,19 @@ if (count($missing) > 0) {
     fwrite(STDERR, "SelfCheckScanner::\$dev_only lacks .distignore entries: " . implode(', ', $missing) . "\n");
     exit(1);
 }
+// .gitattributes must leave the same entries out of git archive and
+// GitHub's Download ZIP, or that zip ships the development files.
+$attributes = array_map('trim', (array) @file($root . '/.gitattributes'));
+$missing = array();
+foreach ($distignore as $entry) {
+    if (!in_array('/' . $entry . ' export-ignore', $attributes, true)) {
+        $missing[] = $entry;
+    }
+}
+if (count($missing) > 0) {
+    fwrite(STDERR, ".gitattributes lacks \"/<entry> export-ignore\" lines for .distignore entries: " . implode(', ', $missing) . "\n");
+    exit(1);
+}
 
 $out = array();
 $code = 1;

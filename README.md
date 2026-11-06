@@ -343,11 +343,12 @@ tests/mcp-stdio.js MCP client session over STDIO through the MCP Adapter
 tests/checksums.sh checksums.json is current; the self-check on a release-like copy
 tests/tamper.sh    sealed settings on a test site (WP-CLI); tests/tamper-ui.js: the review notices
 build/make-checksums.php   writes checksums.json (run it after changing any shipped file)
+build/make-zip.php         builds dist/elderward.zip, the release package
 recovery.php, includes/recovery/   recovery mode (runs without WordPress; PHP 5.6 syntax)
 site/              the project homepage (static HTML, not part of the plugin zip)
 ```
 
-`.distignore` lists what stays out of the WordPress.org package (tests, tooling, docs for contributors, the homepage).
+`.distignore` lists what stays out of the WordPress.org package (tests, tooling, docs for contributors, the homepage); `.gitattributes` leaves the same files out of `git archive` and GitHub's Download ZIP, and `build/make-checksums.php` refuses when the two lists disagree. Build the package with `php build/make-zip.php`: it writes `dist/elderward.zip` with exactly the files listed under `files` in `checksums.json`, each checked against its checksum, and refuses when `checksums.json` is out of date. That zip is what to upload to WordPress.org, install on a test site and run Plugin Check on. A git checkout is not a release: Plugin Check reports its `tests/`, `build/`, `.claude/`, `CLAUDE.md` and the like as `application_detected`, `hidden_files`, `ai_instruction_directory`, `unexpected_markdown_file` and unguarded PHP.
 
 `composer install` brings PHPCS with the WordPress and PHPCompatibility standards; `composer phpcs` must come back clean before a release. `TESTPLAN.md` lists the fixtures and the live wordpress.org tests that need a networked site.
 
