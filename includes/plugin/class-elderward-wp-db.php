@@ -43,13 +43,29 @@ class Elderward_WP_Db implements Elderward\Engine\Db
         return defined('DB_NAME') ? DB_NAME : '';
     }
 
+    /**
+     * The base prefix: the network's on multisite, the site's otherwise.
+     * Never $wpdb->prefix, which is a sub-site's when WP-CLI runs with
+     * --url=<sub-site>: the scan covers the network whatever site it was
+     * started from.
+     */
     public function prefix()
     {
         global $wpdb;
-        return $wpdb->prefix;
+        return $wpdb->base_prefix;
     }
 
-    public function table($short)
+    public function site_prefix($site_id = 0)
+    {
+        global $wpdb;
+        $site_id = (int) $site_id;
+        if ($site_id < 1 || !is_multisite()) {
+            return $wpdb->base_prefix;
+        }
+        return $wpdb->get_blog_prefix($site_id);
+    }
+
+    public function table($short, $site_id = 0)
     {
         global $wpdb;
         switch ($short) {
@@ -57,12 +73,12 @@ class Elderward_WP_Db implements Elderward\Engine\Db
                 return $wpdb->users;
             case 'usermeta':
                 return $wpdb->usermeta;
-            case 'options':
-                return $wpdb->options;
-            case 'posts':
-                return $wpdb->posts;
+            case 'blogs':
+            case 'sitemeta':
+                // Only set on a network, the only place they are asked for.
+                return isset($wpdb->$short) ? $wpdb->$short : $wpdb->base_prefix . $short;
         }
-        return $wpdb->prefix . $short;
+        return $this->site_prefix($site_id) . $short;
     }
 
     public function config_path()

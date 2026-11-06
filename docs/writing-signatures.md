@@ -88,8 +88,8 @@ Up to 200 custom signatures per site. Changes apply from the **next** scan.
 
 ### Database options (`db_option`)
 
-- **Which values:** every row of the options table, the first **256 KB** of each value, as stored (serialized PHP stays serialized; Elderward never unserializes it).
-- **Not covered by custom signatures:** `siteurl`, `home`, `active_plugins` and the `…user_roles` option. They have dedicated checks (`DB_SITE_URL`, `DB_ACTIVE_PLUGIN`, `DB_ROLE_CAPS`).
+- **Which values:** every row of the options table, the first **256 KB** of each value, as stored (serialized PHP stays serialized; Elderward never unserializes it). On a multisite network that is the options table of every site (`db:wp_3_options:<option name>`) and the network's own settings (`db:wp_sitemeta:<name>`).
+- **Not covered by custom signatures:** `siteurl`, `home`, `active_plugins` and the `…user_roles` option, and on a network `site_admins` and `active_sitewide_plugins`. They have dedicated checks (`DB_SITE_URL`, `DB_ACTIVE_PLUGIN`, `DB_ROLE_CAPS`, `DB_SUPER_ADMIN`).
 - **Finding:** `DB_OPTION_IOC` at `db:<options table>:<option name>`, with an excerpt of about 200 characters around the match. One finding per option; built-in signatures are tried first.
 - Good for: injected `<script>` tags in widget or theme options, spam links in text widgets, cron-like options storing code.
 
@@ -97,7 +97,7 @@ Up to 200 custom signatures per site. Changes apply from the **next** scan.
 
 - **Which values:** the content (`post_content`, first **256 KB**) of every post, page and custom post type, **except revisions**. Titles, excerpts and post meta are not scanned.
 - **Cost:** with at least one custom post signature, the scan reads every post (in pages, so memory stays flat). Without one, it only reads posts that contain code-like markers such as `<?php`, `eval(`, `atob(` or `<iframe`.
-- **Finding:** `DB_POST_IOC` at `db:<posts table>:ID=<id>`, naming the post type and title. After 100 flagged posts, further ones are counted but not listed.
+- **Finding:** `DB_POST_IOC` at `db:<posts table>:ID=<id>`, naming the post type and title. After 100 flagged posts, further ones are counted but not listed. On a multisite network every site's posts table is scanned and the 100 is per site.
 - Good for: SEO spam links, injected scripts or iframes, cloaked redirects pasted into content.
 
 ## 5. Conditions: text and regex

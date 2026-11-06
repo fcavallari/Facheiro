@@ -19,15 +19,26 @@ interface Db
 {
     // Prepare the connection. Returns null on success or an error message.
     public function connect(Context $ctx);
-    // Database name and table prefix, for progress text and finding paths.
+    // Database name and base table prefix (the network's, on multisite),
+    // for progress text and finding paths.
     public function name();
     public function prefix();
-    // Full table name for 'users', 'usermeta', 'options', 'posts'.
-    public function table($short);
+    ///////////////
+    // Prefix of one site's tables. Site 0 is "the install's own tables":
+    // what a single site has. On a network sites 0 and 1 use the base
+    // prefix and site N uses {base}N_, as wpdb::get_blog_prefix() does.
+    //////////////
+    public function site_prefix($site_id = 0);
+    ///////////////
+    // Full table name. 'options' and 'posts' belong to a site; 'users',
+    // 'usermeta', 'blogs' and 'sitemeta' are shared by the whole network
+    // and ignore $site_id.
+    //////////////
+    public function table($short, $site_id = 0);
     // Where the credentials came from (the wp-config.php path), or null.
     public function config_path();
-    // True when the install is a multisite network: the scan reads the
-    // tables of one site only, and has to say so.
+    // True when the install is a multisite network: the scan then lists
+    // the sites from {base}blogs and reads each one's tables.
     public function multisite();
     ///////////////
     // Iterate SELECT {columns} FROM {from} [WHERE {where}] ORDER BY {pk},
@@ -73,9 +84,19 @@ class MysqliDb implements Db
         return (null === $this->config) ? 'wp_' : $this->config['prefix'];
     }
 
-    public function table($short)
+    public function site_prefix($site_id = 0)
     {
-        return ($this->prefix() . $short);
+        // The id comes from a database row: only ever an integer in a name.
+        $site_id = (int) $site_id;
+        return ($site_id > 1) ? $this->prefix() . $site_id . '_' : $this->prefix();
+    }
+
+    public function table($short, $site_id = 0)
+    {
+        if (in_array($short, array('users', 'usermeta', 'blogs', 'sitemeta'), true)) {
+            return ($this->prefix() . $short);
+        }
+        return ($this->site_prefix($site_id) . $short);
     }
 
     public function config_path()
