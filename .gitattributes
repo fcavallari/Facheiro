@@ -1,0 +1,21 @@
+# Kept out of git archive and GitHub's Download ZIP: the same list as
+# .distignore (build/make-checksums.php checks they agree). The release
+# package is built with php build/make-zip.php.
+/.distignore export-ignore
+/.git export-ignore
+/.gitignore export-ignore
+/.github export-ignore
+/CLAUDE.md export-ignore
+/TESTPLAN.md export-ignore
+/composer.json export-ignore
+/composer.lock export-ignore
+/phpcs.xml.dist export-ignore
+/tests export-ignore
+/vendor export-ignore
+/node_modules export-ignore
+/build export-ignore
+/.wordpress-org export-ignore
+/site export-ignore
+/.claude export-ignore
+/dist export-ignore
+/.gitattributes export-ignore
