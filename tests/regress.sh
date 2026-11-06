@@ -524,8 +524,8 @@ sig_check "odd locale value is not used"       3 'Checking core 6\.5\.2 (1 files
 
 ###############
 # A multisite network is recognised from wp-config.php (the database scan
-# then says which tables it did not read; that finding needs the MariaDB
-# fixture, TESTPLAN E). A commented-out define does not count.
+# then reads every site listed in {prefix}blogs; that needs a real
+# network, TESTPLAN E5). A commented-out define does not count.
 ##############
 MSITE="$WORK/multisite-config"; mkdir -p "$MSITE/on" "$MSITE/off"
 MS_BASE='<?php

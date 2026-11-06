@@ -236,7 +236,30 @@ Role tampering: with a role-editor plugin (or by editing `wp_user_roles` directl
 - `$EW scandb=1 scandirectory=$COPY` → `Error: could not connect ...`, exit 1; with `format=json` the only stdout line is `{"event":"error",...}`.
 - `$EW scanall=1 scandirectory=$COPY` → the sorted report contains `ERROR,DB_UNAVAILABLE,...wp-config.php,... the database was NOT scanned` and exit is at least 2. With a wrong prefix instead: three `ERROR,DB_QUERY_FAILED` lines (users, options, posts).
 
-**E5. Multisite.** On a multisite network (`define( 'MULTISITE', true );`), `$EW scandb=1 scandirectory=$WP` and a scan from the Network Admin both report `ERROR,DB_MULTISITE_PARTIAL,db:<prefix>options,multisite network: only the tables with the prefix <prefix> were scanned ...` (exit at least 2). A single site reports no such finding.
+**E5. Multisite.** Needs a network with at least three sites (Docker: `wordpress:php8.2-apache` + `mariadb:11`, then `wp core multisite-convert` and `wp site create --slug=two`, `--slug=three`). Plant, on sub-sites only:
+
+```sql
+INSERT INTO wp_2_options (option_name, option_value) VALUES ('ew_sub_test','<script>eval(atob("eA=="))</script>');
+INSERT INTO wp_3_posts (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_status, post_name, to_ping, pinged, post_modified, post_modified_gmt, post_content_filtered, post_type)
+  VALUES (1, NOW(), NOW(), 'sub <?php eval($_POST[1]); ?>', 'Sub injected', '', 'publish', 'sub-injected', '', '', NOW(), NOW(), '', 'post');
+-- grant manage_options to the Subscriber role of site 3 (edit wp_3_user_roles as in E2)
+UPDATE wp_sitemeta SET meta_value = 'a:3:{i:0;s:5:"admin";i:1;s:9:"evilsuper";i:2;s:5:"ghost";}' WHERE meta_key = 'site_admins';
+UPDATE wp_sitemeta SET meta_value = 'a:2:{s:13:"gone/gone.php";i:1700000000;s:19:"../../uploads/x.php";i:1700000000;}' WHERE meta_key = 'active_sitewide_plugins';
+```
+
+and with WP-CLI a rogue administrator of one sub-site and an extra super admin: `wp user create rogue rogue@example.test`, `wp user set-role rogue administrator --url=<site 2>`, `wp user create evilsuper evil@example.test`, `wp super-admin add evilsuper` (the SQL above then adds `ghost`, a login with no user).
+
+Expect, the same findings from `wp elderward db` (run with `--url=` of the main site and of a sub-site: the same findings; the count of options scanned can differ by one or two, WP-CLI itself writes transients between runs), from an admin scan (`Elderward_Job::start()` / `step()`, or the Network Admin page) and from the standalone CLI pointed at a root whose `wp-config.php` has literal credentials and `define( 'MULTISITE', true );`:
+
+- `HIGH,DB_OPTION_IOC,db:wp_2_options:ew_sub_test,...` and `HIGH,DB_POST_IOC,db:wp_3_posts:ID=<n>,...`;
+- `MEDIUM,DB_ROLE_CAPS,db:wp_3_options:wp_3_user_roles,role "subscriber" ...`;
+- `MEDIUM,DB_NEW_ADMIN,db:wp_users:ID=<n>,administrator of site 2 "rogue" ...`, and one `DB_ADMIN_USER`/`DB_NEW_ADMIN` line per administrator per site, each saying `of site N`;
+- `DB_SITE_URL` INFO lines for every site (`db:wp_2_options:siteurl` ...);
+- `MEDIUM,DB_NEW_ADMIN,db:wp_sitemeta:site_admins,super admin "evilsuper" ... (user ID <n>) ...` (`INFO,DB_SUPER_ADMIN` for a super admin older than 30 days) and `LOW,DB_SUPER_ADMIN,db:wp_sitemeta:site_admins,super admin login "ghost" has no user account ...`;
+- `HIGH,DB_ACTIVE_PLUGIN,db:wp_sitemeta:active_sitewide_plugins,active plugin path escapes the plugins directory: ../../uploads/x.php` and the LOW line for `gone/gone.php`;
+- the summary `Database scan complete: 3 site(s), 2 super admin(s), ...`, and no `DB_MULTISITE_PARTIAL` (that finding is gone).
+
+Scale and resumability: create 60 more sites (`wpmu_create_blog()` in a `wp eval` loop), plant an option on one of the last ones, and confirm it is reported, that the progress shows the sites in batches of 25, and that `php tests/chunking.php <root>` prints `IDENTICAL`. Failures stay loud: a `wp_blogs` row for a site with no tables reports `ERROR,DB_QUERY_FAILED,db:wp_<id>_options,...` and `...wp_<id>_posts,...`; with a wrong `$table_prefix` the scan reports `DB_QUERY_FAILED` for `sitemeta`, `users` (twice: super admins, administrators of site 1), `options`, `posts` and `blogs` (`the list of sites could not be read past id 1, the sites after it were NOT scanned`). A `site_admins` value that is not a serialized list, or no `site_admins` row at all, is a `LOW,DB_SUPER_ADMIN` finding. A single site gives byte-for-byte the output it gave before (no `of site`, no `SITES` in the JSON summary).
 
 ---
 
