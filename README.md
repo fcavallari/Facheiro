@@ -344,6 +344,7 @@ tests/checksums.sh checksums.json is current; the self-check on a release-like c
 tests/tamper.sh    sealed settings on a test site (WP-CLI); tests/tamper-ui.js: the review notices
 build/make-checksums.php   writes checksums.json (run it after changing any shipped file)
 build/make-zip.php         builds dist/elderward.zip, the release package
+.claude/skills/pre-share-check/   Claude Code skill: checks a branch's changes before they are shared (runs the checks above, reviews the diff, changes nothing)
 recovery.php, includes/recovery/   recovery mode (runs without WordPress; PHP 5.6 syntax)
 site/              the project homepage (static HTML, not part of the plugin zip)
 ```
