@@ -1,7 +1,7 @@
 # Which checks to run, and how
 
 The commands come from `CLAUDE.md` (Commands), `composer.json` (scripts) and
-`README.md` (Development). If one of those files disagrees with this page,
+`docs/development.en.md` (Development). If one of those files disagrees with this page,
 the repository's file wins: say so in the report.
 
 There is no CI and there are no git hooks, so a check that is not run here
@@ -80,7 +80,7 @@ it on their test site. Never count them as passed.
 | `Facheiro_Abilities` | assistant tools | `tests/mcp-stdio.js` |
 | database scan (`includes/engine/database.php`, `db.php`, `Facheiro_WP_Db`) | DB cases | `tests/regress.sh` with the MariaDB fixture, `TESTPLAN.md` section E |
 | integrity, restore, `Http` | live wordpress.org tests | `TESTPLAN.md` sections B and D |
-| any admin-facing string | translation files | the `wp i18n` commands in `README.md`, Translations |
+| any admin-facing string | translation files | the `wp i18n` commands in `docs/development.en.md`, Translations |
 | anything headed for a release | Plugin Check | `php build/make-zip.php`, then Plugin Check on `dist/facheiro.zip` (`TESTPLAN.md` F13) |
 
 `TESTPLAN.md` is the full list. Look there when the diff touches something

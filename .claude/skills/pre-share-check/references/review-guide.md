@@ -53,7 +53,8 @@ and line, and a reason taken from the code or from `CLAUDE.md`.
    exit codes, finding types and summary keys, option names, CLI arguments,
    the findings table, saved options, hooks, ability names. `tests/regress.sh`
    protects the output contract: a change there must be deliberate and
-   written up in `README.md`.
+   written up in the reference pages (`site/referencia/index.html`,
+   `site/en/reference/index.html`).
 
 ## Follow-through that travels with a change
 
@@ -65,7 +66,7 @@ because the repository's own checks or its users break without them.
 | changes any tracked file, or adds a file git does not ignore | regenerate `checksums.json` in the same commit | `tests/checksums.sh` |
 | adds or changes an admin string (written in Portuguese) | update `languages/facheiro.pot`, the en_US `.po` with its English translation, `.mo`, `.l10n.php` | the string appears in the `.pot` and `.po` |
 | adds a recovery-page string (written in Portuguese) | add its English line in `includes/recovery/i18n/en.php` with the same placeholders | grep the file |
-| adds a finding type, option or command | document it in `README.md` (and `readme.txt` when users see it), add it to `TESTPLAN.md` | grep the docs for the new name |
+| adds a finding type, option or command | document it in the site reference (`site/referencia/`, `site/en/reference/`) and `readme.txt` when users see it, add it to `TESTPLAN.md`; the wiki guide is updated after the merge, so say which page needs it | grep the docs for the new name |
 | adds a finding type for files | consider `Facheiro_False_Positives` (file types that bind to a SHA-256) | read that class |
 | adds a detection signature | add a positive fixture in `tests/fixtures/detection/` as `.txt`, plus negatives | list the folder |
 | adds a tracked development file or folder | keep `.distignore`, `.gitattributes` and `SelfCheckScanner::$dev_only` in step | `tests/checksums.sh`, read the three |

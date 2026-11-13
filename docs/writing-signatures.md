@@ -449,4 +449,4 @@ Built-in signatures live in `Signatures::builtin_cleanup()`, `builtin_db_options
 - A new built-in signature needs a fixture and a test: a positive case (infected file cleaned correctly, file still valid) and a negative case (a clean file with similar code left alone), in `tests/regress.sh` or the `TESTPLAN.md` fixtures, and `tests/regress.sh` must still pass.
 - Write it from samples you are allowed to use, and describe the campaign in the signature name and a comment.
 
-See [README: Adding signatures](../README.md#adding-signatures) for the rest of the engine's rules.
+See [Development: Adding signatures](development.en.md#adding-signatures) for the rest of the engine's rules.

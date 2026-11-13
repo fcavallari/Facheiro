@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Referência do Facheiro</title>
+<meta name="description" content="Referência do Facheiro: o formato da saída, os eventos JSON, os códigos de saída e o que cada scanner examina.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#eceee6">
+<link rel="canonical" href="https://facheiro.space.fast/referencia/">
+<link rel="alternate" hreflang="pt-BR" href="https://facheiro.space.fast/referencia/">
+<link rel="alternate" hreflang="en" href="https://facheiro.space.fast/en/reference/">
+<link rel="alternate" hreflang="x-default" href="https://facheiro.space.fast/referencia/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%2314302d'/%3E%3Cg fill='none' stroke='%23b9d3cd' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 26V6.5' stroke-width='5'/%3E%3Cpath d='M8.5 12.5v5.5q0 3 3 3H16' stroke-width='4'/%3E%3Cpath d='M23.5 9v5.5q0 3-3 3H16' stroke-width='4'/%3E%3C/g%3E%3Cpath d='M4.5 28h23' stroke='%23e2551d' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* caatinga: "mata branca", the white forest of the dry season */
+  --branco: #eceee6;
+  --papel: #f7f8f3;
+  --tinta: #14302d;
+  --glauco: #4f8f88;
+  --glauco-claro: #b9d3cd;
+  --glauco-texto: #2b6a64;
+  --espinho: #c1911f;
+  --espinho-texto: #7d5b0c;
+  --brasa: #c2410c;
+  --cinza: #55605a;
+  --regua: #c3c9bd;
+  --carvao: #1b1917;
+  --carvao-regua: #3a3631;
+
+  --display: "Alfa Slab One", "Rockwell", "Roboto Slab", Georgia, serif;
+  --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --measure: 66ch;
+  --gutter: clamp(16px, 4vw, 56px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--branco); }
+body { margin: 0; background: var(--branco); color: var(--tinta); font-family: var(--sans); font-size: 1.0625rem; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: var(--glauco-texto); text-underline-offset: .2em; text-decoration-thickness: 1px; }
+a:hover { color: var(--brasa); }
+:focus-visible { outline: 3px solid var(--brasa); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: .92em; color: var(--glauco-texto); overflow-wrap: anywhere; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--gutter); }
+
+/* ---------- top bar ---------- */
+
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 1em; padding-top: 20px; font-size: .95rem; }
+.top .home { font-family: var(--display); font-size: 1.35rem; color: var(--tinta); text-decoration: none; }
+.top .home:hover { color: var(--brasa); }
+
+/* ---------- header ---------- */
+
+header { padding: clamp(32px, 6vh, 72px) 0 clamp(28px, 4vh, 48px); border-bottom: 3px solid var(--tinta); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2.8rem, 7vw, 5.4rem); line-height: .95; margin: 0 0 .35em; }
+.lede { font-size: clamp(1.1rem, 1.5vw, 1.25rem); line-height: 1.5; max-width: 52ch; margin: 0; }
+
+/* ---------- layout ---------- */
+
+.doc { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: clamp(24px, 4vw, 64px); padding-top: clamp(32px, 5vw, 56px); }
+.toc { position: sticky; top: 24px; align-self: start; font-size: .95rem; }
+.toc p { margin: 0 0 .6em; font-weight: 700; }
+.toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--regua); }
+.toc li { margin: 0; }
+.toc a { display: block; padding: .3em 0 .3em 1em; text-decoration: none; }
+
+article { min-width: 0; max-width: 78ch; }
+section + section { margin-top: clamp(48px, 7vw, 88px); }
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(1.7rem, 3.4vw, 2.5rem); line-height: 1.1; margin: 0 0 .6em; scroll-margin-top: 24px; }
+article p, article li { max-width: var(--measure); }
+article ul { padding-left: 1.2em; }
+article li { margin-bottom: .7em; }
+article li::marker { color: var(--glauco); }
+article li ul { margin-top: .7em; }
+
+.code { background: var(--carvao); margin: 1.2em 0; }
+.code pre { margin: 0; padding: .85em 1em; overflow-x: auto; font-family: var(--mono); font-size: .88rem; line-height: 1.6; color: #ecebe4; scrollbar-width: thin; scrollbar-color: var(--carvao-regua) transparent; }
+
+.table { overflow-x: auto; margin: 1.2em 0; scrollbar-width: thin; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; background: var(--papel); }
+th, td { text-align: left; vertical-align: top; padding: .55em .8em; border-bottom: 1px solid var(--regua); }
+th { border-bottom: 2px solid var(--tinta); font-weight: 700; }
+
+/* ---------- footer ---------- */
+
+footer { margin-top: clamp(72px, 11vw, 140px); padding: 2.4em 0 3em; background: var(--tinta); color: #e3e8df; font-size: .95rem; }
+footer a { color: var(--glauco-claro); }
+footer a:hover { color: #fff; }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1em 2em; }
+
+@media (max-width: 900px) {
+  .doc { grid-template-columns: minmax(0, 1fr); }
+  .toc { position: static; }
+}
+@media (max-width: 640px) {
+  body { font-size: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<main>
+  <div class="wrap">
+    <nav class="top" aria-label="Idioma">
+      <a class="home" href="../">Facheiro</a>
+      <a href="../en/reference/" hreflang="en" lang="en">Read in English</a>
+    </nav>
+    <header>
+      <h1>Referência</h1>
+      <p class="lede">O formato da saída, os eventos JSON, os códigos de saída e o que cada scanner examina. Os guias de uso estão na <a href="https://github.com/fcavallari/Facheiro/wiki">wiki</a>; a instalação, no <a href="https://github.com/fcavallari/Facheiro#readme">README</a>.</p>
+    </header>
+    <div class="doc">
+      <nav class="toc" aria-labelledby="toc-title">
+        <p id="toc-title">Nesta página</p>
+        <ol>
+<li><a href="#output">Saída</a></li>
+<li><a href="#json">Saída em JSON e códigos de saída</a></li>
+<li><a href="#checks">O que ele examina</a></li>
+<li><a href="#php-extensions">Extensões do PHP</a></li>
+        </ol>
+      </nav>
+      <article>
+<section aria-labelledby="output">
+<h2 id="output">Saída</h2>
+<p>Todos os scanners relatam os achados num único formato, fácil de filtrar com grep, ordenar e colar num chamado. O formato e os detalhes dos achados são em inglês em qualquer idioma:</p>
+<div class="code"><pre>SEVERITY,TYPE,path,detail</pre></div>
+<p>Os três primeiros campos nunca contêm vírgulas; tudo depois da terceira vírgula é detalhe em formato livre. Como os caminhos e o conteúdo dos logs vêm de um servidor comprometido, <code>%</code>, caracteres de controle e (no campo do caminho) vírgulas são codificados com <code>%</code>, de modo que um nome de arquivo forjado não consegue deslocar campos nem injetar linhas falsas de achado. As gravidades são <code>HIGH</code>, <code>MEDIUM</code>, <code>LOW</code>, <code>INFO</code> e <code>ERROR</code>. Linhas recuadas abaixo de um achado são contexto de apoio (linhas de log de exemplo, principais IPs de origem). Por exemplo:</p>
+<div class="code"><pre>HIGH,MALWARE_CLEANED,/path/to/file.js,javascript_ndsw
+HIGH,MALWARE_FOUND,/path/to/file.js,javascript_ndsw (dry run: file not modified)
+HIGH,MALWARE_FOUND,/path/to/link.js,javascript_ndsw (symbolic link to /shared/file.js: never modified, clean the file it points to)
+HIGH,CRONTAB_IOC,crontab,crontab.tmp.006: * * * * * echo ... | base64 --decode &gt; /tmp/x
+MEDIUM,LOG_IOC,/var/log/apache2/access.log,access.xmlrpc.flood: 4182 hit(s) - High volume of xmlrpc.php POSTs, ...</pre></div>
+<p>IoCs de log saem como <code>MEDIUM</code> (tentativas de ataque, inclusive as que falharam), exceto o tráfego para um shell que já está no disco, que é <code>HIGH</code>. Assinaturas ruidosas por natureza (por exemplo, POSTs em <code>wp-login.php</code>) só disparam acima de um limite de volume, para que o tráfego normal não gere alarmes.</p>
+</section>
+
+<section aria-labelledby="json">
+<h2 id="json">Saída em JSON e códigos de saída</h2>
+<p><code>format=json</code> (CLI) ou <code>--format=json</code> (WP-CLI) troca o stdout para NDJSON: um objeto de evento por linha, com os valores crus (escapados em JSON):</p>
+<div class="code"><pre>{"event":"finding","severity":"HIGH","type":"LOG_IOC","path":"...","detail":"...","context":["e.g. ..."]}
+{"event":"summary","scan":"integrity","MODIFIED":1,"MISSING":0,...}</pre></div>
+<p>Bytes que não são UTF-8 válido (um nome de arquivo, uma linha de log, um valor do banco cortado no meio de um caractere) não cabem em JSON: eles viram U+FFFD na saída JSON, na tabela do painel e no modo de recuperação, de modo que o achado continua sendo relatado. A saída em texto imprime os bytes crus.</p>
+<p>O progresso e os textos informativos vão para o stderr, então o stdout traz apenas eventos legíveis por máquina, prontos para pipelines. Um erro de uso ou fatal (argumentos inválidos, alvo ilegível, banco inacessível em <code>scandb=1</code>) é emitido como <code>{"event":"error","detail":"..."}</code> antes de sair com 1, de modo que o fluxo nunca carrega texto solto. A exportação JSON do painel usa os mesmos eventos de achado.</p>
+<p>Tudo o que impede uma verificação vira um achado <code>ERROR</code> (saída 2), nunca um pulo silencioso:</p>
+<ul>
+<li>uma pasta de conteúdo que não pode ser localizada: <code>CONTENT_DIR_UNKNOWN</code>;</li>
+<li>dentro do <code>scanall</code>, um banco inacessível: <code>DB_UNAVAILABLE</code>; uma consulta que falha: <code>DB_QUERY_FAILED</code>;</li>
+<li>um arquivo ilegível: <code>INTEGRITY_UNREADABLE</code> (ou, na varredura por assinaturas, <code>FILE_UNREADABLE</code>); uma pasta que não pode ser listada gera os mesmos dois tipos (antes ela era pulada);</li>
+<li>um link simbólico para uma pasta que uma execução capaz de modificar arquivos não seguiu: <code>SYMLINK_NOT_FOLLOWED</code>;</li>
+<li>checksums de referência que não puderam ser baixados ou lidos: <code>INTEGRITY_NO_REFERENCE</code> como <code>ERROR</code> (como <code>INFO</code>, significa que não existe referência oficial para aquele pacote, ou que não há nenhuma em <code>checksumdir=</code>);</li>
+<li>numa rede multisite, uma lista de sites que não pôde ser lida, ou um site cujas tabelas estão faltando: <code>DB_QUERY_FAILED</code>, com o nome da tabela;</li>
+<li>um arquivo PHP acima do limite de 2 MB da varredura por assinaturas: <code>FILE_TOO_LARGE</code> (arquivos maiores que não são PHP geram o mesmo tipo como <code>INFO</code>);</li>
+<li>uma assinatura cuja regex o motor PCRE desistiu de avaliar num arquivo (limite de backtrack, de recursão ou da pilha do JIT): <code>SIGNATURE_ERROR</code>;</li>
+<li>um log que não pode ser aberto ou descompactado: <code>LOG_UNREADABLE</code>;</li>
+<li>um crontab que não pode ser lido (sem <code>shell_exec</code>, sem o binário <code>crontab</code>): <code>CRONTAB_UNAVAILABLE</code>.</li>
+</ul>
+<p>Um relatório limpo significa que todos os scanners de fato olharam.</p>
+<p>O código de saída reflete o pior achado, para que tarefas de cron e CI possam alertar com base nele: <strong>0</strong> limpo (ou só INFO), <strong>1</strong> erro de uso ou fatal, <strong>2</strong> achados LOW/MEDIUM/ERROR, <strong>3</strong> achados HIGH. Repare que uma limpeza bem-sucedida também sai com 3: havia malware.</p>
+</section>
+
+<section aria-labelledby="checks">
+<h2 id="checks">O que ele examina</h2>
+<ul>
+<li><strong>Arquivos</strong>: detecção e limpeza, por assinaturas, de injeções de malware conhecidas (por exemplo, as campanhas JavaScript <code>ndsw</code>/<code>ndsx</code> e <code>wqpq</code>), nas extensões web comuns (<code>php</code>, <code>js</code>, <code>html</code>, ...). Os arquivos limpos são gravados de forma atômica (arquivo temporário + rename), então uma gravação que falha nunca trunca o original. A pasta do próprio plugin nunca é escaneada. Um <strong>conjunto de detecção</strong> embutido, com cerca de 35 formatos genéricos de webshell e backdoor, relata <code>MALWARE_FOUND</code> e nunca limpa, nem numa execução real: código ou comandos de shell vindos da requisição (<code>eval($_POST[...])</code>, <code>system($_GET[...])</code>, entrada da requisição usada como callback ou caminho de include), gravações de arquivo com nome vindo da requisição e uploaders que mantêm o nome de arquivo do cliente (as formas mais frouxas, por um caminho ou uma variável, só em arquivos sem nenhuma verificação de capability, nonce ou upload do WordPress), shells protegidos por senha, famílias de shell conhecidas (WSO/FilesMan, b374k, c99, r57, IndoXploit, Alfa), WP-VCD, NDSW com variáveis renomeadas, PHP atrás de um cabeçalho de imagem, includes de ícones/imagens ou de caminhos em códigos de escape, e ofuscação (<code>eval</code> da saída de <code>base64_decode</code>/<code>gzinflate</code>, regexes com <code>/e</code>, nomes de função invertidos ou em rot13, nomes em escape hexadecimal, cadeias de <code>chr()</code>, ofuscadores com o array <code>$GLOBALS</code>, chamadas dinâmicas de uma linha). HIGH significa um destino perigoso alimentado direto pela requisição, uma proteção por senha ou uma família conhecida; MEDIUM é ofuscação de que código legítimo quase nunca precisa. Um arquivo em que nada bateu ganha uma segunda olhada com os comentários removidos, fragmentos <code>'ev'.'al'</code> e acréscimos com <code>.=</code> unidos, <code>${"_POST"}</code> lido como <code>$_POST</code> e escapes de letras decodificados. Os formatos foram modelados no que php-malware-finder, AMWScan, signature-base, o scanner do scr34m e o Linux Malware Detect têm em comum, e são testados contra falsos positivos no core do WordPress e em cerca de 2.200 plugins e 550 temas populares do wordpress.org: o que ainda bate lá são plugins que executam, por projeto, PHP enviado a eles (Ad Inserter, VaultPress), as strings do scanner de um plugin antispam e um comentário de documentação.</li>
+<li><strong>Crontab</strong>: roda <code>crontab -l</code> para o usuário que executa o PHP e procura padrões conhecidos de persistência (decodificadores base64 encadeados por pipe, downloads do pastebin, droppers em diretórios tmp). Os crontabs de outros usuários e <code>/etc/cron.*</code> não são cobertos; se o comando não puder rodar, <code>CRONTAB_UNAVAILABLE</code> avisa.</li>
+<li><strong>Logs de acesso</strong>: tráfego de ataque conhecido: requisições a webshells, arquivos PHP servidos de <code>wp-content/uploads</code>, tentativas de exploit do wp-file-manager / Slider Revolution / TimThumb, sondagens de <code>.env</code>, travessia de diretórios, injeção de código e de PHP-CGI, enumeração de usuários e enxurradas de força bruta em xmlrpc/wp-login. A correlação (<code>correlate=1</code> / <code>--correlate</code>, automática no <code>scanall</code>) também relata os arquivos cuja data de modificação cai dentro de <code>window</code> segundos (300 por padrão) do tráfego apontado: <code>LOG_FILE_CORRELATION</code>, o vestígio de "esta requisição criou aquele arquivo". Uma correspondência é uma pista forte; a ausência dela não inocenta nada, já que edições posteriores ou datas falsificadas apagam o vínculo.</li>
+<li><strong>Integridade</strong>: confere o core do WordPress, cada plugin e cada tema com os pacotes oficiais do wordpress.org da versão instalada. O idioma do core é o que a instalação indica em <code>wp-includes/version.php</code> (um pacote localizado define <code>$wp_local_package</code> ali, e os arquivos traduzidos do core só batem com os checksums daquele idioma); <code>locale=xx_XX</code> / <code>--locale</code> o substitui. Relata <code>INTEGRITY_MODIFIED</code> (checksum diferente), <code>INTEGRITY_MISSING</code> (arquivo do pacote que sumiu) e <code>INTEGRITY_EXTRA</code> (arquivo no disco que o pacote não contém: PHP sobrando dentro do core ou de um plugin é o clássico webshell plantado e sai como <code>HIGH</code>; sobras normalmente legítimas, como <code>error_log</code> e o bootstrap do WAF do Wordfence, saem como <code>INFO</code> com uma explicação). Pacotes que não podem ser conferidos (plugins e temas personalizados ou premium, temas filhos, versões fora do arquivo) saem como <code>INTEGRITY_NO_REFERENCE</code>, então um relatório limpo nunca significa, em silêncio, "não verificado". O core e os plugins usam as APIs de checksums; os temas não têm API de checksums, então o manifesto é montado calculando os hashes do zip oficial do tema (exige a extensão zip do PHP). Temas e plugins que vêm junto em <code>wp-content</code> são pulados na passada do core, e o <code>wp-config.php</code> é ignorado.</li>
+<li><strong>Verificações rápidas</strong>: os esconderijos baratos e reveladores dos invasores: PHP executável dentro de <code>wp-content/uploads</code> (<code>UPLOADS_PHP</code>, HIGH), diretivas <code>auto_prepend_file</code>/<code>auto_append_file</code> em <code>.user.ini</code>/<code>php.ini</code>/<code>.htaccess</code>, que executam um arquivo a cada requisição (<code>PHP_PREPEND</code>; o bootstrap do WAF do Wordfence é reconhecido e sai como INFO), um inventário dos mu-plugins, que carregam sem etapa de ativação (<code>MU_PLUGIN</code>, INFO), e PHP oculto em arquivos com ponto (<code>HIDDEN_PHP</code>).</li>
+<li><strong>Banco de dados</strong>: varredura só de leitura (apenas SELECT).
+<ul>
+<li><em>Contas e papéis.</em> Um inventário das contas de administrador (<code>DB_ADMIN_USER</code>, INFO; confirme cada uma), com os administradores criados nos últimos 30 dias elevados a <code>DB_NEW_ADMIN</code> (MEDIUM, o vestígio clássico de tomada de controle), e papéis que não são de administrador mas receberam poderes de tomada de controle, como <code>manage_options</code>/<code>edit_users</code>, na opção <code>user_roles</code> (<code>DB_ROLE_CAPS</code>, MEDIUM; plugins editores de papéis e papéis de gerente de loja fazem isso legitimamente, então verifique em vez de presumir).</li>
+<li><em>Opções e posts.</em> Valores de opção injetados (<code>DB_OPTION_IOC</code>: PHP/eval, iframes ocultos, JS ofuscado, scripts remotos), sequestro de <code>siteurl</code>/<code>home</code> (<code>DB_SITE_URL</code>) e adulteração de <code>active_plugins</code> (<code>DB_ACTIVE_PLUGIN</code>: travessia de caminho ou entradas que não existem no disco); e injeções de script/PHP no conteúdo de posts (<code>DB_POST_IOC</code>, encontradas com um pré-filtro <code>LIKE</code> no servidor, para a tabela de posts não ser trazida inteira; as revisões são puladas, então cada post injetado é relatado uma vez).</li>
+<li><em>Sem unserialize.</em> Todo valor é apenas comparado com padrões e <strong>nunca passa por <code>unserialize()</code></strong>: dados serializados hostis podem disparar uma injeção de objeto PHP.</li>
+<li><em>Quando o banco não responde.</em> Na CLI independente, se o mysqli estiver ausente, se as credenciais não puderem ser lidas (configurações no estilo <code>getenv()</code> não podem ser interpretadas sem executá-las) ou se o banco estiver inacessível, <code>scandb=1</code> sai com 1 e um erro, enquanto <code>scanall=1</code> relata <code>DB_UNAVAILABLE</code> (ERROR) e continua; uma consulta que falha no meio da varredura relata <code>DB_QUERY_FAILED</code> para aquela tabela.</li>
+<li><em>Redes multisite.</em> Numa <strong>rede multisite</strong> todos os sites são escaneados, seja qual for o site de onde a varredura partiu: os sites são listados de <code>{prefix}blogs</code> um lote por vez (assim uma rede com dezenas de milhares de sites é percorrida com uma fila curta e pode pausar e continuar), e as tabelas de opções e de posts de cada site (<code>{prefix}{id}_options</code>, <code>{prefix}{id}_posts</code>), a opção de papéis dele (<code>{prefix}{id}_user_roles</code>) e os administradores dele (<code>{prefix}{id}_capabilities</code> na <code>usermeta</code> compartilhada) passam pelas mesmas verificações, com o caminho do achado nomeando a tabela do site e os achados de administrador dizendo <code>administrator of site N</code>. As configurações da própria rede em <code>{prefix}sitemeta</code> também são escaneadas: os super administradores (<code>DB_SUPER_ADMIN</code>, INFO; cada um controla todos os sites, então confirme cada um; um criado nos últimos 30 dias é um <code>DB_NEW_ADMIN</code>, um login que está na lista sem conta de usuário por trás é LOW, porque quem registrar esse nome vira super administrador, e uma lista ausente ou ilegível é relatada, em vez de ser tomada como "nenhum super administrador"), os plugins ativados na rede (<code>active_sitewide_plugins</code>, com as mesmas verificações <code>DB_ACTIVE_PLUGIN</code> de <code>active_plugins</code>) e os valores injetados (<code>DB_OPTION_IOC</code>). O limite da listagem de posts (100 posts apontados) conta por site. Um site listado em <code>{prefix}blogs</code> cujas tabelas estão faltando relata <code>DB_QUERY_FAILED</code> para cada uma delas, e o mesmo vale para uma lista de sites que não pode ser lida, dizendo depois de qual id os sites não foram escaneados.</li>
+</ul></li>
+<li><strong>Datas de modificação</strong>: heurísticas só de relatório para arquivos mexidos fora do ritmo do pacote a que pertencem. Cada verificação procura um ponto fora da curva <em>dentro</em> de um pacote (o core, um plugin, um tema), nunca uma comparação com uma data do site inteiro, que se afogaria em falsos positivos depois de qualquer migração. <code>TIMESTAMP_OUTLIER</code> aponta um punhado de arquivos modificados depois do grupo dominante de instalação/atualização do pacote (o clássico <code>functions.php</code> com backdoor, ou um loader plantado); um grupo grande e mais novo é uma atualização legítima e não é apontado. <code>TIMESTAMP_TIMESTOMP</code> aponta arquivos PHP cuja data de modificação está muito atrás da data de alteração do inode: <code>touch -t</code> consegue recuar a data do conteúdo, mas a data de alteração do inode não pode ser definida sem root. E só aponta quando poucos arquivos do pacote mostram isso, já que migrações e <code>rsync -a</code> fazem o mesmo com árvores inteiras. Datas são pistas, não provas: invasores as falsificam e atualizações as reescrevem, então esses achados nunca alimentam uma ação de limpeza, e um resultado limpo não inocenta um arquivo.</li>
+</ul>
+</section>
+
+<section aria-labelledby="php-extensions">
+<h2 id="php-extensions">Extensões do PHP</h2>
+<p>A varredura por assinaturas, as verificações rápidas e as de datas não precisam de mais nada. Os outros scanners usam extensões PHP que servidores mais fechados às vezes não têm; a falta de uma delas aparece como um achado <code>ERROR</code>, em vez de a verificação ser pulada:</p>
+<div class="table"><table>
+<thead><tr><th scope="col">Necessário para</th><th scope="col">Requisito</th></tr></thead>
+<tbody>
+<tr><td>Logs rotacionados em <code>.gz</code></td><td>extensão zlib</td></tr>
+<tr><td>Verificação de integridade online (CLI independente)</td><td>extensão curl, ou <code>allow_url_fopen=On</code> (o plugin usa a API HTTP do WordPress)</td></tr>
+<tr><td>Verificação de temas e qualquer restauração</td><td>extensão zip</td></tr>
+<tr><td>Varredura do banco de dados (CLI independente)</td><td>extensão mysqli (o plugin usa a conexão do WordPress)</td></tr>
+<tr><td>Varredura do crontab</td><td><code>shell_exec</code> fora de <code>disable_functions</code></td></tr>
+</tbody></table></div>
+</section>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>O Facheiro é gratuito, GPLv2 ou posterior.</span>
+    <span><a href="https://github.com/fcavallari/Facheiro/wiki">Guias na wiki</a> · <a href="https://github.com/fcavallari/Facheiro">github.com/fcavallari/Facheiro</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
