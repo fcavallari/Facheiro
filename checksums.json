@@ -4,7 +4,8 @@
     "algorithm": "sha256",
     "files": {
         "LICENSE": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
-        "README.md": "8f65ef9909137f9e6eea2a09720bd1cf82056ab9bf90883c66dda47e9fff14d6",
+        "README.en.md": "41051a296d9855eb60332d5a3edd28ef00038be477c925128bb8164580a3338b",
+        "README.md": "2a8871a47989d6ed72d26118dc9f9321509c9a5e022468c80810d276cf7c8459",
         "assets/admin.css": "9e445b5e319f8b11bf8a11c273131c2d69bb04ec22799bf996dafa794f1ec93f",
         "assets/admin.js": "bc9b16d689e94946e51d87f2dd60531d3aea4c3f972714dc81b6bd3abaddb0a3",
         "assets/img/facheiro-logo-on-light.svg": "5fbf796f58e74cc86d2d0178565e30623aa5557d48e4bd81d4b815644c022ecc",
@@ -79,7 +80,7 @@
         ".wordpress-org/icon-128x128.png": "98e2c11c508de20d53ab47229e134d9095ed45538490cb02fbd9b7662054d3c7",
         ".wordpress-org/icon-256x256.png": "9fec5a8bbc51d0956b4d30bc9c114ef375e486140642739c4417618f54a1dbb2",
         ".wordpress-org/icon.svg": "6286516305af82b430a3c20ae9e8b5f300fa5aa225b93907c058f3e4e0fb750d",
-        "CLAUDE.md": "293f05df07ce8a823ee298ad811fd6678ed9e149415ee59e068f8ec604dc265b",
+        "CLAUDE.md": "b0185c3ec4aaa4af31d67341630ac8396cade165586176ba8436933b9a55aa37",
         "TESTPLAN.md": "a7bd97b8ffa1e1b2d96608ff6ce2ea0ba26fdaa396eeaf0d213a24f56bfa1785",
         "build/logo/make-logo.py": "cdf69e026dc4e152461c37e9ea412e51aee7f91dfbf61d27cd470c8fad94e9fe",
         "build/logo/render.js": "acd256a32c10b2102800721bd520a5deabd240e4b3a99a40a44af328929ba416",
