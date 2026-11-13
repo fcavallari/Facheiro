@@ -1,6 +1,6 @@
 <?php
 ////////////////
-// Elderward recovery mode: the key-protected page that scans the site
+// Facheiro recovery mode: the key-protected page that scans the site
 // without WordPress (entry point: recovery.php in the plugin folder).
 //
 // Rules this file keeps:
@@ -17,28 +17,28 @@
 // phpcs:disable WordPress.Security.ValidatedSanitizedInput -- no WordPress, so nothing adds slashes to the input and there is no sanitize_*(): each value is cast, then compared with an allowlist or a hash, or resolved with realpath() before it is used.
 // phpcs:disable WordPress.Security.NonceVerification -- no WordPress nonces here: sign-in is checked against the key, and every other POST needs a token bound to the signed session (App::csrf()).
 
-namespace Elderward\Recovery;
+namespace Facheiro\Recovery;
 
-use Elderward\Engine\BaseReporter;
-use Elderward\Engine\Context;
-use Elderward\Engine\CurlHttp;
-use Elderward\Engine\Fatal;
-use Elderward\Engine\MysqliDb;
-use Elderward\Engine\Runner;
-use Elderward\Engine\Scanner;
-use Elderward\Engine\Signatures;
+use Facheiro\Engine\BaseReporter;
+use Facheiro\Engine\Context;
+use Facheiro\Engine\CurlHttp;
+use Facheiro\Engine\Fatal;
+use Facheiro\Engine\MysqliDb;
+use Facheiro\Engine\Runner;
+use Facheiro\Engine\Scanner;
+use Facheiro\Engine\Signatures;
 
 // Outside WordPress only recovery.php, which defines this constant, may load
 // the file. A direct request stops here.
 if (!defined('ABSPATH')) {
-    if (!defined('ELDERWARD_RECOVERY_ENTRY')) {
+    if (!defined('FACHEIRO_RECOVERY_ENTRY')) {
         exit;
     }
 }
 
 final class App
 {
-    const KEY_FILE = 'elderward-recovery-key.php';
+    const KEY_FILE = 'facheiro-recovery-key.php';
     const GUARD = '<?php exit; ?>';
     const MIN_KEY = 24;
     const SESSION_TTL = 3600;
@@ -52,7 +52,7 @@ final class App
     // every request an attacker sends.
     const MAX_CLIENTS = 500;
     const MAX_FINDINGS = 5000;
-    const COOKIE = 'elderward_recovery';
+    const COOKIE = 'facheiro_recovery';
 
     private static $plugin_dir;
     private static $content_dir;
@@ -60,7 +60,7 @@ final class App
     private static $key;
     private static $state_dir;
     private static $nonce;
-    private static $lang = 'en';
+    private static $lang = 'pt_BR';
     private static $strings = array();
 
     public static function run($plugin_dir)
@@ -96,7 +96,7 @@ final class App
         }
         if ('POST' === $method) {
             if (!isset($_POST['token']) || !hash_equals(self::csrf($session), (string) $_POST['token'])) {
-                self::json(array('ok' => false, 'message' => self::t('Your session expired. Reload the page.')), 403);
+                self::json(array('ok' => false, 'message' => self::t('Sua sessão expirou. Recarregue a página.')), 403);
             }
             switch ($do) {
                 case 'logout':
@@ -113,7 +113,7 @@ final class App
                     self::json(self::cancel());
                     break;
             }
-            self::json(array('ok' => false, 'message' => self::t('Unknown action.')), 400);
+            self::json(array('ok' => false, 'message' => self::t('Ação desconhecida.')), 400);
         }
         if (isset($_GET['export'])) {
             self::export();
@@ -122,12 +122,13 @@ final class App
     }
 
     ////////////////
-    // Language: English or Brazilian Portuguese, from the switch in the
-    // header (remembered in a cookie) or the browser's preferred language.
+    // Language: Brazilian Portuguese (the language the page is written in)
+    // or English, from the switch in the header (remembered in a cookie) or
+    // the browser's preferred language.
     // WordPress's translations cannot be used: WordPress is not loaded.
     //////////////
 
-    const LANG_COOKIE = 'elderward_recovery_lang';
+    const LANG_COOKIE = 'facheiro_recovery_lang';
 
     private static function pick_language()
     {
@@ -144,24 +145,23 @@ final class App
             $accept = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? strtolower((string) $_SERVER['HTTP_ACCEPT_LANGUAGE']) : '';
             foreach (explode(',', $accept) as $item) {
                 $tag = trim((string) strtok($item, ';'));
-                if (0 === strpos($tag, 'pt')) {
-                    self::$lang = 'pt_BR';
+                if (0 === strpos($tag, 'en')) {
+                    self::$lang = 'en';
                     break;
                 }
-                if (0 === strpos($tag, 'en')) {
+                if (0 === strpos($tag, 'pt')) {
                     break;
                 }
             }
         }
-        if ('en' !== self::$lang) {
-            $file = __DIR__ . '/i18n/' . self::$lang . '.php';
-            $strings = is_file($file) ? include $file : array();
-            self::$strings = is_array($strings) ? $strings : array();
-        }
+        // pt_BR.php only names the engine's scan stages; en.php holds the page.
+        $file = __DIR__ . '/i18n/' . self::$lang . '.php';
+        $strings = is_file($file) ? include $file : array();
+        self::$strings = is_array($strings) ? $strings : array();
     }
 
     /**
-     * The text in the page's language (the English text when there is no
+     * The text in the page's language (the Portuguese text when there is no
      * translation). Extra arguments fill placeholders like sprintf(); they
      * are not escaped here.
      */
@@ -228,7 +228,7 @@ final class App
             'expires' => $expires,
             // Sessions are signed with this: replacing or revoking the key
             // ends every session.
-            'secret'  => hash('sha256', 'elderward-recovery-session|' . $hash . '|' . $created),
+            'secret'  => hash('sha256', 'facheiro-recovery-session|' . $hash . '|' . $created),
         );
     }
 
@@ -275,7 +275,7 @@ final class App
         }
         if (self::$key['manual'] && (int) $mine['fails'] >= self::MAX_FAILS) {
             http_response_code(429);
-            self::page_login(self::t('Too many wrong keys. Try again in 15 minutes.'));
+            self::page_login(self::t('Chaves erradas demais. Tente de novo em 15 minutos.'));
             return;
         }
         $given = isset($_POST['key']) ? trim((string) $_POST['key']) : '';
@@ -288,7 +288,7 @@ final class App
         }
         if (!self::$key['manual']) {
             http_response_code(403);
-            self::page_login(self::t('That key is not valid.'));
+            self::page_login(self::t('Essa chave não é válida.'));
             return;
         }
         $mine['fails'] = (int) $mine['fails'] + 1;
@@ -309,7 +309,7 @@ final class App
         self::write_state('attempts', $attempts);
         sleep(1);
         http_response_code(403);
-        self::page_login(self::t('That key is not valid.'));
+        self::page_login(self::t('Essa chave não é válida.'));
     }
 
     private static function sign(array $payload)
@@ -379,8 +379,8 @@ final class App
     {
         $tag = substr(hash('sha256', (string) self::$root), 0, 16);
         $candidates = array(
-            rtrim(sys_get_temp_dir(), '/\\') . '/elderward-recovery-' . $tag,
-            self::$content_dir . '/elderward-recovery',
+            rtrim(sys_get_temp_dir(), '/\\') . '/facheiro-recovery-' . $tag,
+            self::$content_dir . '/facheiro-recovery',
         );
         foreach ($candidates as $dir) {
             if (!is_dir($dir)) {
@@ -453,7 +453,7 @@ final class App
     private static function encode($data)
     {
         $json = json_encode($data); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here.
-        if (false === $json && class_exists('Elderward\\Engine\\BaseReporter', false)) {
+        if (false === $json && class_exists('Facheiro\\Engine\\BaseReporter', false)) {
             $json = json_encode(BaseReporter::clean_utf8_deep($data)); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here.
         }
         return $json;
@@ -565,11 +565,11 @@ final class App
 
     private static function load_engine()
     {
-        if (!defined('ELDERWARD_RECOVERY')) {
-            define('ELDERWARD_RECOVERY', true);
+        if (!defined('FACHEIRO_RECOVERY')) {
+            define('FACHEIRO_RECOVERY', true);
         }
         require_once self::$plugin_dir . '/includes/engine/load.php';
-        if (!class_exists('Elderward\\Recovery\\CollectReporter')) {
+        if (!class_exists('Facheiro\\Recovery\\CollectReporter')) {
             require_once __DIR__ . '/reporter.php';
         }
     }
@@ -638,7 +638,7 @@ final class App
     private static function start()
     {
         if (null === self::$state_dir) {
-            return array('ok' => false, 'message' => self::t('No writable folder for the scan state (neither the system temp folder nor wp-content).'));
+            return array('ok' => false, 'message' => self::t('Não há pasta gravável para o estado da varredura (nem a pasta temporária do sistema nem a wp-content).'));
         }
         self::load_engine();
         $options = array('scanall' => 1, 'scandirectory' => self::$root, 'plugindir' => dirname(self::$plugin_dir));
@@ -646,7 +646,7 @@ final class App
         if ('' !== $log) {
             $real = realpath($log);
             if (false === $real || !is_readable($real)) {
-                return array('ok' => false, 'message' => self::t('The access log path does not exist or PHP cannot read it.'));
+                return array('ok' => false, 'message' => self::t('O caminho dos logs de acesso não existe ou o PHP não consegue lê-lo.'));
             }
             $options['scanlog'] = $real;
         }
@@ -659,12 +659,12 @@ final class App
         }
         $lock = self::lock(true);
         if (null === $lock) {
-            return array('ok' => false, 'message' => self::t('Could not lock the scan state.'));
+            return array('ok' => false, 'message' => self::t('Não foi possível travar o estado da varredura.'));
         }
         $current = self::read_state('job');
         if (!empty($current) && 'running' === $current['status']) {
             self::unlock($lock);
-            return array('ok' => false, 'message' => self::t('A scan is already running. Cancel it first.'));
+            return array('ok' => false, 'message' => self::t('Já há uma varredura em andamento. Cancele-a primeiro.'));
         }
         $job = array(
             'status'      => 'running',
@@ -724,7 +724,7 @@ final class App
             // that was tampered with cannot turn the scan into a cleanup.
             $ctx = Runner::scanall_context(self::context(self::scan_options(isset($job['options']) ? (array) $job['options'] : array()), $reporter));
             if (!isset($job['stages']) || $job['stages'] !== Runner::scanall_stages($ctx)) {
-                throw new Fatal(self::t('The saved scan state does not match this site; start a new scan.'));
+                throw new Fatal(self::t('O estado salvo da varredura não corresponde a este site; inicie uma nova varredura.'));
             }
             if (!isset($job['attempt']) || !is_array($job['attempt'])) {
                 $job['attempt'] = array('key' => '', 'count' => 0);
@@ -763,7 +763,7 @@ final class App
                     $job['attempt'] = array('key' => $key, 'count' => 1);
                 }
                 if ($job['attempt']['count'] > self::MAX_ATTEMPTS) {
-                    throw new Fatal(self::t('PHP stopped %1$d times on the same part of the "%2$s" stage (usually the memory or time limit). Raise memory_limit, or run php bin/elderward.php scanall=1 from a shell.', self::MAX_ATTEMPTS, self::t(Runner::stage_label($stage))));
+                    throw new Fatal(self::t('O PHP parou %1$d vezes na mesma parte da etapa "%2$s" (em geral, pelo limite de memória ou de tempo). Aumente o memory_limit ou rode php bin/facheiro.php scanall=1 em um terminal.', self::MAX_ATTEMPTS, self::t(Runner::stage_label($stage))));
                 }
                 $job = self::absorb($job, $reporter);
                 self::write_state('job', $job);
@@ -852,7 +852,7 @@ final class App
     {
         $job = self::read_state('job');
         header('Content-Type: application/x-ndjson; charset=utf-8');
-        header('Content-Disposition: attachment; filename="elderward-recovery-' . gmdate('Ymd-His') . '.json"');
+        header('Content-Disposition: attachment; filename="facheiro-recovery-' . gmdate('Ymd-His') . '.json"');
         foreach (isset($job['findings']) ? $job['findings'] : array() as $finding) {
             $line = self::encode(array_merge(array('event' => 'finding'), (array) $finding));
             if (false !== $line) {
@@ -910,10 +910,10 @@ final class App
         echo '<!doctype html><html lang="' . ('pt_BR' === self::$lang ? 'pt-BR' : 'en') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
         echo '<meta name="robots" content="noindex, nofollow"><title>' . self::h($title) . '</title><style>' . self::css() . '</style></head><body>';
         $other = 'pt_BR' === self::$lang ? array('en', 'English', 'en') : array('pt_BR', 'Português', 'pt-BR');
-        echo '<main class="wrap"><header class="brand"><div><div class="word">Elderward</div><div class="tag">' . self::e('Recovery mode · works without WordPress') . '</div></div>'
+        echo '<main class="wrap"><header class="brand"><div><div class="word">Facheiro</div><div class="tag">' . self::e('Modo de recuperação · funciona sem o WordPress') . '</div></div>'
             . '<a class="lang" href="' . self::h(self::self_url() . '?lang=' . $other[0]) . '" hreflang="' . $other[2] . '" lang="' . $other[2] . '">' . self::h($other[1]) . '</a></header>';
         if (!self::https()) {
-            echo '<p class="note warn">' . self::e('This page is not using HTTPS: the key and the results cross the network unencrypted. Use the https:// address if the site has one.') . '</p>';
+            echo '<p class="note warn">' . self::e('Esta página não está usando HTTPS: a chave e os resultados atravessam a rede sem criptografia. Use o endereço https:// se o site tiver um.') . '</p>';
         }
     }
 
@@ -929,16 +929,16 @@ final class App
 
     private static function page_login($error)
     {
-        self::page_start(self::t('Elderward recovery'));
-        echo '<section class="card narrow"><h1>' . self::e('Sign in') . '</h1>';
-        echo '<p>' . self::e('Enter the recovery key created in Elderward > Recovery, with WP-CLI, or in the key file you uploaded.') . '</p>';
+        self::page_start(self::t('Recuperação Facheiro'));
+        echo '<section class="card narrow"><h1>' . self::e('Entrar') . '</h1>';
+        echo '<p>' . self::e('Digite a chave de recuperação criada em Facheiro > Recuperação, pelo WP-CLI ou no arquivo de chave que você enviou.') . '</p>';
         if ('' !== $error) {
             echo '<p class="note error" role="alert">' . self::h($error) . '</p>';
         }
         echo '<form method="post" action="' . self::h(self::self_url()) . '" autocomplete="off">';
-        echo '<input type="hidden" name="do" value="login"><label for="key">' . self::e('Recovery key') . '</label>';
+        echo '<input type="hidden" name="do" value="login"><label for="key">' . self::e('Chave de recuperação') . '</label>';
         echo '<input type="password" id="key" name="key" required autofocus spellcheck="false">';
-        echo '<button type="submit" class="primary">' . self::e('Sign in') . '</button></form></section>';
+        echo '<button type="submit" class="primary">' . self::e('Entrar') . '</button></form></section>';
         self::page_end();
     }
 
@@ -950,36 +950,36 @@ final class App
         $job = self::read_state('job');
         $config = is_file(self::$root . '/wp-config.php') ? self::$root . '/wp-config.php' : (is_file(dirname(self::$root) . '/wp-config.php') ? dirname(self::$root) . '/wp-config.php' : null);
 
-        self::page_start(self::t('Elderward recovery'));
-        echo '<form method="post" action="' . self::h(self::self_url()) . '" class="signout"><input type="hidden" name="do" value="logout"><input type="hidden" name="token" value="' . self::h($token) . '"><button type="submit">' . self::e('Sign out') . '</button></form>';
+        self::page_start(self::t('Recuperação Facheiro'));
+        echo '<form method="post" action="' . self::h(self::self_url()) . '" class="signout"><input type="hidden" name="do" value="logout"><input type="hidden" name="token" value="' . self::h($token) . '"><button type="submit">' . self::e('Sair') . '</button></form>';
         if (self::$key['manual']) {
-            echo '<p class="note warn">' . self::t('This key was added by hand and never expires. Delete %s when you are done.', '<code>' . self::h(self::relative(self::$content_dir . '/' . self::KEY_FILE)) . '</code>') . '</p>';
+            echo '<p class="note warn">' . self::t('Esta chave foi adicionada à mão e não expira. Apague %s quando terminar.', '<code>' . self::h(self::relative(self::$content_dir . '/' . self::KEY_FILE)) . '</code>') . '</p>';
         }
 
-        echo '<section class="card"><h2>' . self::e('This site') . '</h2><dl class="facts">';
-        echo '<dt>' . self::e('WordPress folder') . '</dt><dd><code>' . self::h(self::$root) . '</code></dd>';
-        echo '<dt>' . self::e('WordPress version') . '</dt><dd>' . (null === $version ? '<span class="bad">' . self::e('wp-includes/version.php not found') . '</span>' : self::h($version)) . '</dd>';
-        echo '<dt>wp-config.php</dt><dd>' . (null === $config ? '<span class="bad">' . self::e('not found') . '</span>' : '<code>' . self::h(self::relative($config)) . '</code> ' . self::e('(read, never run)')) . '</dd>';
-        echo '<dt>PHP</dt><dd>' . self::e('%1$s, memory limit %2$s', PHP_VERSION, (string) ini_get('memory_limit')) . '</dd>';
+        echo '<section class="card"><h2>' . self::e('Este site') . '</h2><dl class="facts">';
+        echo '<dt>' . self::e('Pasta do WordPress') . '</dt><dd><code>' . self::h(self::$root) . '</code></dd>';
+        echo '<dt>' . self::e('Versão do WordPress') . '</dt><dd>' . (null === $version ? '<span class="bad">' . self::e('wp-includes/version.php não encontrado') . '</span>' : self::h($version)) . '</dd>';
+        echo '<dt>wp-config.php</dt><dd>' . (null === $config ? '<span class="bad">' . self::e('não encontrado') . '</span>' : '<code>' . self::h(self::relative($config)) . '</code> ' . self::e('(lido, nunca executado)')) . '</dd>';
+        echo '<dt>PHP</dt><dd>' . self::e('%1$s, limite de memória %2$s', PHP_VERSION, (string) ini_get('memory_limit')) . '</dd>';
         if (is_file(self::$root . '/.maintenance')) {
-            echo '<dt>' . self::e('Maintenance') . '</dt><dd><span class="bad">' . self::e('.maintenance exists') . '</span>: ' . self::e('an update stopped halfway, which shows "Briefly unavailable for scheduled maintenance". Delete the file if no update is running.') . '</dd>';
+            echo '<dt>' . self::e('Manutenção') . '</dt><dd><span class="bad">' . self::e('existe um arquivo .maintenance') . '</span>: ' . self::e('uma atualização parou no meio, o que mostra "Momentaneamente indisponível para manutenção programada". Apague o arquivo se nenhuma atualização estiver em andamento.') . '</dd>';
         }
         echo '</dl></section>';
 
-        echo '<section class="card"><h2>' . self::e('What broke the site') . '</h2>';
+        echo '<section class="card"><h2>' . self::e('O que quebrou o site') . '</h2>';
         if (empty($errors['logs'])) {
-            echo '<p>' . self::t('No PHP error log was found. To get one, add %s to wp-config.php, load the broken page once, then reload this page.', '<code>' . self::h("define('WP_DEBUG', true); define('WP_DEBUG_LOG', true); define('WP_DEBUG_DISPLAY', false);") . '</code>') . '</p>';
+            echo '<p>' . self::t('Nenhum log de erros do PHP foi encontrado. Para ter um, adicione %s ao wp-config.php, abra a página quebrada uma vez e depois recarregue esta página.', '<code>' . self::h("define('WP_DEBUG', true); define('WP_DEBUG_LOG', true); define('WP_DEBUG_DISPLAY', false);") . '</code>') . '</p>';
         } elseif (empty($errors['lines'])) {
-            echo '<p>' . self::e('No fatal errors in the latest part of: %s.', implode(', ', array_map(array(__CLASS__, 'relative'), $errors['logs']))) . '</p>';
+            echo '<p>' . self::e('Nenhum erro fatal na parte mais recente de: %s.', implode(', ', array_map(array(__CLASS__, 'relative'), $errors['logs']))) . '</p>';
         } else {
             if (!empty($errors['suspects'])) {
-                echo '<p><strong>' . self::e('The errors point at:') . '</strong></p><ul class="suspects">';
+                echo '<p><strong>' . self::e('Os erros apontam para:') . '</strong></p><ul class="suspects">';
                 foreach ($errors['suspects'] as $name => $count) {
-                    echo '<li><code>wp-content/' . self::h($name) . '</code> (' . self::e(1 === $count ? '%d error' : '%d errors', (int) $count) . ')</li>';
+                    echo '<li><code>wp-content/' . self::h($name) . '</code> (' . self::e(1 === $count ? '%d erro' : '%d erros', (int) $count) . ')</li>';
                 }
-                echo '</ul><p class="hint">' . self::t('Renaming that plugin or theme folder (or a single must-use plugin file), for example by adding %s to its name over FTP or your host\'s file manager, switches it off and usually brings the site back. Then scan below: code that suddenly fails may have been modified by malware.', '<code>.off</code>') . '</p>';
+                echo '</ul><p class="hint">' . self::t('Renomear a pasta desse plugin ou tema (ou o arquivo, no caso de um plugin obrigatório), por exemplo acrescentando %s ao nome por FTP ou pelo gerenciador de arquivos da hospedagem, desativa-o e costuma trazer o site de volta. Depois, faça a varredura abaixo: um código que de repente passa a falhar pode ter sido modificado por malware.', '<code>.off</code>') . '</p>';
             }
-            echo '<details open><summary>' . self::e('Latest fatal errors') . '</summary><pre class="log">';
+            echo '<details open><summary>' . self::e('Erros fatais mais recentes') . '</summary><pre class="log">';
             foreach ($errors['lines'] as $entry) {
                 echo self::h($entry['line']) . "\n";
             }
@@ -988,20 +988,20 @@ final class App
         echo '</section>';
 
         $running = !empty($job) && 'running' === $job['status'];
-        echo '<section class="card" id="scan" data-token="' . self::h($token) . '" data-running="' . ($running ? '1' : '0') . '"><h2>' . self::e('Scan for malware') . '</h2>';
-        echo '<p>' . self::e('The same report-only scan as the Elderward admin page: WordPress, plugin and theme files against the official copies, known malware, the database (through the settings in wp-config.php), faked file dates and the server crontab. Nothing is changed.') . '</p>';
-        echo '<label for="log">' . self::e('Access logs (optional)') . '</label><input type="text" id="log" placeholder="/var/log/apache2" spellcheck="false">';
-        echo '<p class="buttons"><button type="button" class="primary" id="start"' . ($running ? ' disabled' : '') . '>' . self::e('Start scan') . '</button> <button type="button" id="cancel"' . ($running ? '' : ' disabled') . '>' . self::e('Cancel') . '</button></p>';
-        echo '<div id="progress"' . ($running ? '' : ' hidden') . '><div class="bar"><div class="fill" style="width:0%"></div></div><p id="status">' . self::e('Keep this page open while the scan runs.') . '</p></div>';
+        echo '<section class="card" id="scan" data-token="' . self::h($token) . '" data-running="' . ($running ? '1' : '0') . '"><h2>' . self::e('Varredura de malware') . '</h2>';
+        echo '<p>' . self::e('A mesma varredura só de relatório da página de administração do Facheiro: arquivos do WordPress, dos plugins e dos temas comparados com as cópias oficiais, malware conhecido, o banco de dados (pelas configurações do wp-config.php), datas de arquivos falsificadas e o crontab do servidor. Nada é alterado.') . '</p>';
+        echo '<label for="log">' . self::e('Logs de acesso (opcional)') . '</label><input type="text" id="log" placeholder="/var/log/apache2" spellcheck="false">';
+        echo '<p class="buttons"><button type="button" class="primary" id="start"' . ($running ? ' disabled' : '') . '>' . self::e('Iniciar varredura') . '</button> <button type="button" id="cancel"' . ($running ? '' : ' disabled') . '>' . self::e('Cancelar') . '</button></p>';
+        echo '<div id="progress"' . ($running ? '' : ' hidden') . '><div class="bar"><div class="fill" style="width:0%"></div></div><p id="status">' . self::e('Mantenha esta página aberta enquanto a varredura roda.') . '</p></div>';
         if (!empty($job) && 'running' !== $job['status']) {
             self::render_results($job);
         }
         echo '</section>';
 
-        echo '<section class="card"><h2>' . self::e('After the scan') . '</h2><ol>';
-        echo '<li>' . self::e('Take a backup of the files and the database before changing anything.') . '</li>';
-        echo '<li>' . self::t('Remove known malware and restore modified core, plugin and theme files from the command line: %1$s shows the same report, %2$s previews a cleanup.', '<code>php wp-content/plugins/elderward/bin/elderward.php scanall=1</code>', '<code>scandirectory=… dryrun=1</code>') . '</li>';
-        echo '<li>' . self::e('Once WordPress loads again, change every password and the salts in wp-config.php, and revoke this recovery key.') . '</li>';
+        echo '<section class="card"><h2>' . self::e('Depois da varredura') . '</h2><ol>';
+        echo '<li>' . self::e('Faça um backup dos arquivos e do banco de dados antes de mudar qualquer coisa.') . '</li>';
+        echo '<li>' . self::t('Remova o malware conhecido e restaure os arquivos modificados do core, dos plugins e dos temas pela linha de comando: %1$s mostra o mesmo relatório, %2$s simula uma limpeza.', '<code>php wp-content/plugins/facheiro/bin/facheiro.php scanall=1</code>', '<code>scandirectory=… dryrun=1</code>') . '</li>';
+        echo '<li>' . self::e('Quando o WordPress voltar a carregar, troque todas as senhas e os salts do wp-config.php e revogue esta chave de recuperação.') . '</li>';
         echo '</ol></section>';
 
         self::page_end(self::script());
@@ -1016,8 +1016,8 @@ final class App
             $y = isset($order[$b['severity']]) ? $order[$b['severity']] : 9;
             return $x - $y;
         });
-        $words = array('done' => self::t('complete'), 'failed' => self::t('failed'), 'cancelled' => self::t('cancelled'));
-        echo '<p class="last">' . self::t('Last scan: %1$s, started %2$s UTC.', '<strong>' . self::h(isset($words[$job['status']]) ? $words[$job['status']] : $job['status']) . '</strong>', self::h(gmdate('Y-m-d H:i', (int) $job['started'])));
+        $words = array('done' => self::t('concluída'), 'failed' => self::t('falhou'), 'cancelled' => self::t('cancelada'));
+        echo '<p class="last">' . self::t('Última varredura: %1$s, iniciada em %2$s UTC.', '<strong>' . self::h(isset($words[$job['status']]) ? $words[$job['status']] : $job['status']) . '</strong>', self::h(gmdate('Y-m-d H:i', (int) $job['started'])));
         if ('' !== (string) $job['error']) {
             echo ' <span class="bad">' . self::h($job['error']) . '</span>';
         }
@@ -1026,25 +1026,25 @@ final class App
             $count = isset($job['counts'][$severity]) ? (int) $job['counts'][$severity] : 0;
             echo '<span class="sev sev-' . self::h(strtolower($severity)) . '">' . self::h($severity) . ' ' . $count . '</span> ';
         }
-        echo '<a href="' . self::h(self::self_url()) . '?export=1">' . self::e('Export JSON') . '</a></p>';
+        echo '<a href="' . self::h(self::self_url()) . '?export=1">' . self::e('Exportar JSON') . '</a></p>';
         if ((int) $job['dropped'] > 0) {
-            echo '<p class="note warn">' . self::e('%d more findings were not kept; export from the command line for the full list.', (int) $job['dropped']) . '</p>';
+            echo '<p class="note warn">' . self::e('Outros %d achados não foram guardados; exporte pela linha de comando para ter a lista completa.', (int) $job['dropped']) . '</p>';
         }
         if (empty($findings)) {
-            echo '<p>' . self::e('Nothing found.') . '</p>';
+            echo '<p>' . self::e('Nada encontrado.') . '</p>';
             return;
         }
         if ('en' !== self::$lang) {
-            echo '<p class="hint">' . self::e('Finding details are in English, as in exports and on the command line.') . '</p>';
+            echo '<p class="hint">' . self::e('Os detalhes dos achados ficam em inglês, como nas exportações e na linha de comando.') . '</p>';
         }
-        echo '<div class="scroll"><table><thead><tr><th>' . self::e('Severity') . '</th><th>' . self::e('Type') . '</th><th>' . self::e('Where') . '</th><th>' . self::e('Details') . '</th></tr></thead><tbody>';
+        echo '<div class="scroll"><table><thead><tr><th>' . self::e('Gravidade') . '</th><th>' . self::e('Tipo') . '</th><th>' . self::e('Onde') . '</th><th>' . self::e('Detalhes') . '</th></tr></thead><tbody>';
         foreach ($findings as $finding) {
             echo '<tr><td><span class="sev sev-' . self::h(strtolower($finding['severity'])) . '">' . self::h($finding['severity']) . '</span></td>';
             echo '<td class="type">' . self::h($finding['type']) . '</td>';
             echo '<td><code>' . self::h(self::relative($finding['path'])) . '</code></td>';
             echo '<td>' . self::h($finding['detail']);
             if (!empty($finding['context'])) {
-                echo '<details><summary>' . self::e('Context') . '</summary><pre>' . self::h(implode("\n", array_map('strval', (array) $finding['context']))) . '</pre></details>';
+                echo '<details><summary>' . self::e('Contexto') . '</summary><pre>' . self::h(implode("\n", array_map('strval', (array) $finding['context']))) . '</pre></details>';
             }
             echo '</td></tr>';
         }
@@ -1054,7 +1054,7 @@ final class App
     private static function script()
     {
         $strings = array();
-        foreach (array('Scanning: ', 'Working…', 'Error.', 'Lost contact with the server; retrying…', 'Starting…', 'Could not start.') as $text) {
+        foreach (array('Verificando: ', 'Trabalhando…', 'Erro.', 'Perdemos o contato com o servidor; tentando de novo…', 'Iniciando…', 'Não foi possível iniciar.') as $text) {
             $strings[$text] = self::t($text);
         }
         $json = json_encode($strings, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- no WordPress here; inline script data, HTML-safe flags.
@@ -1065,16 +1065,16 @@ final class App
         if (false === $code) {
             $code = '';
         }
-        return ('var ELDERWARD_L = ' . $json . ';' . $code);
+        return ('var FACHEIRO_L = ' . $json . ';' . $code);
     }
 
     private static function css()
     {
         return 'body{margin:0;background:#f0f0f1;color:#1d2327;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif}'
             . '.wrap{max-width:1100px;margin:0 auto;padding:24px 20px 48px;box-sizing:border-box}'
-            . '.brand{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:20px 24px;border-radius:6px;background:#061614;color:#dcd3b0;border:1px solid #173d37;margin-bottom:20px}'
-            . '.brand .lang{color:#8fb9ab;font-size:13px;border:1px solid #2c5a51;border-radius:999px;padding:2px 12px;text-decoration:none;white-space:nowrap}.brand .lang:hover{color:#f0e6c4}'
-            . '.brand .word{font:600 30px/1.1 Georgia,"Times New Roman",serif;color:#f0e6c4}.brand .tag{color:#b9b195;margin-top:4px}'
+            . '.brand{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:20px 24px;border-radius:6px;background:#14302d;color:#eceee6;border:1px solid #14302d;margin-bottom:20px}'
+            . '.brand .lang{color:#b9d3cd;font-size:13px;border:1px solid #2b6a64;border-radius:999px;padding:2px 12px;text-decoration:none;white-space:nowrap}.brand .lang:hover{color:#eceee6}'
+            . '.brand .word{font:700 30px/1.1 Rockwell,"Roboto Slab",Georgia,serif;color:#eceee6}.brand .tag{color:#b9d3cd;margin-top:4px}'
             . '.card{background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:20px 24px;margin:0 0 20px;box-shadow:0 1px 2px rgba(0,0,0,.04)}'
             . '.card.narrow{max-width:460px;margin:40px auto}h1,h2{margin:0 0 12px;font-size:20px;font-weight:600}'
             . 'label{display:block;font-weight:600;margin:12px 0 6px}input[type=password],input[type=text]{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #8c8f94;border-radius:4px;font:14px Menlo,Consolas,monospace}'

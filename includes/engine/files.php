@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Filesystem helpers shared by the scanners.
@@ -11,7 +11,7 @@ namespace Elderward\Engine;
 // Same rule as load.php: WordPress, the CLI or the recovery page, never a
 // direct web request.
 if (!defined('ABSPATH')) {
-    if (!defined('ELDERWARD_RECOVERY') && PHP_SAPI !== 'cli') {
+    if (!defined('FACHEIRO_RECOVERY') && PHP_SAPI !== 'cli') {
         exit;
     }
 }
@@ -188,9 +188,9 @@ function require_outside_tool(Context $ctx, $dir)
     if (null === $real || !TreeWalk::within($real, $ctx->plugin_dir)) {
         return;
     }
-    throw new Fatal($dir . ' is inside the folder Elderward runs from (' . $ctx->plugin_dir
-        . '), whose files are never scanned: nothing would be checked. Move Elderward (bin/ and includes/) into a folder of its own, for example '
-        . $ctx->plugin_dir . '/elderward, and run it from there');
+    throw new Fatal($dir . ' is inside the folder Facheiro runs from (' . $ctx->plugin_dir
+        . '), whose files are never scanned: nothing would be checked. Move Facheiro (bin/ and includes/) into a folder of its own, for example '
+        . $ctx->plugin_dir . '/facheiro, and run it from there');
 }
 
 function under_plugin_dir(Context $ctx, $path)

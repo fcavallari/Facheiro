@@ -1,7 +1,7 @@
 <?php
 ////////////////
 // Writes checksums.json: the SHA-256 of every file a release ships, which
-// the self-check verifies Elderward's own files against when wordpress.org
+// the self-check verifies Facheiro's own files against when wordpress.org
 // has no checksums for this version.
 //
 //   php build/make-checksums.php           write checksums.json
@@ -18,8 +18,8 @@ if (PHP_SAPI !== 'cli') {
 
 require_once dirname(__DIR__) . '/includes/engine/load.php';
 
-use Elderward\Engine\IntegrityScanner;
-use Elderward\Engine\SelfCheckScanner;
+use Facheiro\Engine\IntegrityScanner;
+use Facheiro\Engine\SelfCheckScanner;
 
 $root = dirname(__DIR__);
 $check = in_array('--check', array_slice($argv, 1), true);

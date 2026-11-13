@@ -1,0 +1,1999 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Facheiro 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/fcavallari/Facheiro/issues\n"
+"Last-Translator: Fio Cavallari\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-11-02T17:57:54+00:00\n"
+"PO-Revision-Date: 2026-11-02T22:01:03+00:00\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: facheiro\n"
+
+#. Plugin Name of the plugin
+#: facheiro.php
+#: includes/plugin/class-facheiro-admin.php:68
+#: includes/plugin/class-facheiro-admin.php:69
+#: includes/plugin/class-facheiro-admin.php:82
+#: includes/plugin/class-facheiro-admin.php:83
+#: includes/plugin/class-facheiro-admin.php:1158
+#: includes/plugin/class-facheiro-admin.php:1162
+msgid "Facheiro"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: facheiro.php
+msgid "https://github.com/fcavallari/Facheiro"
+msgstr ""
+
+#. Description of the plugin
+#: facheiro.php
+msgid "Varredura de malware e resposta a incidentes: verificação de integridade, banco de dados e logs, blindagem do servidor e um modo de recuperação para sites que não carregam mais."
+msgstr ""
+
+#. Author of the plugin
+#: facheiro.php
+msgid "Fio Cavallari"
+msgstr ""
+
+#. Author URI of the plugin
+#: facheiro.php
+msgid "https://github.com/fcavallari"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:45
+msgid "Segurança Facheiro"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:46
+msgid "Varredura de malware e resposta a incidentes com o Facheiro."
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:94
+msgid "Ver o status da varredura"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:98
+msgid "Iniciar uma varredura"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:105
+msgid "Avançar a varredura em andamento"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:109
+msgid "Cancelar a varredura em andamento"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:113
+msgid "Listar achados"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:124
+msgid "Ver um achado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:129
+msgid "Ler um arquivo sinalizado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:134
+msgid "Marcar um achado como falso positivo"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:142
+msgid "Remover a marcação de falso positivo"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:150
+msgid "Listar falsos positivos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:154
+msgid "Listar assinaturas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:181
+msgid "Testar assinaturas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:190
+msgid "Salvar uma assinatura personalizada"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:195
+msgid "Excluir uma assinatura personalizada"
+msgstr ""
+
+#: includes/plugin/class-facheiro-abilities.php:200
+msgid "Triagem dos resultados do Facheiro"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:53
+#: includes/plugin/class-facheiro-admin-hardening.php:144
+#: includes/plugin/class-facheiro-admin-hardening.php:154
+#: includes/plugin/class-facheiro-admin-recovery.php:31
+#: includes/plugin/class-facheiro-admin-recovery.php:55
+#: includes/plugin/class-facheiro-admin.php:235
+#: includes/plugin/class-facheiro-admin.php:359
+#: includes/plugin/class-facheiro-admin.php:409
+#: includes/plugin/class-facheiro-admin.php:477
+#: includes/plugin/class-facheiro-admin.php:837
+#: includes/plugin/class-facheiro-admin.php:883
+#: includes/plugin/class-facheiro-admin.php:1047
+#: includes/plugin/class-facheiro-admin.php:1140
+msgid "Você não tem permissão para fazer isso."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:80
+msgid "O Facheiro só escreve regras para Apache ou LiteSpeed. Para Nginx, baixe o arquivo de configuração."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:90
+msgid "Escolhas salvas."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:101
+msgid "Não foi possível gravar as regras, então nada foi alterado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:109
+msgid "Não havia regras do Facheiro para remover."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:109
+msgid "Nada a alterar."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:116
+msgid "Regras do Facheiro removidas, mas este site não consegue acessar a si mesmo por HTTP, então o Facheiro não pôde verificar se ele continua funcionando."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:117
+msgid "Proteções gravadas, mas este site não consegue acessar a si mesmo por HTTP, então o Facheiro não pôde verificar se ele continua funcionando nem desfazer sozinho uma quebra. Abra o site em uma nova aba agora; se aparecer um erro, clique em \"Remover regras do Facheiro\" ou apague, por FTP, as linhas entre \"# BEGIN Facheiro\" e \"# END Facheiro\"."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:121
+msgid "Regras do Facheiro removidas. O site continua respondendo normalmente."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:122
+msgid "Proteções aplicadas. O site continua respondendo normalmente."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:124
+msgid "Use \"Verificar agora\", abaixo, para confirmar que o servidor aplica cada regra."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:133
+msgid "criado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:135
+msgid "regras removidas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:137
+msgid "atualizado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:180
+msgid "Nenhuma proteção selecionada: aplicar remove todas as regras do Facheiro."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:193
+#: includes/plugin/class-facheiro-admin-hardening.php:366
+msgid "Protegido"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:194
+#: includes/plugin/class-facheiro-admin-hardening.php:367
+msgid "Desprotegido"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:195
+#: includes/plugin/class-facheiro-admin-hardening.php:368
+msgid "Não verificado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:198
+msgid "A blindagem faz o servidor web recusar o que ele nunca deveria entregar: PHP largado na pasta de uploads, cópias do wp-config.php, pastas .git, arquivos internos do WordPress. Ela não remove malware, mas impede muitos ataques e não deixa um web shell plantado ser executado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:206
+msgid "Seu servidor web"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:210
+msgid "Apache e LiteSpeed leem regras de arquivos .htaccess dentro das pastas do site, então o Facheiro pode escrevê-las por você. O Nginx lê a configuração só dos arquivos do próprio servidor, que o PHP não pode (nem deve) alterar: o Facheiro entrega um arquivo para você incluir nela."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:211
+msgid "Não tem certeza? A maioria das hospedagens compartilhadas usa Apache ou LiteSpeed. A documentação ou o suporte da sua hospedagem sabe dizer."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:214
+msgid "Servidor web"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:225
+msgid "O Facheiro não conseguiu identificar o servidor deste site."
+msgstr ""
+
+#. translators: %s: web server name
+#: includes/plugin/class-facheiro-admin-hardening.php:228
+#, php-format
+msgid "Este site parece rodar em %s."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:236
+msgid "Escolha as proteções"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:238
+msgid "Modelo"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:246
+msgid "O Recomendado é seguro para quase todos os sites. O Rigoroso acrescenta proteções que podem quebrar alguns temas e integrações. Mude qualquer chave para montar sua própria seleção."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:259
+#: includes/plugin/class-facheiro-hardening.php:98
+msgid "Recomendado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:261
+#: includes/plugin/class-facheiro-hardening.php:99
+msgid "Rigoroso"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:263
+msgid "Teste com cuidado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:272
+msgid "Pode quebrar:"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:280
+msgid "Revisar e aplicar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:283
+msgid "O Facheiro coloca estas regras entre as linhas \"# BEGIN Facheiro\" e \"# END Facheiro\" e não mexe no resto de cada arquivo. Ele verifica o site antes e depois e, se o site deixar de responder normalmente, devolve cada arquivo ao que era."
+msgstr ""
+
+#. translators: 1: number of protections, 2: user name, 3: date and time
+#: includes/plugin/class-facheiro-admin-hardening.php:290
+#, php-format
+msgid "%1$d proteções aplicadas por %2$s em %3$s."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:292
+#: includes/plugin/class-facheiro-admin.php:1598
+msgid "um usuário excluído"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:305
+msgid "Baixe o arquivo abaixo e coloque-o no servidor, por exemplo como /etc/nginx/snippets/facheiro.conf."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:306
+msgid "Dentro do bloco server { } deste site, adicione a linha include snippets/facheiro.conf; acima do bloco que entrega os arquivos .php ao PHP (location ~ \\.php$)."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:307
+msgid "Rode nginx -t para testar a configuração e depois recarregue o Nginx (systemctl reload nginx)."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:308
+msgid "Volte aqui e use \"Verificar agora\" para confirmar."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:310
+msgid "Em hospedagem gerenciada sem acesso ao servidor, envie o arquivo ao suporte da hospedagem e peça para incluí-lo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:314
+msgid "Aplicar proteções"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:316
+msgid "Remover regras do Facheiro"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:318
+msgid "Baixar a configuração do Nginx"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:319
+#: includes/plugin/class-facheiro-admin.php:758
+#: includes/plugin/class-facheiro-admin.php:767
+msgid "Copiar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:326
+msgid "Verificar o site no ar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:328
+msgid "Verificar agora"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:333
+msgid "O Facheiro envia requisições de teste inofensivas a este site, como o pedido de um arquivo PHP inexistente na pasta de uploads, e observa a resposta do servidor. Uma recusa significa que a regra funciona. Nada é criado no site."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:334
+msgid "Funciona não importa quem tenha adicionado as regras, então use depois de incluir o arquivo do Nginx ou editar o .htaccess à mão. Um firewall ou CDN na frente do site pode fazer uma proteção parecer ativa quando a recusa vem do firewall."
+msgstr ""
+
+#. translators: %s: date and time
+#: includes/plugin/class-facheiro-admin-hardening.php:341
+#, php-format
+msgid "Última verificação: %s. O resultado de cada proteção aparece ao lado da chave dela, acima."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:343
+msgid "Ainda não verificado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:363
+msgid "Gravar estas regras nos arquivos .htaccess mostrados? O Facheiro verifica o site em seguida e desfaz a alteração se o site parar de funcionar."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:364
+msgid "Remover todas as regras do Facheiro dos arquivos .htaccess?"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:365
+msgid "Verificando…"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:369
+msgid "Verificado agora. O resultado de cada proteção aparece ao lado da chave dela, acima."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:38
+msgid "Chave de recuperação revogada. A página de recuperação agora responde \"não encontrada\"."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:39
+msgid "Não foi possível apagar o arquivo da chave. Apague wp-content/facheiro-recovery-key.php à mão."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:77
+msgid "Ainda não há chave. Crie uma enquanto o site funciona, para que o modo de recuperação esteja pronto se ele quebrar."
+msgstr ""
+
+#. translators: %s: file path
+#: includes/plugin/class-facheiro-admin-recovery.php:81
+#, php-format
+msgid "%s existe, mas não contém uma chave válida (uma chave digitada à mão precisa ter pelo menos 24 caracteres). O modo de recuperação fica desligado até ele ser corrigido ou substituído."
+msgstr ""
+
+#. translators: %s: file path
+#: includes/plugin/class-facheiro-admin-recovery.php:85
+#, php-format
+msgid "Uma chave foi adicionada à mão em %s. Ela não expira: revogue-a quando não precisar mais dela."
+msgstr ""
+
+#. translators: 1: date and time, 2: user name, 3: expiry date and time or "never"
+#: includes/plugin/class-facheiro-admin-recovery.php:89
+#, php-format
+msgid "Criada em %1$s por %2$s. Expira: %3$s."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:92
+msgid "nunca (até ser revogada)"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:95
+msgid "Esta chave expirou."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:107
+msgid "Se um malware ou uma atualização com defeito derrubar o site (tela branca, \"Houve um erro crítico neste site\", um painel que não abre), páginas do WordPress como esta também param de funcionar. O modo de recuperação é uma página separada que não carrega o WordPress: ela mostra os erros de PHP que quebraram o site e roda a varredura completa, só de relatório, incluindo o banco de dados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:111
+msgid "Chave de recuperação"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:112
+#: includes/plugin/class-facheiro-admin-recovery.php:201
+msgid "Modo de recuperação ligado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:112
+msgid "Modo de recuperação desligado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:116
+msgid "Sua chave de recuperação"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:116
+msgid "guarde-a agora no seu gerenciador de senhas. O Facheiro guarda só uma impressão digital dela e não consegue mostrá-la de novo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:118
+msgid "Copiar chave"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:124
+msgid "Página de recuperação:"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:126
+msgid "Copiar endereço"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:132
+msgid "Válida por"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:138
+msgid "Criar chave de recuperação"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:138
+#: includes/plugin/class-facheiro-admin-recovery.php:202
+msgid "Criar uma nova chave"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:139
+msgid "Revogar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:141
+msgid "Criar uma nova chave substitui a anterior. Guarde a chave e o endereço da página juntos, fora deste site: você vai precisar deles justamente quando este site não puder mostrá-los."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:146
+msgid "Quando o site cair"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:149
+msgid "Abra o endereço da página de recuperação e digite a chave."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:150
+msgid "Leia \"O que quebrou o site\": os erros de PHP mais recentes, com o plugin ou tema de onde vêm. Renomear a pasta desse plugin (por FTP ou pelo gerenciador de arquivos da hospedagem) costuma trazer o site de volta."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:151
+msgid "Rode a varredura para ver se há malware envolvido. Ela é só de relatório, como a varredura desta página, e cobre os arquivos e o banco de dados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:152
+msgid "Faça a limpeza pela linha de comando (wp facheiro scan, ou php bin/facheiro.php sem WordPress) e depois revogue a chave."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:158
+msgid "Sem chave, e o WordPress já quebrou?"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:160
+msgid "Crie você mesmo o arquivo da chave por FTP, SFTP ou pelo gerenciador de arquivos da hospedagem:"
+msgstr ""
+
+#. translators: %s: file path
+#: includes/plugin/class-facheiro-admin-recovery.php:165
+#, php-format
+msgid "Crie o arquivo %s (ao lado da pasta de plugins)."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:168
+msgid "Coloque isto nele, trocando a chave de exemplo por um texto aleatório seu de pelo menos 24 caracteres:"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:170
+msgid "Abra a página de recuperação e digite essa chave. Apague o arquivo quando terminar."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:172
+msgid "Com o WP-CLI no servidor, isto faz o mesmo:"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:175
+msgid "O arquivo começa com \"<?php exit; ?>\", então, mesmo que alguém o peça pela web, o servidor o executa e não mostra nada."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:176
+msgid "Se o próprio WP-CLI falhar por causa do plugin quebrado, acrescente --skip-plugins=<nome da pasta desse plugin>, ou crie o arquivo à mão."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:183
+msgid "Como a página de recuperação é protegida"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:186
+msgid "Sem um arquivo de chave válido e dentro da validade, ela responde \"não encontrada\" e não faz mais nada."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:187
+msgid "Só uma impressão digital (SHA-256) de uma chave criada aqui é guardada, e a chave é mostrada a você uma única vez, sem ser salva em lugar nenhum. As chaves têm 32 caracteres aleatórios, então um palpite errado é simplesmente recusado. Uma chave digitada à mão no arquivo pode ser mais fraca: cada tentativa errada custa um segundo, e um cliente fica bloqueado por 15 minutos depois de 10 tentativas erradas."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:188
+msgid "Um acesso dura uma hora, termina quando a chave é revogada ou substituída e fica preso a um cookie que a página define só para si mesma."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:189
+msgid "Ela lê as configurações do banco de dados do wp-config.php sem executá-lo, só lê arquivos e o banco de dados e nunca altera nem envia nada."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:190
+msgid "Use-a por HTTPS: em HTTP simples, a chave atravessa a rede sem criptografia."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:199
+msgid "Criar uma nova chave? A atual deixa de funcionar."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-recovery.php:200
+msgid "Revogar a chave de recuperação? A página de recuperação deixa de funcionar até uma nova chave ser criada."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:103
+msgid "Visão geral"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:104
+msgid "O Facheiro procura neste site malware e sinais de invasão. As varreduras só fazem relatório: nada no site é alterado a partir desta página."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:105
+msgid "Inicie uma varredura na aba Varredura. Quando ela terminar, os achados aparecem logo abaixo, dos mais graves para os menos graves."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:107
+msgid "Entendendo os achados"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:108
+msgid "HIGH: quase certamente malicioso; trate primeiro. MEDIUM: suspeito; confira. LOW: vale saber. INFO: para registro. ERROR: uma verificação não pôde rodar, então essa parte do site está desconhecida, não limpa."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:109
+msgid "Achados de datas de arquivo e de logs são pistas, não provas. O SHA-256 de um arquivo sinalizado pode ser consultado no VirusTotal; só o hash sai do seu navegador."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:110
+msgid "\"Marcar como falso positivo\" esconde, nas próximas varreduras, um achado que você conferiu, com uma nota opcional do motivo. Para arquivos, a marcação só vale enquanto o arquivo continuar exatamente como você o revisou. \"Baixar amostra\" salva uma cópia protegida por senha (senha: infected) para um analista de malware."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:112
+#: includes/plugin/class-facheiro-admin.php:1181
+#: includes/plugin/class-facheiro-admin.php:1265
+#: includes/plugin/class-facheiro-admin.php:1480
+msgid "Configurações"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:113
+msgid "Executar varreduras: em segundo plano (pelo WP-Cron, para você poder sair da página) ou só com a página aberta (se as varreduras em segundo plano nunca terminam na sua hospedagem)."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:114
+msgid "Varreduras automáticas: rodam a mesma varredura diária, duas vezes por dia ou semanalmente. Sempre rodam em segundo plano e são puladas enquanto outra varredura está em andamento."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:115
+msgid "Logs de acesso: local opcional dos logs do servidor web (um arquivo ou uma pasta, como /var/log/apache2), verificado em toda varredura em busca de tráfego de ataque."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:117
+#: includes/plugin/class-facheiro-admin.php:1177
+msgid "Assinaturas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:118
+msgid "Uma assinatura descreve algo a procurar. As assinaturas embutidas vêm com o Facheiro; na aba Assinaturas você pode adicionar as suas para uma ameaça específica deste site, testá-las em um arquivo ou em uma amostra colada e importá-las ou exportá-las."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:119
+msgid "Assinaturas personalizadas só informam ocorrências. Nunca limpam nem apagam nada."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:121
+#: includes/plugin/class-facheiro-admin.php:1178
+msgid "Blindagem"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:122
+msgid "A aba Blindagem adiciona regras ao servidor web que recusam requisições perigosas: PHP nos uploads, cópias do wp-config, arquivos ocultos como .git, arquivos internos do WordPress. Escolha seu servidor, um modelo (Recomendado ou Rigoroso) ou proteções individuais e revise as regras exatas antes de aplicar."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:123
+msgid "No Apache e no LiteSpeed, o Facheiro grava as regras em arquivos .htaccess, verifica o site em seguida e desfaz a alteração se o site quebrar. No Nginx, baixe o arquivo de configuração e inclua-o na configuração do servidor. \"Verificar agora\" confirma o que o site no ar realmente aplica."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:125
+#: includes/plugin/class-facheiro-admin.php:1179
+msgid "Recuperação"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:126
+msgid "O modo de recuperação faz a varredura do site quando o próprio WordPress não carrega mais (tela branca ou erro fatal), a partir de uma página que não depende do WordPress. Ele é trancado por uma chave que você cria na aba Recuperação, pelo WP-CLI ou enviando um arquivo de chave."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:128
+#: includes/plugin/class-facheiro-admin.php:1180
+msgid "Assistentes de IA"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:129
+msgid "A aba Assistentes de IA explica como deixar um assistente, como o Claude, rodar varreduras e explicar os achados, pelo plugin MCP Adapter, ou como copiar um resumo para qualquer chat."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:131
+#: includes/plugin/class-facheiro-admin.php:1440
+msgid "Limpeza"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:132
+msgid "A limpeza e a restauração rodam pelo WP-CLI (wp facheiro scan, wp facheiro integrity --restore), onde você pode fazer um backup e conferir cada alteração antes com --dryrun."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:143
+msgid "Mais ajuda"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:144
+msgid "Documentação do Facheiro"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:202
+msgid "Iniciando a varredura…"
+msgstr ""
+
+#. translators: %s: name of the scanner currently running
+#: includes/plugin/class-facheiro-admin.php:204
+#, php-format
+msgid "Verificando: %s"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:205
+msgid "Varredura concluída. Recarregando…"
+msgstr ""
+
+#. translators: %s: error message
+#: includes/plugin/class-facheiro-admin.php:207
+#, php-format
+msgid "A varredura falhou: %s"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:208
+msgid "Varredura cancelada."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:209
+msgid "Perdemos o contato com o servidor; tentando de novo…"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:210
+msgid "Cancelar a varredura em andamento?"
+msgstr ""
+
+#. translators: %d: seconds since the background runner last saved progress
+#: includes/plugin/class-facheiro-admin.php:212
+#, php-format
+msgid "última atividade há %d s"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:213
+#: includes/plugin/class-facheiro-admin.php:1288
+msgid "Rodando em segundo plano: você pode sair desta página e voltar depois."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:214
+#: includes/plugin/class-facheiro-admin.php:1289
+msgid "Mantenha esta página aberta: a varredura roda em pequenas etapas a partir desta aba."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:215
+msgid "Marcar este achado como falso positivo? Se quiser, anote o motivo; a nota fica guardada com a decisão."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:216
+msgid "Marcado como falso positivo. As próximas varreduras o escondem até o arquivo mudar."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:217
+msgid "Desfazer"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:218
+msgid "Não é mais um falso positivo; ele volta a aparecer nos achados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:219
+msgid "Remover todos os falsos positivos salvos? Os achados que eles escondiam voltam a aparecer."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:220
+msgid "Voltar a confiar neste falso positivo? Faça isso só se você ou outro administrador fez a alteração."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:221
+msgid "Nenhuma assinatura corresponde."
+msgstr ""
+
+#. translators: %d: number of matching signatures
+#: includes/plugin/class-facheiro-admin.php:223
+#, php-format
+msgid "Assinaturas correspondentes: %d"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:224
+#: includes/plugin/class-facheiro-admin.php:567
+msgid "desativada"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:225
+msgid "Copiado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:226
+msgid "Excluir esta assinatura personalizada?"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:227
+msgid "A varredura em segundo plano parou de avançar, então ela continua a partir desta aba enquanto a página estiver aberta. Ferramentas > Saúde do site mostra se este site consegue acessar o próprio wp-cron.php; se não conseguir, ajuste \"Executar varreduras\" para \"Só com esta página aberta\"."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:332
+#: includes/plugin/class-facheiro-admin.php:340
+msgid "Falso positivo desconhecido."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:349
+msgid "Pedido desconhecido."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:364
+#: includes/plugin/class-facheiro-admin.php:481
+#: includes/plugin/class-facheiro-admin.php:1051
+msgid "Link expirado, volte e tente de novo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:368
+#: includes/plugin/class-facheiro-false-positives.php:199
+msgid "Esse achado não faz parte dos resultados atuais."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:372
+msgid "Amostra indisponível"
+msgstr ""
+
+#. translators: %s: signature id
+#: includes/plugin/class-facheiro-admin.php:447
+#, php-format
+msgid "Assinatura %s salva. Ela vale a partir da próxima varredura."
+msgstr ""
+
+#. translators: %s: signature id
+#: includes/plugin/class-facheiro-admin.php:452
+#, php-format
+msgid "Assinatura %s excluída."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:455
+msgid "Assinatura ativada."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:455
+msgid "Assinatura desativada."
+msgstr ""
+
+#. translators: %s: signature id
+#: includes/plugin/class-facheiro-admin.php:459
+#, php-format
+msgid "A assinatura %s voltou a ser confiável."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:463
+msgid "Remoção das assinaturas confirmada."
+msgstr ""
+
+#. translators: %d: number of signatures
+#: includes/plugin/class-facheiro-admin.php:468
+#, php-format
+msgid "%d assinatura importada."
+msgid_plural "%d assinaturas importadas."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/plugin/class-facheiro-admin.php:529
+msgid "Arquivos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:529
+msgid "Opções do banco de dados"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:529
+msgid "Posts do banco de dados"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:532
+msgid "Uma assinatura descreve algo a procurar. Adicione as suas para uma ameaça específica deste site; elas rodam em todas as varreduras a partir da próxima. Assinaturas personalizadas só informam ocorrências (como SIGNATURE_MATCH, para arquivos): nada é limpo ou apagado por causa delas."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:533
+msgid "Como escrever uma boa assinatura"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:533
+#: includes/plugin/class-facheiro-admin.php:1386
+msgid "(abre em uma nova aba)"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:537
+msgid "Suas assinaturas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:539
+#: includes/plugin/class-facheiro-admin.php:631
+msgid "Adicionar assinatura"
+msgstr ""
+
+#. translators: %s: comma-separated signature names
+#: includes/plugin/class-facheiro-admin.php:546
+#, php-format
+msgid "Removidas fora do Facheiro: %s. Importe-as de novo de uma exportação se ainda devem existir."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:549
+msgid "Confirmar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:552
+msgid "Ainda não há assinaturas personalizadas. As assinaturas embutidas estão listadas no fim desta página."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:556
+#: includes/plugin/class-facheiro-admin.php:685
+msgid "Assinatura"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:557
+#: includes/plugin/class-facheiro-admin.php:601
+#: includes/plugin/class-facheiro-admin.php:686
+msgid "Procura em"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:558
+#: includes/plugin/class-facheiro-admin.php:608
+#: includes/plugin/class-facheiro-admin.php:687
+#: includes/plugin/class-facheiro-admin.php:1345
+msgid "Gravidade"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:559
+#: includes/plugin/class-facheiro-admin.php:618
+#: includes/plugin/class-facheiro-admin.php:688
+msgid "Condições"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:560
+#: includes/plugin/class-facheiro-admin.php:1349
+#: includes/plugin/class-facheiro-admin.php:1636
+msgid "Ações"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:568
+msgid "Adicionada ou alterada fora do Facheiro. Mantenha-a só se um administrador fez essa alteração."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:574
+msgid "Editar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:575
+msgid "Desativar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:575
+msgid "Ativar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:577
+#: includes/plugin/class-facheiro-admin.php:1657
+msgid "Manter"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:579
+msgid "Excluir"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:590
+msgid "Adicionar uma assinatura"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:590
+msgid "Editar assinatura"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:598
+msgid "Nome"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:600
+msgid "Um nome curto com letras minúsculas, números, pontos, hífens e sublinhados. Os achados o mostram como custom.<nome>."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:607
+msgid "Arquivos: PHP, JavaScript e outros arquivos de código com menos de 2 MB. Opções e posts do banco de dados: valores da tabela de opções e conteúdo dos posts."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:614
+msgid "HIGH se uma ocorrência for certamente maliciosa, MEDIUM se precisar ser conferida, LOW se só valer a pena saber."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:615
+msgid "Descrição"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:616
+msgid "Backdoor do carregador ACME"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:617
+msgid "Aparece em cada ocorrência."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:620
+msgid "Uma por linha, cada uma começando com text: (texto exato) ou regex: (um padrão). Um arquivo corresponde quando todas as linhas correspondem."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:623
+msgid "text: corresponde exatamente aos caracteres que vêm depois, incluindo maiúsculas e minúsculas. regex: recebe uma expressão regular do PHP (PCRE) com delimitadores, como /eval\\s*\\(/i. Uma regex que corresponderia a um arquivo vazio é recusada, porque sinalizaria tudo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:624
+msgid "Para arquivos, até 10 linhas, e todas precisam corresponder. A primeira linha é testada primeiro em cada arquivo, então use um texto curto e característico: isso mantém as varreduras rápidas. Assinaturas de banco de dados usam uma única linha de regex."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:625
+msgid "Antes de salvar, teste a assinatura abaixo no arquivo malicioso (ela precisa corresponder) e em um arquivo limpo do mesmo tipo (ela não pode corresponder)."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:628
+msgid "Status"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:629
+msgid "Usar nas varreduras"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:631
+msgid "Salvar alterações"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:633
+#: includes/plugin/class-facheiro-admin.php:1279
+msgid "Cancelar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:640
+msgid "Experimentar assinaturas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:642
+msgid "Veja quais assinaturas embutidas e personalizadas correspondem a um arquivo deste site ou a uma amostra colada. Nada é salvo, e só os nomes das assinaturas correspondentes são mostrados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:644
+msgid "Arquivo deste site"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:646
+msgid "Caminho a partir da pasta do WordPress. O wp-config.php não pode ser usado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:649
+msgid "Ou cole uma amostra"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:652
+msgid "Testar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:658
+msgid "Importar e exportar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:660
+msgid "Exportar assinaturas personalizadas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:663
+msgid "A exportação é um arquivo JSON. Ele também funciona com a ferramenta de linha de comando independente: php bin/facheiro.php scanall=1 signatures=signatures.json"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:669
+#: includes/plugin/class-facheiro-admin.php:673
+msgid "Importar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:671
+msgid "Cole o conteúdo de um arquivo de assinaturas. Assinaturas com o mesmo nome são substituídas. Se alguma entrada for inválida, nada é importado."
+msgstr ""
+
+#. translators: %d: number of built-in signatures
+#: includes/plugin/class-facheiro-admin.php:680
+#, php-format
+msgid "Assinaturas embutidas (%d)"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:682
+msgid "Vêm com o Facheiro; não podem ser alteradas aqui. Os padrões de log de acesso e de crontab não estão listados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:724
+msgid "Conecte um assistente de IA, como Claude, ChatGPT, Antigravity ou Cursor, pelo Model Context Protocol (MCP). Ele poderá rodar varreduras, explicar os achados, ler arquivos sinalizados, rascunhar e testar assinaturas e registrar falsos positivos, agindo em seu nome."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:728
+msgid "Confira os requisitos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:731
+msgid "WordPress 6.9 ou mais recente: as ferramentas do Facheiro estão disponíveis para assistentes."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:731
+msgid "É preciso o WordPress 6.9 ou mais recente (ele traz a Abilities API). Atualize o WordPress ou use o resumo no fim desta página."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:734
+msgid "O plugin MCP Adapter está ativo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:736
+msgid "Instale e ative o plugin oficial MCP Adapter, do projeto WordPress:"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:745
+msgid "Adicione o Facheiro ao seu assistente"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:747
+msgid "Copie a configuração que corresponde ao seu caso para as configurações de MCP do seu assistente."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:750
+msgid "Claude Desktop: Settings > Developer > Edit Config, e adicione o item \"facheiro\" dentro de \"mcpServers\". Claude Code: rode claude mcp add-json facheiro seguido do objeto interno (a parte depois de \"facheiro\":). Antigravity, Cursor e outros: adicione-o ao arquivo de configuração de MCP deles."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:751
+msgid "Depois, reinicie o assistente. Ele deve listar as ferramentas do Facheiro e o prompt \"facheiro-triage\"."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:755
+msgid "O assistente roda onde o WP-CLI alcança este site"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:756
+msgid "Por exemplo, o Claude Code no servidor ou em um computador com uma cópia do site. Nada passa pela rede."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:761
+msgid "O assistente roda no seu computador e o site está no ar"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:763
+msgid "Precisa do Node.js no seu computador. Crie uma senha de aplicativo, cole-a no lugar do texto de exemplo e revogue-a quando terminar."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:764
+msgid "Criar uma senha de aplicativo"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:769
+msgid "O ChatGPT se conecta a servidores MCP pela internet em vez de rodar um comando, e só nos planos que permitem conectores personalizados. Se o seu não permite, use o resumo no fim desta página."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:774
+msgid "Pergunte"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:777
+msgid "\"Use o prompt de triagem do Facheiro.\" (aparece entre os prompts do servidor)"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:778
+msgid "\"Faça uma varredura no meu site com o Facheiro e me diga se ele foi invadido.\""
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:779
+msgid "\"Explique os achados HIGH e o que devo fazer com cada um.\""
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:780
+msgid "\"O Facheiro deixou passar um backdoor em wp-content/plugins/acme/loader.php: escreva uma assinatura para ele, teste nesse arquivo e em um plugin limpo e depois salve.\""
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:782
+msgid "O assistente age com a sua conta, mas não pode limpar, restaurar nem alterar arquivos: a limpeza continua sendo um comando que você mesmo roda. Tudo o que uma varredura lê do site pode ter sido escrito pelo invasor, e o Facheiro marca isso como não confiável para o assistente. Mesmo assim, confira o raciocínio dele antes de deixá-lo marcar um achado como falso positivo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:787
+msgid "Sem MCP? Copie um resumo para qualquer chat"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:789
+msgid "Instruções para o chatbot e até 100 dos achados mais graves da última varredura. Inclui caminhos de arquivos e trechos de código deste site, então compartilhe só com um serviço em que você confia para isso."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:791
+msgid "Copiar resumo"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:850
+msgid "Configurações salvas."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:854
+msgid "O caminho dos logs de acesso não existe ou o PHP não consegue lê-lo. As varreduras pulam os logs até que ele possa ser lido."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:859
+msgid "DISABLE_WP_CRON está definido neste site, então o WordPress não inicia o WP-Cron sozinho. As varreduras em segundo plano e as automáticas só avançam quando a tarefa cron do servidor chama o wp-cron.php."
+msgstr ""
+
+#. translators: %s: the Site Health loopback error
+#: includes/plugin/class-facheiro-admin.php:865
+#, php-format
+msgid "Este site não conseguiu acessar o próprio wp-cron.php (%s). As varreduras em segundo plano só vão avançar enquanto a página do Facheiro estiver aberta, e as varreduras automáticas podem nunca começar. Corrija o problema de loopback indicado em Ferramentas > Saúde do site, ou ajuste \"Executar varreduras\" para \"Só com esta página aberta\"."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:890
+msgid "As configurações salvas atuais voltaram a ser confiáveis."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:893
+msgid "As configurações de varredura atuais voltaram a ser confiáveis."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:947
+msgid "Os próprios arquivos do Facheiro foram alterados, então estes resultados podem não ser confiáveis."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:948
+msgid "Reinstale o Facheiro a partir do wordpress.org, ou rode a ferramenta de linha de comando independente a partir de um download novo, e faça a varredura de novo. Os achados da autoverificação do Facheiro listam os arquivos."
+msgstr ""
+
+#. translators: %s: folder path
+#: includes/plugin/class-facheiro-admin.php:956
+#, php-format
+msgid "A detecção de adulteração das configurações salvas está desligada: o PHP não consegue gravar o arquivo de selo em %s."
+msgstr ""
+
+#. translators: %s: date and time
+#: includes/plugin/class-facheiro-admin.php:966
+#, php-format
+msgid "O selo contra adulteração das configurações salvas sumiu em %s e foi recriado a partir das configurações atuais. Algo o apagou, ou o site foi migrado sem ele. Confira os falsos positivos salvos e as assinaturas personalizadas e depois confirme-os."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:969
+msgid "As configurações salvas estão corretas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:982
+msgid "Algumas configurações salvas foram alteradas fora do Facheiro, direto no banco de dados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:983
+msgid "É assim que um invasor se esconde de um scanner. Revise cada alteração: mantenha-a só se você ou outro administrador a fez de propósito."
+msgstr ""
+
+#. translators: %d: number of false positives
+#: includes/plugin/class-facheiro-admin.php:989
+#, php-format
+msgid "%d falso positivo salvo é ignorado até que você o revise."
+msgid_plural "%d falsos positivos salvos são ignorados até que você os revise."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/plugin/class-facheiro-admin.php:992
+msgid "Revisar falsos positivos"
+msgstr ""
+
+#. translators: %d: number of signatures
+#: includes/plugin/class-facheiro-admin.php:998
+#, php-format
+msgid "%d assinatura personalizada foi adicionada, alterada ou removida."
+msgid_plural "%d assinaturas personalizadas foram adicionadas, alteradas ou removidas."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/plugin/class-facheiro-admin.php:1001
+msgid "Revisar assinaturas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1004
+msgid "As configurações de varredura (como e quando as varreduras rodam, o caminho dos logs de acesso) foram alteradas."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1005
+msgid "Revisar configurações"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1006
+msgid "As configurações de varredura estão corretas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1027
+msgid "a requisição de loopback falhou"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1163
+msgid "Varredura de malware e resposta a incidentes para WordPress"
+msgstr ""
+
+#. translators: %s: plugin version number
+#: includes/plugin/class-facheiro-admin.php:1167
+#, php-format
+msgid "Versão %s"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1176
+msgid "Varredura"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1251
+msgid "Fazer a varredura deste site"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1253
+msgid "Procura malware e sinais de invasão. Uma varredura só informa o que encontra: nada no seu site é alterado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1255
+msgid "Arquivos do WordPress, dos plugins e dos temas comparados com as cópias oficiais"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1256
+msgid "Malware conhecido nos seus arquivos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1257
+msgid "Entradas suspeitas no banco de dados e contas de administrador"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1258
+msgid "Arquivos com datas falsificadas e o crontab do servidor"
+msgstr ""
+
+#. translators: %s: link to the Settings tab
+#: includes/plugin/class-facheiro-admin.php:1264
+#, php-format
+msgid "Logs de acesso: não verificados (informe o local deles na aba %s)"
+msgstr ""
+
+#. translators: %s: access log path
+#: includes/plugin/class-facheiro-admin.php:1269
+#, php-format
+msgid "Logs de acesso: não foi possível ler %s, então eles são pulados (veja Configurações)"
+msgstr ""
+
+#. translators: %s: access log path
+#: includes/plugin/class-facheiro-admin.php:1272
+#, php-format
+msgid "Logs de acesso em %s"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1278
+msgid "Iniciar varredura"
+msgstr ""
+
+#. translators: 1: status word, 2: start date/time, 3: end date/time or dash
+#: includes/plugin/class-facheiro-admin.php:1299
+#, php-format
+msgid "Última varredura automática: %1$s. Iniciada em %2$s, terminada em %3$s."
+msgstr ""
+
+#. translators: 1: status word, 2: start date/time, 3: end date/time or dash
+#: includes/plugin/class-facheiro-admin.php:1302
+#, php-format
+msgid "Última varredura: %1$s. Iniciada em %2$s, terminada em %3$s."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1321
+msgid "Achados"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1323
+msgid "Um achado por linha: gravidade, tipo, caminho, detalhes"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1323
+msgid "Exportar como texto"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1324
+msgid "Um objeto JSON por linha (NDJSON), com contexto e hashes"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1324
+msgid "Exportar como JSON"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1329
+msgid "HIGH: quase certamente malicioso; trate primeiro. MEDIUM: suspeito; confira. LOW: vale saber. INFO: para registro (por exemplo, a lista de administradores). ERROR: uma verificação não pôde rodar, então essa área está desconhecida, não limpa."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1330
+msgid "Achados de datas de arquivo e de logs são pistas, não provas: confirme antes de agir."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1331
+msgid "Se você conferiu um achado e ele é inofensivo, marque-o como falso positivo: as próximas varreduras o escondem, mas só enquanto o arquivo continuar exatamente como você o revisou. \"Baixar amostra\" salva uma cópia protegida por senha de um arquivo sinalizado para um analista de malware."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1335
+msgid "Todos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1339
+msgid "Falsos positivos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1346
+#: includes/plugin/class-facheiro-admin.php:1633
+msgid "Tipo"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1347
+#: includes/plugin/class-facheiro-admin.php:1634
+msgid "Onde"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1348
+#: includes/plugin/class-facheiro-admin.php:1635
+msgid "Detalhes"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1357
+msgid "Nenhum achado destes resultados está marcado como falso positivo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1359
+msgid "Varredura em andamento…"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1359
+msgid "Nada encontrado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1380
+msgid "Contexto"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1386
+msgid "Consultar no VirusTotal"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1389
+msgid "Marcado como falso positivo antes, mas o arquivo mudou desde que foi revisado, então volta a ser informado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1391
+msgid "Marcado como falso positivo antes, mas o valor armazenado mudou desde que foi revisado, então volta a ser informado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1398
+msgid "Não é falso positivo"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1400
+msgid "Marcar como falso positivo"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1403
+msgid "Baixar amostra"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1426
+msgid "\"Baixar amostra\" salva o arquivo em um zip protegido com a senha \"infected\", junto com uma nota de onde ele foi encontrado e por quê. Envie você mesmo a um analista de malware ou a um sandbox: o Facheiro nunca envia nada. O link do VirusTotal envia só o hash do arquivo, a partir do seu navegador."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1428
+msgid "\"Baixar amostra\" salva o arquivo em um zip, junto com uma nota de onde ele foi encontrado e por quê. O PHP deste servidor não consegue proteger zips com senha, então seu antivírus pode bloquear o download. O Facheiro nunca envia nada. O link do VirusTotal envia só o hash do arquivo, a partir do seu navegador."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1442
+msgid "Esta página nunca altera arquivos. A limpeza e a restauração rodam pela linha de comando, onde você pode fazer um backup antes e conferir cada alteração:"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1443
+msgid "# Conferir e depois remover malware conhecido dos arquivos infectados"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1447
+msgid "# Conferir e depois restaurar arquivos modificados do WordPress, dos plugins e dos temas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1450
+msgid "Sem WP-CLI? As mesmas verificações rodam com php bin/facheiro.php a partir da pasta do plugin; veja o readme."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1487
+#: includes/plugin/class-facheiro-admin.php:1490
+msgid "Executar varreduras"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1491
+msgid "Em segundo plano (recomendado)"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1492
+msgid "A varredura continua depois que você sai desta página."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1493
+msgid "Só com esta página aberta"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1494
+msgid "Use se as varreduras em segundo plano nunca terminam na sua hospedagem."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1498
+msgid "As varreduras em segundo plano rodam em pequenas etapas pelo WP-Cron, o executor de tarefas do WordPress. Para isso, o site precisa conseguir fazer uma requisição ao próprio wp-cron.php; Ferramentas > Saúde do site mostra isso como \"requisições de loopback\". Se a página perceber que uma varredura em segundo plano parou, ela continua a partir da aba do seu navegador."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1499
+msgid "\"Só com esta página aberta\" roda as mesmas etapas a partir da aba do seu navegador. Fechar a aba pausa a varredura; abrir a página de novo a retoma."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1505
+msgid "Varreduras automáticas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1513
+msgid "às"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1516
+msgid "de"
+msgstr ""
+
+#. translators: %s: the site's timezone, for example UTC+2 or Europe/Lisbon
+#: includes/plugin/class-facheiro-admin.php:1527
+#, php-format
+msgid "Varreduras programadas, sem que você precise iniciá-las. Os horários seguem o fuso horário do site (%s)."
+msgstr ""
+
+#. translators: %s: date and time of the next automatic scan
+#: includes/plugin/class-facheiro-admin.php:1531
+#, php-format
+msgid "Próxima varredura: %s."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1537
+msgid "Uma varredura automática é a mesma do botão Iniciar varredura. Ela sempre roda em segundo plano, verifica os logs de acesso informados abaixo e é pulada se outra varredura ainda estiver em andamento. Os resultados dela substituem os desta página."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1538
+msgid "O WP-Cron inicia tarefas quando alguém visita o site, então, em um site com pouco movimento, uma varredura pode começar um pouco atrasada. Para horários exatos, peça à hospedagem para chamar o wp-cron.php por uma tarefa cron de verdade."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1544
+#: includes/plugin/class-facheiro-plugin.php:55
+#: includes/plugin/class-facheiro-plugin.php:56
+msgid "Logs de acesso"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1548
+msgid "Opcional. Um arquivo ou pasta de logs do servidor web, verificado em toda varredura."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1550
+msgid "Este caminho não existe ou o PHP não consegue lê-lo, então as varreduras pulam os logs."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1555
+msgid "Os logs mostram requisições a web shells, ataques ao login e aos uploads e quais arquivos os invasores usaram. As varreduras só os leem; eles nunca são alterados nem enviados a lugar nenhum."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1556
+msgid "Locais comuns são /var/log/apache2, /var/log/nginx ou uma pasta logs ao lado do site; o painel ou o suporte da hospedagem sabe dizer. Uma pasta inclui os arquivos rotacionados .log.1 e .gz. O usuário do PHP precisa conseguir lê-los. Deixe o campo vazio para pular esta verificação."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1563
+msgid "DISABLE_WP_CRON está definido neste site, então o WordPress não inicia o WP-Cron sozinho. As varreduras em segundo plano e as automáticas só avançam quando a tarefa cron do servidor chama o wp-cron.php (a cada um ou dois minutos é o ideal)."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1565
+msgid "Salvar configurações"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1579
+msgid "Saiba mais"
+msgstr ""
+
+#. translators: 1: user display name, 2: date and time
+#: includes/plugin/class-facheiro-admin.php:1602
+#, php-format
+msgid "Marcado como falso positivo por um assistente de IA agindo como %1$s em %2$s."
+msgstr ""
+
+#. translators: 1: user display name, 2: date and time
+#: includes/plugin/class-facheiro-admin.php:1605
+#, php-format
+msgid "Marcado como falso positivo por %1$s em %2$s."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1625
+msgid "Falsos positivos salvos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1627
+msgid "Cada um esconde o mesmo achado (mesmo tipo, local e detalhes) nas próximas varreduras. Para um achado sobre um arquivo, ele só vale enquanto o arquivo for exatamente o que foi revisado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1629
+msgid "Nenhum salvo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1651
+msgid "Alterado fora do Facheiro, por isso é ignorado. Mantenha-o só se um administrador fez essa alteração."
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1659
+msgid "Remover"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1664
+msgid "Esquecer todos os falsos positivos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1674
+msgid "em andamento"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1676
+msgid "concluída"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1678
+msgid "falhou"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin.php:1680
+msgid "cancelada"
+msgstr ""
+
+#: includes/plugin/class-facheiro-false-positives.php:220
+msgid "Há falsos positivos salvos demais. Remova alguns antes de adicionar outros."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:33
+msgid "Bloquear PHP na pasta de uploads"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:34
+msgid "Os uploads guardam imagens e documentos. Um arquivo PHP ali é quase sempre um web shell que um invasor conseguiu enviar; isto impede que ele seja executado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:35
+msgid "Raramente quebra algo. Alguns plugins mal escritos guardam PHP nos uploads."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:39
+msgid "Bloquear o acesso direto aos arquivos internos do WordPress"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:40
+msgid "Os arquivos de wp-includes e wp-admin/includes são carregados pelo próprio WordPress e nunca precisam ser abertos pelo navegador. Invasores os pedem para sondar fraquezas."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:41
+msgid "Seguro para o próprio WordPress; os poucos arquivos que precisam continuar acessíveis são liberados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:45
+msgid "Proteger os arquivos wp-config"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:46
+msgid "O wp-config.php guarda a senha do banco de dados. Isto também cobre cópias como wp-config.php.bak ou wp-config.old, que de outra forma poderiam ser baixadas como texto puro."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:47
+msgid "Seguro: nada deveria pedir esses arquivos."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:51
+msgid "Bloquear backups, logs e configurações do servidor"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:52
+msgid "Impede o download de arquivos como dumps .sql, cópias .bak e .old, backups de editor (~), arquivos .log (incluindo o debug.log), arquivos .ini e scripts de shell, além do readme.html e do license.txt, que revelam a versão do WordPress."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:53
+msgid "Quebra links para arquivos com essas extensões, se o seu site oferece algum para download."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:57
+msgid "Bloquear arquivos e pastas ocultos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:58
+msgid "Nomes que começam com ponto (.git, .env, .htaccess, .user.ini) muitas vezes guardam senhas, chaves ou todo o histórico do código. A pasta .well-known, usada pelos certificados SSL, continua acessível."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:59
+msgid "Seguro para quase todos os sites."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:63
+msgid "Desativar a listagem de pastas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:64
+msgid "Sem um arquivo de índice, alguns servidores listam todos os arquivos de uma pasta (por exemplo, tudo em uploads), o que ajuda invasores a escolher o alvo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:65
+msgid "Em algumas hospedagens Apache esta configuração não é permitida no .htaccess e o site mostraria um erro; o Facheiro verifica o site e desfaz a alteração se isso acontecer."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:69
+msgid "Bloquear PHP direto nos temas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:70
+msgid "Os arquivos dos temas são carregados pelo WordPress; um pedido direto a um arquivo PHP dentro da pasta de um tema é sinal de ataque ou de arquivo plantado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:71
+msgid "Quebra temas antigos que apontam para os próprios arquivos PHP (por exemplo, um gerador de imagens ou de CSS)."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:75
+msgid "Adicionar cabeçalhos de segurança"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:76
+msgid "X-Content-Type-Options (sem adivinhar o tipo de conteúdo), X-Frame-Options SAMEORIGIN (outros sites não podem exibir o seu em frames, contra clickjacking) e Referrer-Policy (menos informação nos links para outros sites)."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:77
+msgid "Outros sites não poderão mais mostrar suas páginas em um frame."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:81
+msgid "Desativar o XML-RPC"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:82
+msgid "O xmlrpc.php é uma interface antiga de publicação remota e um alvo preferido para adivinhação de senhas e abuso de pingbacks."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:83
+msgid "Quebra o Jetpack, os aplicativos móveis do WordPress e outras ferramentas que publicam pelo XML-RPC."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:87
+msgid "Bloquear PHP direto nos plugins"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:88
+msgid "Como a regra dos temas, para a pasta de plugins. A página de recuperação do Facheiro continua acessível."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:89
+msgid "Quebra todo plugin que tem um ponto de entrada PHP próprio (alguns retornos de pagamento, ferramentas de imagem, telas de administração antigas). Teste o site com cuidado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:100
+msgid "Personalizado"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:129
+msgid "Apache ou LiteSpeed (.htaccess)"
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:130
+msgid "Nginx"
+msgstr ""
+
+#. translators: %s: file path
+#: includes/plugin/class-facheiro-hardening.php:464
+#, php-format
+msgid "O PHP não consegue gravar %s, então nada foi alterado. Corrija as permissões ou adicione as regras à mão."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:523
+msgid "O site deixou de responder normalmente depois da alteração (ou um arquivo não pôde ser gravado), então cada arquivo voltou a ser como era. Provavelmente seu servidor não permite uma destas regras no .htaccess; tente de novo sem \"Desativar a listagem de pastas\" ou \"Adicionar cabeçalhos de segurança\"."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:834
+msgid "Este site não conseguiu acessar a si mesmo por HTTP, então nada pôde ser verificado. Ferramentas > Saúde do site mostra isso como um problema de loopback."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:834
+msgid "O site não respondeu à requisição de teste."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:839
+msgid "Requisições de PHP nos uploads são recusadas."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:839
+msgid "Um arquivo PHP nos uploads seria executado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:841
+msgid "wp-includes e wp-admin/includes recusam requisições diretas de PHP."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:841
+msgid "Arquivos PHP em wp-includes ou wp-admin/includes podem ser pedidos diretamente."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:843
+msgid "Arquivos wp-config e suas cópias são recusados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:843
+msgid "Uma cópia como wp-config.php.bak poderia ser baixada."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:845
+msgid "Arquivos de backup, dumps e logs são recusados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:845
+msgid "Arquivos como dumps .sql, cópias .bak e logs poderiam ser baixados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:847
+msgid "Arquivos e pastas ocultos são recusados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:847
+msgid "Arquivos e pastas ocultos, como .git ou .env, poderiam ser baixados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:849
+msgid "O xmlrpc.php é recusado."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:849
+msgid "O xmlrpc.php responde a requisições."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:851
+msgid "Requisições diretas de PHP nos temas são recusadas."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:851
+msgid "Arquivos PHP dos temas podem ser pedidos diretamente."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:853
+msgid "Requisições diretas de PHP nos plugins são recusadas."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:853
+msgid "Arquivos PHP dos plugins podem ser pedidos diretamente."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:855
+msgid "A pasta de uploads não é listada."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:855
+msgid "A pasta de uploads lista seus arquivos."
+msgstr ""
+
+#. translators: %s: list of HTTP header names
+#: includes/plugin/class-facheiro-hardening.php:858
+msgid "Os três cabeçalhos de segurança são enviados."
+msgstr ""
+
+#. translators: %s: list of HTTP header names
+#: includes/plugin/class-facheiro-hardening.php:858
+#, php-format
+msgid "Faltando: %s."
+msgstr ""
+
+#: includes/plugin/class-facheiro-job.php:102
+msgid "Já há uma varredura em andamento."
+msgstr ""
+
+#: includes/plugin/class-facheiro-job.php:108
+msgid "Não foi possível criar a pasta de trabalho em wp-content/uploads."
+msgstr ""
+
+#. translators: 1: stage name, 2: number of attempts
+#: includes/plugin/class-facheiro-job.php:294
+#, php-format
+msgid "A etapa que rodava \"%1$s\" foi interrompida %2$d vezes sem terminar (limite de memória do PHP ou tempo esgotado no servidor). O log de erros do PHP tem os detalhes; o comando do WP-CLI para esta verificação roda sem os limites das requisições."
+msgstr ""
+
+#. translators: 1: PHP error message, 2: file name, 3: line number
+#: includes/plugin/class-facheiro-job.php:362
+#, php-format
+msgid "O PHP interrompeu a requisição: %1$s (%2$s:%3$d). O comando do WP-CLI para esta verificação roda sem os limites das requisições."
+msgstr ""
+
+#: includes/plugin/class-facheiro-plugin.php:49
+msgid "Autoverificação do Facheiro"
+msgstr ""
+
+#: includes/plugin/class-facheiro-plugin.php:50
+msgid "Verificações rápidas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-plugin.php:51
+msgid "Integridade"
+msgstr ""
+
+#: includes/plugin/class-facheiro-plugin.php:52
+msgid "Datas dos arquivos"
+msgstr ""
+
+#: includes/plugin/class-facheiro-plugin.php:53
+msgid "Crontab"
+msgstr ""
+
+#: includes/plugin/class-facheiro-plugin.php:54
+msgid "Banco de dados"
+msgstr ""
+
+#: includes/plugin/class-facheiro-plugin.php:57
+msgid "Assinaturas de malware (simulação)"
+msgstr ""
+
+#: includes/plugin/class-facheiro-recovery-key.php:46
+msgid "1 dia"
+msgstr ""
+
+#: includes/plugin/class-facheiro-recovery-key.php:47
+msgid "7 dias"
+msgstr ""
+
+#: includes/plugin/class-facheiro-recovery-key.php:48
+msgid "30 dias"
+msgstr ""
+
+#: includes/plugin/class-facheiro-recovery-key.php:49
+msgid "Até eu revogar"
+msgstr ""
+
+#. translators: %s: folder path
+#: includes/plugin/class-facheiro-recovery-key.php:103
+#, php-format
+msgid "O PHP não consegue gravar em %s, então o arquivo da chave não pôde ser salvo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-recovery-key.php:106
+msgid "Não foi possível salvar o arquivo da chave."
+msgstr ""
+
+#: includes/plugin/class-facheiro-sample.php:41
+msgid "Este achado não é sobre um arquivo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-sample.php:46
+msgid "O arquivo não existe mais ou o PHP não consegue lê-lo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-sample.php:51
+msgid "Só arquivos dentro da pasta do WordPress podem ser baixados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-sample.php:54
+msgid "O wp-config.php guarda a senha do banco de dados e as chaves secretas, então o Facheiro nunca o empacota. Revise-o direto no servidor."
+msgstr ""
+
+#: includes/plugin/class-facheiro-sample.php:58
+msgid "O arquivo tem mais de 10 MB; copie-o do servidor à mão."
+msgstr ""
+
+#: includes/plugin/class-facheiro-sample.php:71
+msgid "A extensão zip do PHP não está disponível, então a amostra não pode ser empacotada. O SHA-256 dela aparece na página de achados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-sample.php:79
+#: includes/plugin/class-facheiro-signatures.php:345
+msgid "Não foi possível ler o arquivo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-sample.php:109
+msgid "Não foi possível criar o arquivo zip."
+msgstr ""
+
+#: includes/plugin/class-facheiro-sample.php:120
+msgid "Não foi possível gravar o arquivo zip."
+msgstr ""
+
+#: includes/plugin/class-facheiro-settings.php:34
+msgid "Em segundo plano (WP-Cron)"
+msgstr ""
+
+#: includes/plugin/class-facheiro-settings.php:35
+msgid "Nesta aba do navegador"
+msgstr ""
+
+#: includes/plugin/class-facheiro-settings.php:42
+msgid "Desligadas"
+msgstr ""
+
+#: includes/plugin/class-facheiro-settings.php:43
+msgid "Diárias"
+msgstr ""
+
+#: includes/plugin/class-facheiro-settings.php:44
+msgid "Duas vezes por dia"
+msgstr ""
+
+#: includes/plugin/class-facheiro-settings.php:45
+msgid "Semanais"
+msgstr ""
+
+#: includes/plugin/class-facheiro-settings.php:108
+msgid "O caminho dos logs de acesso não existe ou o PHP não consegue lê-lo."
+msgstr ""
+
+#: includes/plugin/class-facheiro-signatures.php:105
+msgid "Os padrões precisam ser texto UTF-8 válido."
+msgstr ""
+
+#: includes/plugin/class-facheiro-signatures.php:131
+msgid "Outra assinatura personalizada já usa esse nome."
+msgstr ""
+
+#: includes/plugin/class-facheiro-signatures.php:143
+#: includes/plugin/class-facheiro-signatures.php:225
+msgid "Assinaturas personalizadas demais."
+msgstr ""
+
+#: includes/plugin/class-facheiro-signatures.php:188
+msgid "Não há assinatura personalizada com esse nome."
+msgstr ""
+
+#. translators: %s: the offending line
+#: includes/plugin/class-facheiro-signatures.php:260
+#, php-format
+msgid "Cada linha de condição precisa começar com \"text:\" ou \"regex:\" (recebido: %s)."
+msgstr ""
+
+#: includes/plugin/class-facheiro-signatures.php:334
+msgid "Informe um arquivo legível dentro da pasta do WordPress."
+msgstr ""
+
+#: includes/plugin/class-facheiro-signatures.php:339
+msgid "Arquivos wp-config guardam a senha do banco de dados e não podem ser testados."
+msgstr ""
+
+#: includes/plugin/class-facheiro-signatures.php:342
+msgid "O arquivo tem mais de 2 MB, tamanho que a varredura de arquivos também pula."
+msgstr ""
+
+#: includes/plugin/class-facheiro-signatures.php:356
+msgid "Assinatura de limpeza (remove o código injetado em uma limpeza)"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:299
+msgid "Aplicar sem a verificação de segurança"
+msgstr ""
+
+#: includes/plugin/class-facheiro-admin-hardening.php:300
+msgid "Este site não consegue acessar a si mesmo por HTTP, então o Facheiro não pode verificá-lo depois de gravar as regras. Se o servidor recusar alguma delas, o site inteiro, inclusive esta página, mostrará um erro até que você apague as linhas entre \"# BEGIN Facheiro\" e \"# END Facheiro\" nos arquivos .htaccess, por FTP ou pelo gerenciador de arquivos da hospedagem."
+msgstr ""
+
+#: includes/plugin/class-facheiro-hardening.php:492
+msgid "Este site não consegue acessar a si mesmo por HTTP, então o Facheiro não poderia verificá-lo depois da alteração nem desfazer uma quebra. Nada foi alterado. Para gravar as regras mesmo assim, marque \"Aplicar sem a verificação de segurança\" e tenha acesso por FTP ou pelo gerenciador de arquivos à mão, ou adicione manualmente as regras mostradas na prévia."
+msgstr ""

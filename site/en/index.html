@@ -1,0 +1,1389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Facheiro</title>
+<meta name="description" content="Facheiro is a free malware scanner and incident-response plugin for WordPress. One report-only scan from the admin checks files, core, plugins, themes, the database and access logs, with hardening, a recovery mode and AI assistant tools.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#eceee6">
+<meta property="og:title" content="Facheiro">
+<meta property="og:description" content="Malware scanner and incident response for WordPress: find what got into the site, and how.">
+<link rel="canonical" href="https://facheiro.space.fast/en/">
+<link rel="alternate" hreflang="pt-BR" href="https://facheiro.space.fast/">
+<link rel="alternate" hreflang="en" href="https://facheiro.space.fast/en/">
+<link rel="alternate" hreflang="x-default" href="https://facheiro.space.fast/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%2314302d'/%3E%3Cg fill='none' stroke='%23b9d3cd' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 26V6.5' stroke-width='5'/%3E%3Cpath d='M8.5 12.5v5.5q0 3 3 3H16' stroke-width='4'/%3E%3Cpath d='M23.5 9v5.5q0 3-3 3H16' stroke-width='4'/%3E%3C/g%3E%3Cpath d='M4.5 28h23' stroke='%23e2551d' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* caatinga: "mata branca", the white forest of the dry season */
+  --branco: #eceee6;
+  --papel: #f7f8f3;
+  --tinta: #14302d;
+  --glauco: #4f8f88;
+  --glauco-claro: #b9d3cd;
+  --glauco-texto: #2b6a64;
+  --espinho: #c1911f;
+  --espinho-texto: #7d5b0c;
+  --brasa: #c2410c;
+  --cinza: #55605a;
+  --regua: #c3c9bd;
+  --carvao: #1b1917;
+  --carvao-regua: #3a3631;
+
+  --display: "Alfa Slab One", "Rockwell", "Roboto Slab", Georgia, serif;
+  --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --measure: 66ch;
+  --gutter: clamp(16px, 4vw, 56px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { background: var(--branco); }
+
+body {
+  margin: 0;
+  background: var(--branco);
+  color: var(--tinta);
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: var(--glauco-texto); text-underline-offset: .2em; text-decoration-thickness: 1px; }
+a:hover { color: var(--brasa); }
+
+:focus-visible {
+  outline: 3px solid var(--brasa);
+  outline-offset: 3px;
+}
+
+pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--carvao-regua) transparent;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: .92em;
+  color: var(--glauco-texto);
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ---------- language switch ---------- */
+
+.lang {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 20px;
+  font-size: .95rem;
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  gap: clamp(24px, 4vw, 64px);
+  align-items: end;
+  padding-top: clamp(24px, 5vh, 64px);
+  border-bottom: 3px solid var(--tinta);
+}
+
+.hero-text { padding-bottom: clamp(32px, 6vh, 72px); }
+
+h1 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(3.4rem, 9.4vw, 8.6rem);
+  line-height: .9;
+  letter-spacing: -.01em;
+  margin: 0 0 .3em;
+  color: var(--tinta);
+}
+
+.lede {
+  font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+  line-height: 1.5;
+  max-width: 36ch;
+  margin: 0 0 1.6em;
+}
+
+.cacto { position: relative; align-self: end; }
+
+.cacto canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1.18;
+}
+
+.cacto button {
+  position: absolute;
+  right: 0;
+  bottom: 12px;
+  font: inherit;
+  font-size: .9rem;
+  color: var(--glauco-texto);
+  background: var(--branco);
+  border: 0;
+  padding: .1em .4em;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+.cacto button:hover { color: var(--brasa); }
+
+/* ---------- command block ---------- */
+
+.cmd {
+  display: flex;
+  align-items: stretch;
+  background: var(--carvao);
+  max-width: 100%;
+}
+
+.cmd pre {
+  margin: 0;
+  padding: .85em 1em;
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--mono);
+  font-size: .92rem;
+  line-height: 1.6;
+  color: #ecebe4;
+}
+
+.cmd pre .p { color: #8f8a80; user-select: none; }
+
+.copy {
+  flex: none;
+  font: inherit;
+  font-size: .9rem;
+  color: var(--glauco-claro);
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--carvao-regua);
+  padding: 0 1em;
+  cursor: pointer;
+}
+.copy:hover { background: var(--carvao-regua); color: #fff; }
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6em 1.6em;
+  margin-top: 1.4em;
+}
+
+.links a { font-weight: 600; }
+
+/* ---------- sections ---------- */
+
+section { padding: clamp(56px, 9vw, 112px) 0 0; }
+
+h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1.08;
+  margin: 0 0 .35em;
+  max-width: 22ch;
+}
+
+.sub {
+  color: var(--cinza);
+  max-width: var(--measure);
+  margin: 0 0 2.2em;
+}
+
+h3 {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  margin: 0 0 .6em;
+}
+
+/* ---------- terminal ---------- */
+
+.term { background: var(--carvao); }
+
+.term-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+  padding: .5em 1em;
+  border-bottom: 1px solid var(--carvao-regua);
+  color: #8f8a80;
+  font-family: var(--mono);
+  font-size: .85rem;
+}
+
+.term-bar button {
+  font: inherit;
+  color: var(--glauco-claro);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+
+.term pre {
+  margin: 0;
+  padding: 1.1em 1.2em 1.3em;
+  min-height: 29em;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: .88rem;
+  line-height: 1.6;
+  color: #b3afa4;
+  white-space: pre;
+}
+
+.term .c { color: #ecebe4; }
+.term .ctx { color: #8f8a80; }
+.term .HIGH { color: #ff8552; font-weight: 600; }
+.term .MEDIUM { color: #e6b84a; font-weight: 600; }
+.term .LOW { color: #8fc9c0; font-weight: 600; }
+.term .INFO { color: #b3afa4; font-weight: 600; }
+.term .ERROR { color: #cfa6e0; font-weight: 600; }
+.term .cursor {
+  display: inline-block;
+  width: .6em;
+  height: 1.1em;
+  vertical-align: -.2em;
+  background: var(--glauco-claro);
+  animation: blink 1.1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ---------- checks and tools ---------- */
+
+.modes {
+  margin: 0;
+  border-top: 1px solid var(--regua);
+}
+
+.mode {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  gap: .4em 2.4em;
+  padding: 1.3em 0;
+  border-bottom: 1px solid var(--regua);
+}
+
+.mode dt {
+  font-family: var(--mono);
+  font-size: .82rem;
+  color: var(--cinza);
+  overflow-wrap: anywhere;
+}
+
+.mode dt .name {
+  display: block;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--tinta);
+  line-height: 1.25;
+  margin-bottom: .2em;
+}
+
+.mode dd {
+  margin: 0;
+  max-width: var(--measure);
+}
+
+/* ---------- guarantees ---------- */
+
+.garantias {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 30ch), 1fr));
+  gap: 2em 3em;
+}
+
+.garantias li {
+  position: relative;
+  padding-left: 1.5em;
+}
+
+/* a stem with its thorns already burnt off */
+.garantias li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .2em;
+  width: .5em;
+  height: 1.2em;
+  border-radius: .25em .25em 0 0;
+  background: var(--glauco);
+  box-shadow: inset 0 -3px 0 var(--brasa);
+}
+
+.garantias strong {
+  display: block;
+  font-size: 1.15rem;
+  line-height: 1.25;
+  margin-bottom: .3em;
+}
+
+.garantias p { margin: 0; color: var(--cinza); }
+
+/* ---------- output + exit codes ---------- */
+
+.formats {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2em 3em;
+  margin-bottom: 3.2em;
+}
+
+.formats p { margin: 0 0 1em; max-width: var(--measure); }
+
+.formats pre {
+  margin: 0;
+  padding: 1em 1.1em;
+  background: var(--carvao);
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: .88rem;
+  line-height: 1.6;
+  color: #ecebe4;
+}
+
+.track {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 2px solid var(--tinta);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--papel);
+}
+
+.track li {
+  padding: 1em 1.1em 1.2em;
+  border-left: 2px solid var(--tinta);
+}
+.track li:first-child { border-left: 0; }
+
+.track .n {
+  display: block;
+  font-family: var(--display);
+  font-size: 3.2rem;
+  line-height: 1;
+  margin-bottom: .2em;
+}
+
+.track li:nth-child(1) .n { color: var(--glauco); }
+.track li:nth-child(2) .n { color: var(--cinza); }
+.track li:nth-child(3) .n { color: var(--espinho); }
+.track li:nth-child(4) .n { color: var(--brasa); }
+
+.track p { margin: 0; color: var(--cinza); font-size: 1rem; }
+.track p b { color: var(--tinta); }
+
+/* ---------- install ---------- */
+
+.get {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2.4em 3em;
+}
+
+.get ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.get li { margin-bottom: .7em; max-width: var(--measure); }
+.get li::marker { color: var(--glauco); }
+
+.get .cmd + .cmd { margin-top: .8em; }
+.get h3:not(:first-child) { margin-top: 1.6em; }
+
+.warning {
+  margin-top: 1.6em;
+  padding: 1em 1.1em;
+  border-left: 4px solid var(--brasa);
+  background: var(--papel);
+  max-width: var(--measure);
+}
+.warning p { margin: 0; font-weight: 600; }
+.warning p + p { margin-top: .6em; color: var(--cinza); font-weight: 400; }
+
+.note {
+  margin: .9em 0 0;
+  color: var(--cinza);
+  font-size: .95rem;
+}
+
+.hint {
+  color: var(--cinza);
+  max-width: var(--measure);
+  margin: .8em 0 1em;
+}
+
+.cli-cols { margin: 2.6em 0 3.2em; }
+
+.steps {
+  margin: 0;
+  padding-left: 1.5em;
+}
+.steps li { margin-bottom: .7em; max-width: var(--measure); }
+.steps li::marker { color: var(--brasa); font-weight: 700; }
+
+/* ---------- footer ---------- */
+
+footer {
+  margin-top: clamp(72px, 11vw, 140px);
+  padding: 3.2em 0 4em;
+  background: var(--tinta);
+  color: #e3e8df;
+}
+
+footer a { color: var(--glauco-claro); }
+footer a:hover { color: #fff; }
+
+.epigraph {
+  font-family: var(--display);
+  font-size: clamp(1.5rem, 3.2vw, 2.4rem);
+  line-height: 1.2;
+  margin: 0 0 .5em;
+  max-width: 24ch;
+}
+
+.epigraph-note {
+  color: var(--glauco-claro);
+  margin: 0 0 2.4em;
+  max-width: var(--measure);
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1em 2em;
+  font-size: .95rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- a still of the plugin's admin page ---------- */
+
+.shot {
+  margin: 0;
+  border: 2px solid var(--tinta);
+  background: var(--papel);
+}
+
+.shot-bar {
+  padding: .5em 1em;
+  border-bottom: 2px solid var(--tinta);
+  color: var(--cinza);
+  font-family: var(--mono);
+  font-size: .85rem;
+}
+
+.shot figcaption {
+  padding: .8em 1em;
+  border-top: 2px solid var(--tinta);
+  color: var(--cinza);
+  font-size: .95rem;
+}
+
+.wp {
+  background: #f0f0f1;
+  color: #1d2327;
+  padding: clamp(12px, 2.4vw, 24px);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.wp code {
+  font-family: Menlo, Consolas, Monaco, monospace;
+  font-size: 12px;
+  color: #1d2327;
+  background: #f0f0f1;
+  padding: 1px 4px;
+  overflow-wrap: anywhere;
+}
+
+.wp-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  color: #eceee6;
+  background: var(--tinta);
+  border-radius: 6px;
+}
+.wp-brand svg { flex: none; width: 48px; height: 48px; }
+.wp-brand b { display: block; font-family: var(--display); font-weight: 400; font-size: 1.7rem; line-height: 1; }
+.wp-brand div span { display: block; margin-top: 6px; color: var(--glauco-claro); font-size: 13px; }
+
+.wp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 16px 0 0;
+  border-bottom: 1px solid #c3c4c7;
+}
+.wp-tabs span { padding: 8px 14px; color: #50575e; font-weight: 600; }
+.wp-tabs .on { color: #1d2327; box-shadow: inset 0 -3px 0 var(--brasa); }
+
+.wp-card {
+  margin-top: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #c3c4c7;
+}
+.wp-card h4 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+
+.wp-checks { list-style: none; margin: 0 0 14px; padding: 0; }
+.wp-checks li { padding-left: 1.4em; position: relative; margin-bottom: 2px; }
+.wp-checks li::before { content: "\2713"; position: absolute; left: 0; color: #00a32a; font-weight: 700; }
+
+.wp-btn, .wp-btn2 {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 4px 12px;
+  font-size: 13px;
+  line-height: 2;
+  white-space: nowrap;
+}
+.wp-btn { background: #2271b1; color: #fff; border: 1px solid #2271b1; }
+.wp-btn2 { background: #f6f7f7; color: #2271b1; border: 1px solid #2271b1; }
+
+.wp-desc { margin: 10px 0 0; color: #50575e; font-size: 13px; }
+
+.wp-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.wp-head h4 { margin: 0; }
+
+.wp-filters { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 10px 0; font-size: 13px; color: #2271b1; }
+.wp-filters .on { color: #1d2327; font-weight: 600; }
+
+.wp-table { overflow-x: auto; scrollbar-width: thin; }
+.wp table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
+.wp td:nth-child(3) { width: 26%; }
+.wp td:nth-child(3) code { overflow-wrap: normal; word-break: normal; }
+.wp th { text-align: left; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #c3c4c7; }
+.wp td { vertical-align: top; padding: 9px 10px; border-top: 1px solid #f0f0f1; }
+.wp tbody tr:nth-child(odd) td { background: #f6f7f7; }
+.wp .act { color: #2271b1; white-space: nowrap; }
+
+.sev { display: inline-block; padding: 0 6px; border-radius: 2px; font-size: 12px; font-weight: 600; }
+.s-high { background: #d63638; color: #fff; }
+.s-medium { background: #dba617; color: #1d2327; }
+.s-low { background: #dcdcde; color: #1d2327; }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .hero-text { padding-bottom: 0; }
+  .cacto { max-width: 420px; margin: 0 auto; width: 100%; }
+  .formats, .get { grid-template-columns: minmax(0, 1fr); }
+  .mode { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  body { font-size: 1rem; }
+  .track { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .track li:nth-child(3) { border-left: 0; }
+  .track li:nth-child(n+3) { border-top: 2px solid var(--tinta); }
+  .term pre { font-size: .78rem; min-height: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .term .cursor { animation: none; }
+  .cacto button { display: none; }
+}
+</style>
+</head>
+<body>
+
+<main>
+  <div class="wrap">
+    <nav class="lang" aria-label="Language">
+      <a href="../" hreflang="pt-BR" lang="pt-BR">Ler em português</a>
+    </nav>
+    <header class="hero">
+      <div class="hero-text">
+        <h1>Facheiro</h1>
+        <p class="lede">Malware scanner and incident response for WordPress. Install the plugin, start one scan from the admin, and see what got into the site and how it got in, without changing a thing.</p>
+
+        <div class="cmd">
+          <pre id="cmd-hero"><span class="p">$ </span>cd wp-content/plugins
+<span class="p">$ </span>git clone https://github.com/fcavallari/Facheiro.git facheiro
+<span class="p">$ </span>wp plugin activate facheiro</pre>
+          <button class="copy" type="button" data-copy="cmd-hero">Copy</button>
+        </div>
+        <p class="note">Free and GPL. Not on WordPress.org yet.</p>
+
+        <p class="links">
+          <a href="#install">How to install</a>
+          <a href="https://github.com/fcavallari/Facheiro">Read the source on GitHub</a>
+        </p>
+      </div>
+
+      <div class="cacto">
+        <canvas id="cacto" aria-hidden="true"></canvas>
+        <button type="button" id="reburn">Burn again</button>
+      </div>
+    </header>
+
+    <section aria-labelledby="h-admin">
+      <h2 id="h-admin">One scan, from the admin</h2>
+      <p class="sub">Open Facheiro in the admin menu and click Start scan. It runs in the background through WP-Cron, so you can close the tab, and it changes nothing on the site.</p>
+
+      <figure class="shot">
+        <div class="shot-bar"><span>wp-admin › Facheiro</span></div>
+        <div class="wp">
+          <div class="wp-brand">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#b9d3cd" stroke-linecap="round" stroke-linejoin="round"><path d="M16 26V6.5" stroke-width="5"/><path d="M8.5 12.5v5.5q0 3 3 3H16" stroke-width="4"/><path d="M23.5 9v5.5q0 3-3 3H16" stroke-width="4"/></g><path d="M4.5 28h23" stroke="#e2551d" stroke-width="2.4" stroke-linecap="round"/></svg>
+            <div><b>Facheiro</b><span>Malware scanner and incident response for WordPress</span></div>
+          </div>
+          <div class="wp-tabs"><span class="on">Scan</span><span>Signatures</span><span>Hardening</span><span>Recovery</span><span>AI assistants</span></div>
+
+          <div class="wp-card">
+            <h4>Scan this site</h4>
+            <ul class="wp-checks">
+              <li>WordPress, plugin and theme files compared with the official copies</li>
+              <li>Known malware in your files</li>
+              <li>Suspicious entries in the database and admin accounts</li>
+              <li>Files with faked dates, and the server crontab</li>
+              <li>Access logs in /var/log/apache2</li>
+            </ul>
+            <span class="wp-btn">Start scan</span>
+            <p class="wp-desc">Last scan: complete. Started 2 Nov 2026 14:02, finished 14:09.</p>
+          </div>
+
+          <div class="wp-card">
+            <div class="wp-head">
+              <h4>Findings</h4>
+              <span><span class="wp-btn2">Export as text</span> <span class="wp-btn2">Export as JSON</span></span>
+            </div>
+            <div class="wp-filters"><span class="on">All</span><span>HIGH</span><span>MEDIUM</span><span>LOW</span><span>INFO</span><span>False positives</span></div>
+            <div class="wp-table">
+              <table>
+                <thead><tr><th>Severity</th><th>Type</th><th>Where</th><th>Details</th><th>Actions</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="sev s-high">HIGH</span></td><td>UPLOADS_PHP</td><td><code>wp-content/uploads/2024/03/cache.php</code></td><td lang="en">executable PHP inside wp-content/uploads - usually a webshell dropped through an upload form</td><td class="act">Mark as false positive<br>Download sample<br>Look up on VirusTotal</td></tr>
+                  <tr><td><span class="sev s-high">HIGH</span></td><td>DB_OPTION_IOC</td><td><code>db:wp_options:widget_text</code></td><td lang="en">db.option.hidden-iframe: Hidden iframe inside an option value - a classic drive-by injection</td><td class="act">Mark as false positive</td></tr>
+                  <tr><td><span class="sev s-medium">MEDIUM</span></td><td>DB_NEW_ADMIN</td><td><code>db:wp_users:ID=7</code></td><td lang="en">administrator "wp-sync" &lt;wp-sync@example.com&gt; registered 2024-03-12 03:16:40 - created within the last 30 days, the classic takeover artifact; verify who created it</td><td class="act">Mark as false positive</td></tr>
+                  <tr><td><span class="sev s-low">LOW</span></td><td>INTEGRITY_MISSING</td><td><code>wp-admin/css/about.min.css</code></td><td lang="en">core 6.6.2: file from the official package is missing</td><td class="act">Mark as false positive</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <figcaption>The Facheiro page in wp-admin, with the site language set to English: start a scan, then read the findings worst first.</figcaption>
+      </figure>
+    </section>
+
+    <section aria-labelledby="h-checks">
+      <h2 id="h-checks">What one scan looks at</h2>
+      <p class="sub">Seven checks in one report. Anything that blocks a check, like an unreadable file or a missing PHP extension, is reported as an error instead of skipped.</p>
+
+      <dl class="modes">
+        <div class="mode">
+          <dt><span class="name">Quick checks</span>UPLOADS_PHP, PHP_PREPEND, MU_PLUGIN, HIDDEN_PHP</dt>
+          <dd>The cheap places attackers hide: executable PHP in <code>wp-content/uploads</code>, <code>auto_prepend_file</code> hooks in <code>.user.ini</code>, <code>php.ini</code> and <code>.htaccess</code>, mu-plugins that load with no activation step, and hidden dotfile PHP.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Integrity</span>INTEGRITY_MODIFIED, INTEGRITY_MISSING, INTEGRITY_EXTRA</dt>
+          <dd>Core, every plugin and every theme compared with the official wordpress.org package for the installed version. Extra PHP inside core or a plugin is the classic dropped webshell. Premium plugins and child themes that can't be checked are reported as such, so a clean report never quietly means unchecked.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Database</span>DB_NEW_ADMIN, DB_ROLE_CAPS, DB_OPTION_IOC, DB_POST_IOC</dt>
+          <dd>Read-only. Every administrator listed, with recent ones highlighted, non-admin roles granted takeover powers, PHP, hidden iframes or obfuscated JavaScript in options and posts, a hijacked <code>siteurl</code> or <code>home</code>, and tampered <code>active_plugins</code>.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Access logs</span>LOG_IOC, LOG_FILE_CORRELATION</dt>
+          <dd>Optional: give it a log file or folder in Settings, rotated and <code>.gz</code> files included. Webshell requests, exploit attempts on known-vulnerable plugins, <code>.env</code> probes, code injection and brute-force floods, plus the files modified within minutes of that traffic.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Malware signatures</span>MALWARE_FOUND, SIGNATURE_MATCH</dt>
+          <dd>Known injections such as the <code>ndsw</code>/<code>ndsx</code> and <code>wqpq</code> JavaScript campaigns, plus any signatures you write. From the admin this runs as a dry run. Cleanup happens from the command line.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Timestamps</span>TIMESTAMP_OUTLIER, TIMESTAMP_TIMESTOMP</dt>
+          <dd>Files changed after the rest of their package, and PHP whose modified time was pushed back with <code>touch</code>. These are leads, not proof.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Crontab</span>CRONTAB_IOC</dt>
+          <dd>The crontab of the user PHP runs as, checked for piped base64 decoders, pastebin downloads and droppers in tmp directories.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="h-tools">
+      <h2 id="h-tools">Beyond the scan</h2>
+      <p class="sub">The rest of the Facheiro page, tab by tab.</p>
+
+      <dl class="modes">
+        <div class="mode">
+          <dt><span class="name">Review findings</span>Scan tab</dt>
+          <dd>Mark a finding as a false positive with a note. On a file, the mark holds only while the file is byte for byte the one you reviewed. Download sample packs a flagged file into a zip encrypted with the password <code>infected</code>, and file findings link to a VirusTotal lookup by hash. Export the report as text or NDJSON.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Scheduled scans</span>Scan tab, Settings</dt>
+          <dd>Daily, twice daily or weekly, in the site's timezone. If WP-Cron is unreliable on your host, run scans only while the page is open.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Custom signatures</span>Signatures tab</dt>
+          <dd>Exact text or regular expressions for files, option values or post content. Test one against a pasted sample or a file of the site, then share it as JSON with other sites and the command line. Custom signatures only detect.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Hardening</span>Hardening tab</dt>
+          <dd>Server rules that refuse PHP in uploads, copies of <code>wp-config.php</code>, hidden files, backups and logs, WordPress internals and folder listings. Start from the Recommended or Strict template, or pick each protection. On Apache and LiteSpeed it writes <code>.htaccess</code> and rolls back if the site stops responding. On Nginx you download a file to include. Check now tests what the live server actually refuses.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">Recovery mode</span>Recovery tab</dt>
+          <dd>A key-protected page that works when WordPress doesn't, after a white screen or a critical error. It shows the PHP errors that broke the site and the plugin or theme they point at, and runs the full scan. Without a key it answers 404.</dd>
+        </div>
+        <div class="mode">
+          <dt><span class="name">AI assistants</span>AI assistants tab</dt>
+          <dd>On WordPress 6.9 or newer with the MCP Adapter plugin, Claude, ChatGPT, Antigravity or Cursor can run scans, explain findings, read flagged files and draft signatures with you. They can't clean or change files. No MCP? Copy a summary into any chat.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="h-wards">
+      <h2 id="h-wards">Wards it will not break</h2>
+      <p class="sub">It runs on sites that are already compromised, so it treats every filename, log line and API response as hostile.</p>
+
+      <ul class="garantias">
+        <li>
+          <strong>Scans change nothing</strong>
+          <p>Admin scans only report. The only files the admin ever writes are the <code>.htaccess</code> rules you apply and the recovery key you create.</p>
+        </li>
+        <li>
+          <strong>Nothing leaves the server</strong>
+          <p>No account and no telemetry. The only outbound requests go to wordpress.org, for checksums and official packages.</p>
+        </li>
+        <li>
+          <strong>TLS verification stays on</strong>
+          <p>An "all clean" answer must never come from an attacker sitting between the site and wordpress.org.</p>
+        </li>
+        <li>
+          <strong>The database is only read</strong>
+          <p>SELECT queries only, <code>wp-config.php</code> is read without being executed, and stored values are never unserialized, which could trigger PHP object injection.</p>
+        </li>
+        <li>
+          <strong>Blocked checks are loud</strong>
+          <p>A missing extension, an unreachable database or an unreadable log is an ERROR finding, never a silent skip. A clean report means every scanner actually looked.</p>
+        </li>
+        <li>
+          <strong>A false positive can't hide a changed file</strong>
+          <p>A mark on a file stores its SHA-256. If the file changes, the finding comes back.</p>
+        </li>
+        <li>
+          <strong>Assistants look, never touch</strong>
+          <p>No AI tool cleans, restores or writes files. Everything scanned is labelled as untrusted data, so a planted file can't give the assistant orders.</p>
+        </li>
+        <li>
+          <strong>Restores are verified first</strong>
+          <p>Each file from the official zip is checked byte for byte against the reference checksums before it's written. A tampered package is refused, and extra files are never deleted.</p>
+        </li>
+        <li>
+          <strong>Hardening undoes itself</strong>
+          <p>After writing rules, Facheiro loads the home page, the login and an admin request. If any of them breaks, every file goes back exactly as it was.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="h-cli">
+      <h2 id="h-cli">Cleanup happens in a shell</h2>
+      <p class="sub">Cleaning and restoring write files, so they run from WP-CLI, where you take a backup and preview first. Every scanner is a <code>wp facheiro</code> command too, with output you can pipe.</p>
+
+      <div class="term">
+        <div class="term-bar">
+          <span>admin@host: /var/www/html</span>
+          <button type="button" id="replay">Run again</button>
+        </div>
+        <pre id="term" aria-label="Example facheiro output"></pre>
+      </div>
+
+      <div class="get cli-cols">
+        <div>
+          <h3>Clean and restore</h3>
+          <div class="cmd">
+            <pre id="cmd-dry"><span class="p">$ </span>wp facheiro scan --dryrun</pre>
+            <button class="copy" type="button" data-copy="cmd-dry">Copy</button>
+          </div>
+          <div class="cmd">
+            <pre id="cmd-clean"><span class="p">$ </span>wp facheiro scan</pre>
+            <button class="copy" type="button" data-copy="cmd-clean">Copy</button>
+          </div>
+          <div class="cmd">
+            <pre id="cmd-restore-dry"><span class="p">$ </span>wp facheiro integrity --restore --dryrun</pre>
+            <button class="copy" type="button" data-copy="cmd-restore-dry">Copy</button>
+          </div>
+          <div class="cmd">
+            <pre id="cmd-restore"><span class="p">$ </span>wp facheiro integrity --restore --quarantine-dir=/path/outside/webroot</pre>
+            <button class="copy" type="button" data-copy="cmd-restore">Copy</button>
+          </div>
+          <p class="hint">Cleaned files are written to a temp file and renamed into place, so a failed write can't truncate the original. <code>--quarantine-dir</code> keeps each original as evidence.</p>
+        </div>
+        <div>
+          <h3>When WordPress won't load</h3>
+          <p class="hint">Open recovery mode, or run the same scanners from the plugin folder with the standalone CLI. It needs PHP 5.6 and no working WordPress.</p>
+          <div class="cmd">
+            <pre id="cmd-standalone"><span class="p">$ </span>php bin/facheiro.php scanall=1 scandirectory=/path/to/wp-root</pre>
+            <button class="copy" type="button" data-copy="cmd-standalone">Copy</button>
+          </div>
+          <div class="cmd">
+            <pre id="cmd-help"><span class="p">$ </span>php bin/facheiro.php help=1</pre>
+            <button class="copy" type="button" data-copy="cmd-help">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="formats">
+        <div>
+          <h3>Text</h3>
+          <p>One line per finding, the same shape from every scanner. Paths and log content come from the compromised host, so control characters and commas in paths are percent-encoded. A crafted filename can't forge a finding line.</p>
+          <pre>SEVERITY,TYPE,path,detail</pre>
+        </div>
+        <div>
+          <h3>JSON</h3>
+          <p><code>--format=json</code> prints one event per line on stdout and sends progress to stderr. The admin's JSON export uses the same events.</p>
+          <pre>{"event":"finding","severity":"HIGH",
+ "type":"LOG_IOC","path":"...","detail":"..."}</pre>
+        </div>
+      </div>
+
+      <h3>What the exit code tells you</h3>
+      <ol class="track">
+        <li><span class="n">0</span><p><b>Clean</b>, or informational findings only.</p></li>
+        <li><span class="n">1</span><p><b>Usage or fatal error.</b> Check the arguments.</p></li>
+        <li><span class="n">2</span><p><b>LOW, MEDIUM or ERROR</b> findings to review.</p></li>
+        <li><span class="n">3</span><p><b>HIGH findings.</b> A successful cleanup exits 3 too: malware was found.</p></li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="h-get" id="install">
+      <h2 id="h-get">Install it</h2>
+      <p class="sub">Facheiro isn't on WordPress.org yet, so install it from GitHub.</p>
+
+      <div class="get">
+        <div>
+          <h3>Get the plugin</h3>
+          <div class="cmd">
+            <pre id="cmd-install"><span class="p">$ </span>cd wp-content/plugins
+<span class="p">$ </span>git clone https://github.com/fcavallari/Facheiro.git facheiro
+<span class="p">$ </span>wp plugin activate facheiro</pre>
+            <button class="copy" type="button" data-copy="cmd-install">Copy</button>
+          </div>
+          <p class="hint">Or download the repository as a zip and unpack it as <code>wp-content/plugins/facheiro/</code>. The folder has to be named <code>facheiro</code>.</p>
+
+          <h3>After activating</h3>
+          <ol class="steps">
+            <li>Open Facheiro in the admin menu, or the Network Admin on multisite, and click Start scan.</li>
+            <li>Under Settings, add the location of the access logs and, if you want, automatic scans.</li>
+            <li>Apply the Recommended template on the Hardening tab.</li>
+            <li>Create a recovery key on the Recovery tab, so recovery mode is ready if the site ever breaks.</li>
+            <li>Take a backup, then clean up with the WP-CLI commands shown under the results.</li>
+          </ol>
+        </div>
+        <div>
+          <h3>Requirements</h3>
+          <ul>
+            <li>WordPress 6.0 or newer and PHP 7.2 or newer. The standalone CLI and recovery mode run on PHP 5.6.</li>
+            <li>Shell access only to clean or restore files. The admin pages need none.</li>
+            <li>WordPress 6.9 and the MCP Adapter plugin for AI assistants.</li>
+            <li>Apache or LiteSpeed with <code>AllowOverride</code> for the hardening rules Facheiro writes. On Nginx, someone with server access includes the generated file.</li>
+            <li>Some checks use PHP extensions that locked-down hosts lack: zlib for <code>.gz</code> logs, zip for themes and every restore, <code>shell_exec</code> for the crontab. A missing one is reported as an ERROR.</li>
+          </ul>
+          <div class="warning">
+            <p>Take a backup before cleaning. Preview with <code>--dryrun</code>.</p>
+            <p>It finds known malware. A clean scan is not proof of a clean site, and log hits include plenty of attempts that failed.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-samples">
+      <h2 id="h-samples">Send what it missed</h2>
+      <p class="sub">Facheiro only knows malware someone has already caught. If you clean a site and find something it didn't flag, open a GitHub issue with a sample so the next scan catches it.</p>
+
+      <div class="get">
+        <div>
+          <h3>Put this in the issue</h3>
+          <ul>
+            <li>The sample. Download sample on the finding gives you a zip encrypted with the password <code>infected</code>, with a manifest of where and why it was flagged. GitHub won't take a bare <code>.php</code> attachment.</li>
+            <li>Its SHA-256 hash, and the path where you found it.</li>
+            <li>How it was loaded: an include in <code>functions.php</code>, an mu-plugin, a cron entry, <code>auto_prepend_file</code>, or something else.</li>
+            <li>The WordPress, plugin and theme versions, if you have them.</li>
+            <li>For attack traffic, the matching access log lines.</li>
+            <li>If you wrote a signature that catches it, export it from the Signatures tab and attach the JSON.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Package it from a shell</h3>
+          <div class="cmd">
+            <pre id="cmd-hash"><span class="p">$ </span>shasum -a 256 suspicious.php</pre>
+            <button class="copy" type="button" data-copy="cmd-hash">Copy</button>
+          </div>
+          <div class="cmd">
+            <pre id="cmd-zip"><span class="p">$ </span>zip -j -P infected sample.zip suspicious.php</pre>
+            <button class="copy" type="button" data-copy="cmd-zip">Copy</button>
+          </div>
+          <div class="warning">
+            <p>Issues are public. Remove anything that identifies the site before you upload.</p>
+            <p>That means domain names, database credentials, salts, email addresses and visitor IPs in log lines. Never attach <code>wp-config.php</code> or a database dump.</p>
+          </div>
+          <p class="links">
+            <a href="https://github.com/fcavallari/Facheiro/issues/new">Open an issue on GitHub</a>
+            <a href="https://github.com/fcavallari/Facheiro/issues">Search existing issues</a>
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="epigraph">In the dry season, the sertanejo burns the facheiro to take its thorns off.</p>
+    <p class="epigraph-note">The facheiro is a cactus of the Brazilian caatinga. Without its thorns it is water and feed when nothing else is left. The plugin does the same for a hacked site: it takes away what hurts and leaves what is useful.</p>
+    <div class="foot">
+      <span>Facheiro is free, GPLv2 or later, and started as a variation of the Jetpack Cleanup Util.</span>
+      <a href="https://github.com/fcavallari/Facheiro">github.com/fcavallari/Facheiro</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  // UI strings the script writes; the page's lang picks the set
+  var L = document.documentElement.lang === "pt-BR"
+    ? { copy: "Copiar", copied: "Copiado", select: "Selecione o texto" }
+    : { copy: "Copy", copied: "Copied", select: "Select it" };
+
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  //////////////
+  // Copy buttons
+  //////////////
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (btn) {
+    btn.addEventListener("click", function () {
+      var pre = document.getElementById(btn.getAttribute("data-copy"));
+      var text = pre.textContent.replace(/^\$ /gm, "");
+      var done = function () {
+        btn.textContent = L.copied;
+        setTimeout(function () { btn.textContent = L.copy; }, 1600);
+      };
+      try {
+        navigator.clipboard.writeText(text).then(done, function () { btn.textContent = L.select; });
+      } catch (e) {
+        btn.textContent = L.select;
+      }
+    });
+  });
+
+  //////////////
+  // The facheiro: a fire climbs the cactus and burns the thorns off,
+  // the way it is prepared in the dry season. What is left is clean.
+  //////////////
+  var canvas = document.getElementById("cacto");
+  var ctx = canvas.getContext("2d");
+  var INK = "#14302d", STEM = "#4f8f88", RIB = "#2b6a64", THORN = "#c1911f";
+  var EMBER = "#e2551d", SUN = "#ecdca8", GROUND_Y = 0.93;
+  var BURN_MS = 3400;
+  var W = 0, H = 0, stems = [], thorns = [], embers = [];
+  var startTime = 0, running = false, visible = true;
+
+  // trunk and arms in units of the canvas: x, top, bottom, width, and the
+  // height where an arm leaves the trunk
+  var PLAN = [
+    { x: 0.50, top: 0.10, bottom: GROUND_Y, w: 0.105 },
+    { x: 0.24, top: 0.34, bottom: 0.66, w: 0.085, joinX: 0.50 },
+    { x: 0.77, top: 0.22, bottom: 0.52, w: 0.085, joinX: 0.50 },
+    { x: 0.90, top: 0.50, bottom: 0.76, w: 0.07, joinX: 0.50 }
+  ];
+
+  // deterministic scatter, so the thorns sit in the same place on every run
+  var seed = 7;
+  function rnd() {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  }
+
+  function build() {
+    var rect = canvas.getBoundingClientRect();
+    W = Math.max(200, Math.round(rect.width));
+    H = Math.max(200, Math.round(rect.height));
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    seed = 7;
+    stems = PLAN.map(function (p) {
+      return {
+        x: p.x * W, top: p.top * H, bottom: p.bottom * H, w: p.w * W,
+        joinX: p.joinX === undefined ? null : p.joinX * W
+      };
+    });
+
+    thorns = [];
+    var step = Math.max(11, H / 34);
+    stems.forEach(function (s) {
+      var lanes = [-0.5, -0.17, 0.17, 0.5];
+      lanes.forEach(function (lane, li) {
+        var edge = Math.abs(lane) === 0.5;
+        for (var y = s.top + s.w * 0.35 + (li % 2) * step * 0.5; y < s.bottom - 4; y += step) {
+          thorns.push({
+            x: s.x + lane * s.w,
+            y: y + (rnd() - 0.5) * 3,
+            dir: lane < 0 ? -1 : 1,
+            edge: edge,
+            len: (edge ? 0.085 : 0.05) * s.w * 2 * (0.8 + rnd() * 0.5),
+            spark: false
+          });
+        }
+      });
+    });
+    embers = [];
+  }
+
+  function stemPath(s) {
+    ctx.beginPath();
+    if (null !== s.joinX) {
+      // the arm leaves the trunk sideways and turns up
+      var r = Math.min(Math.abs(s.x - s.joinX), s.w * 0.9);
+      var dir = s.x < s.joinX ? 1 : -1;
+      ctx.moveTo(s.joinX, s.bottom);
+      ctx.lineTo(s.x + dir * r, s.bottom);
+      ctx.quadraticCurveTo(s.x, s.bottom, s.x, s.bottom - r);
+    } else {
+      ctx.moveTo(s.x, s.bottom);
+    }
+    ctx.lineTo(s.x, s.top + s.w / 2);
+  }
+
+  function drawStems() {
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    // arms first, so the trunk overlaps their joints
+    [1, 2, 3, 0].forEach(function (i) {
+      var s = stems[i];
+      stemPath(s);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = s.w + 6;
+      ctx.stroke();
+      stemPath(s);
+      ctx.strokeStyle = STEM;
+      ctx.lineWidth = s.w;
+      ctx.stroke();
+      // ribs
+      ctx.strokeStyle = RIB;
+      ctx.lineWidth = Math.max(1.5, s.w * 0.045);
+      [-0.17, 0.17].forEach(function (lane) {
+        ctx.beginPath();
+        ctx.moveTo(s.x + lane * s.w, s.top + s.w * 0.3);
+        ctx.lineTo(s.x + lane * s.w, s.bottom - (null === s.joinX ? 0 : s.w * 0.7));
+        ctx.stroke();
+      });
+    });
+  }
+
+  function drawScene(fireY, now) {
+    ctx.clearRect(0, 0, W, H);
+
+    // sun
+    ctx.fillStyle = SUN;
+    ctx.beginPath();
+    ctx.arc(W * 0.74, H * 0.2, W * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    drawStems();
+
+    // ground, drawn over the trunk's foot
+    ctx.fillStyle = "#eceee6";
+    ctx.fillRect(0, GROUND_Y * H, W, H - GROUND_Y * H);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(W * 0.04, GROUND_Y * H);
+    ctx.lineTo(W * 0.96, GROUND_Y * H);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    [[0.14, 0.05], [0.33, 0.03], [0.66, 0.06], [0.83, 0.03]].forEach(function (p) {
+      ctx.beginPath();
+      ctx.moveTo(W * p[0], GROUND_Y * H + 12);
+      ctx.lineTo(W * (p[0] + p[1]), GROUND_Y * H + 12);
+      ctx.stroke();
+    });
+
+    // thorns the fire has not reached
+    ctx.strokeStyle = THORN;
+    ctx.lineWidth = Math.max(1.3, W / 320);
+    for (var i = 0; i < thorns.length; i++) {
+      var t = thorns[i];
+      if (t.y >= fireY) {
+        if (!t.spark) {
+          t.spark = true;
+          if (now && (t.edge || i % 3 === 0)) {
+            embers.push({ x: t.x, y: t.y, vx: (rnd() - 0.5) * 0.03, vy: -(0.03 + rnd() * 0.05), born: now, life: 700 + rnd() * 900 });
+          }
+        }
+        continue;
+      }
+      ctx.beginPath();
+      if (t.edge) {
+        ctx.moveTo(t.x, t.y);
+        ctx.lineTo(t.x + t.dir * t.len, t.y - t.len * 0.5);
+        ctx.moveTo(t.x, t.y);
+        ctx.lineTo(t.x + t.dir * t.len, t.y + t.len * 0.35);
+      } else {
+        ctx.moveTo(t.x - t.len, t.y - t.len * 0.6);
+        ctx.lineTo(t.x + t.len, t.y + t.len * 0.6);
+        ctx.moveTo(t.x + t.len, t.y - t.len * 0.6);
+        ctx.lineTo(t.x - t.len, t.y + t.len * 0.6);
+      }
+      ctx.stroke();
+    }
+
+    // the fire line: small flames where it meets each stem
+    if (fireY > 0 && fireY < GROUND_Y * H) {
+      ctx.fillStyle = EMBER;
+      stems.forEach(function (s) {
+        if (fireY < s.top || fireY > s.bottom) return;
+        for (var k = -1; k <= 1; k++) {
+          var fx = s.x + k * s.w * 0.36;
+          var fh = s.w * (0.34 + 0.14 * Math.sin((now || 0) / 90 + k * 2 + s.x));
+          ctx.beginPath();
+          ctx.moveTo(fx - s.w * 0.17, fireY + 2);
+          ctx.quadraticCurveTo(fx - s.w * 0.05, fireY - fh * 0.4, fx, fireY - fh);
+          ctx.quadraticCurveTo(fx + s.w * 0.05, fireY - fh * 0.4, fx + s.w * 0.17, fireY + 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+      });
+    }
+
+    // embers
+    var live = [];
+    for (var j = 0; j < embers.length; j++) {
+      var e = embers[j], age = now - e.born;
+      if (age > e.life) continue;
+      live.push(e);
+      ctx.globalAlpha = 1 - age / e.life;
+      ctx.fillStyle = EMBER;
+      ctx.fillRect(e.x + e.vx * age, e.y + e.vy * age, 3, 3);
+    }
+    ctx.globalAlpha = 1;
+    embers = live;
+  }
+
+  function frame(now) {
+    if (!visible) { running = false; return; }
+    var p = Math.min(1, (now - startTime) / BURN_MS);
+    // from the ground to above the tallest stem
+    var fireY = GROUND_Y * H - p * (GROUND_Y * H - H * 0.04);
+    drawScene(p >= 1 ? -1 : fireY, now);
+    if (p < 1 || embers.length) {
+      requestAnimationFrame(frame);
+    } else {
+      running = false;
+    }
+  }
+
+  function burn() {
+    build();
+    if (reduceMotion) {
+      // still picture: the lower half already burnt clean
+      thorns.forEach(function (t) { t.spark = true; });
+      drawScene(H * 0.5, 0);
+      return;
+    }
+    startTime = performance.now() + 500;
+    drawScene(H * 2, 0);
+    if (!running) {
+      running = true;
+      requestAnimationFrame(frame);
+    }
+  }
+
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      build();
+      if (reduceMotion) {
+        drawScene(H * 0.5, 0);
+      } else if (!running) {
+        thorns.forEach(function (t) { t.spark = true; });
+        drawScene(-1, 0);
+      }
+    }, 150);
+  });
+
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      var was = visible;
+      visible = entries[0].isIntersecting;
+      if (visible && !was && !reduceMotion && !running && performance.now() - startTime < BURN_MS) {
+        running = true;
+        requestAnimationFrame(frame);
+      }
+    }).observe(canvas);
+  }
+
+  document.getElementById("reburn").addEventListener("click", burn);
+  burn();
+
+  //////////////
+  // The terminal: a scanall run, typed once when it scrolls into view
+  //////////////
+  var LINES = [
+    { cmd: "wp facheiro scanall --log=/var/log/apache2" },
+    { sev: "HIGH", rest: ",UPLOADS_PHP,/var/www/html/wp-content/uploads/2024/03/cache.php,executable PHP inside wp-content/uploads - usually a webshell dropped through an upload form" },
+    { sev: "HIGH", rest: ",INTEGRITY_EXTRA,/var/www/html/wp-includes/class-wp-locale-switch.php,core 6.6.2: file is not part of the official package" },
+    { sev: "HIGH", rest: ",INTEGRITY_MODIFIED,/var/www/html/wp-content/plugins/akismet/akismet.php,plugin akismet 5.3.3: checksum does not match the official package" },
+    { sev: "HIGH", rest: ",MALWARE_FOUND,/var/www/html/wp-includes/js/jquery/jquery-migrate.min.js,javascript_ndsw (dry run: file not modified)" },
+    { sev: "HIGH", rest: ",CRONTAB_IOC,crontab,crontab.tmp.006: * * * * * echo ... | base64 --decode > /tmp/x" },
+    { sev: "HIGH", rest: ",LOG_IOC,/var/log/apache2/access.log,access.uploads.php: 37 hit(s) - PHP file requested inside wp-content/uploads." },
+    { ctx: "    e.g. 203.0.113.66 - - [12/Mar/2024:03:14:07 +0000] \"POST /wp-content/uploads/2024/03/cache.php HTTP/1.1\" 200" },
+    { sev: "HIGH", rest: ",DB_OPTION_IOC,db:wp_options:widget_text,db.option.hidden-iframe: Hidden iframe inside an option value - a classic drive-by injection" },
+    { sev: "MEDIUM", rest: ",DB_NEW_ADMIN,db:wp_users:ID=7,administrator \"wp-sync\" <wp-sync@example.com> registered 2024-03-12 03:16:40 - created within the last 30 days, the classic takeover artifact; verify who created it" },
+    { sev: "MEDIUM", rest: ",LOG_IOC,/var/log/apache2/access.log.2.gz,access.xmlrpc.flood: 4182 hit(s) - High volume of xmlrpc.php POSTs, typically credential brute forcing via system.multicall or pingback abuse." },
+    { sev: "MEDIUM", rest: ",TIMESTAMP_OUTLIER,/var/www/html/wp-content/themes/astra/functions.php,theme astra: modified 2024-03-12 03:15 but 412 of 418 files cluster around 2024-01-08 10:02" },
+    { sev: "LOW", rest: ",INTEGRITY_MISSING,/var/www/html/wp-admin/css/about.min.css,core 6.6.2: file from the official package is missing" },
+    { sev: "INFO", rest: ",MU_PLUGIN,/var/www/html/wp-content/mu-plugins/loader.php,must-use plugin: loads on every request with no activation step - confirm it is intentional" },
+    { cmd: "echo $?" },
+    { out: "3" }
+  ];
+
+  var term = document.getElementById("term");
+  var termTimers = [];
+
+  function clearTerm() {
+    termTimers.forEach(clearTimeout);
+    termTimers = [];
+    while (term.firstChild) term.removeChild(term.firstChild);
+  }
+
+  function span(cls, text) {
+    var s = document.createElement("span");
+    if (cls) s.className = cls;
+    s.textContent = text;
+    return s;
+  }
+
+  function appendLine(line, typed) {
+    var row = document.createDocumentFragment();
+    if (line.cmd !== undefined) {
+      row.appendChild(span("ctx", "$ "));
+      row.appendChild(span("c", typed === undefined ? line.cmd : typed));
+    } else if (line.sev) {
+      row.appendChild(span(line.sev, line.sev));
+      row.appendChild(span("", line.rest));
+    } else if (line.ctx) {
+      row.appendChild(span("ctx", line.ctx));
+    } else {
+      row.appendChild(span("c", line.out));
+    }
+    term.appendChild(row);
+    term.appendChild(document.createTextNode("\n"));
+  }
+
+  function showAll() {
+    clearTerm();
+    LINES.forEach(function (l) { appendLine(l); });
+    term.appendChild(span("ctx", "$ "));
+  }
+
+  function play() {
+    clearTerm();
+    var at = 200;
+    var cursor = span("cursor", "");
+    LINES.forEach(function (line) {
+      if (line.cmd !== undefined) {
+        var target = null;
+        termTimers.push(setTimeout(function () {
+          term.appendChild(span("ctx", "$ "));
+          target = span("c", "");
+          term.appendChild(target);
+          term.appendChild(cursor);
+        }, at));
+        for (var i = 1; i <= line.cmd.length; i++) {
+          (function (n) {
+            termTimers.push(setTimeout(function () { target.textContent = line.cmd.slice(0, n); }, at + n * 24));
+          })(i);
+        }
+        at += line.cmd.length * 24 + 380;
+        termTimers.push(setTimeout(function () {
+          if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
+          term.appendChild(document.createTextNode("\n"));
+        }, at));
+        at += line.cmd === "echo $?" ? 120 : 900;
+      } else {
+        termTimers.push(setTimeout(function () { appendLine(line); }, at));
+        at += 150 + Math.random() * 120;
+      }
+    });
+    termTimers.push(setTimeout(function () {
+      term.appendChild(span("ctx", "$ "));
+      term.appendChild(cursor);
+    }, at + 200));
+  }
+
+  document.getElementById("replay").addEventListener("click", function () {
+    if (reduceMotion) { showAll(); } else { play(); }
+  });
+
+  if (reduceMotion || !("IntersectionObserver" in window)) {
+    showAll();
+  } else {
+    var played = false;
+    new IntersectionObserver(function (entries, obs) {
+      if (entries[0].isIntersecting && !played) {
+        played = true;
+        obs.disconnect();
+        play();
+      }
+    }, { threshold: 0.35 }).observe(term);
+  }
+})();
+</script>
+</body>
+</html>

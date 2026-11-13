@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Signature data. Every set is compile-checked by Signatures::lint() before
@@ -69,7 +69,7 @@ final class Signatures
     // signature editor, its export/import, the assistant tools and the CLI's
     // signatures=<file.json>:
     //
-    //   {"elderward_signatures": 1, "signatures": [
+    //   {"facheiro_signatures": 1, "signatures": [
     //     {"id": "acme-shell", "target": "file", "severity": "HIGH",
     //      "description": "...", "enabled": true,
     //      "match": [{"string": "acme_shell("}, {"regex": "/eval\\s*\\(/"}]},

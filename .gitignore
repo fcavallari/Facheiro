@@ -7,3 +7,8 @@ build/logo/out/
 reports/
 research_notes/
 dist/
+.spacefast/state.json
+/.spacefast-*
+.spacefast/.spacefast-*
+.spacefast/.space-link-*.tmp
+site/.spacefast/state.json

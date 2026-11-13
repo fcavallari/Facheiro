@@ -1,10 +1,10 @@
 <?php
 /**
- * Removes everything Elderward stored: the findings table, its options,
+ * Removes everything Facheiro stored: the findings table, its options,
  * the work directory under uploads, its hardening rules in .htaccess files,
  * the recovery key and recovery state, and the tamper seal.
  *
- * @package Elderward
+ * @package Facheiro
  */
 
 if (!defined('WP_UNINSTALL_PLUGIN')) {
@@ -15,48 +15,48 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 
 global $wpdb;
 
-$elderward_table = $wpdb->base_prefix . 'elderward_findings';
-$wpdb->query('DROP TABLE IF EXISTS `' . $elderward_table . '`'); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- table name from the base prefix, never user input.
+$facheiro_table = $wpdb->base_prefix . 'facheiro_findings';
+$wpdb->query('DROP TABLE IF EXISTS `' . $facheiro_table . '`'); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- table name from the base prefix, never user input.
 
-wp_clear_scheduled_hook('elderward_scheduled_scan');
-wp_clear_scheduled_hook('elderward_run_job');
+wp_clear_scheduled_hook('facheiro_scheduled_scan');
+wp_clear_scheduled_hook('facheiro_run_job');
 
 // Hardening rules, the recovery key and the tamper seal live in files, not
 // options. The plugin is inactive here, so its classes are loaded by hand.
-require_once __DIR__ . '/includes/plugin/class-elderward-plugin.php';
-require_once __DIR__ . '/includes/plugin/class-elderward-hardening.php';
-require_once __DIR__ . '/includes/plugin/class-elderward-recovery-key.php';
-require_once __DIR__ . '/includes/plugin/class-elderward-seal.php';
-Elderward_Hardening::uninstall();
-Elderward_Recovery_Key::uninstall();
-Elderward_Seal::uninstall();
-delete_option('elderward_hardening');
+require_once __DIR__ . '/includes/plugin/class-facheiro-plugin.php';
+require_once __DIR__ . '/includes/plugin/class-facheiro-hardening.php';
+require_once __DIR__ . '/includes/plugin/class-facheiro-recovery-key.php';
+require_once __DIR__ . '/includes/plugin/class-facheiro-seal.php';
+Facheiro_Hardening::uninstall();
+Facheiro_Recovery_Key::uninstall();
+Facheiro_Seal::uninstall();
+delete_option('facheiro_hardening');
 
-delete_option('elderward_db_version');
-delete_option('elderward_job');
-delete_option('elderward_job_lock');
-delete_option('elderward_settings');
-delete_option('elderward_false_positives');
-delete_option('elderward_signatures');
+delete_option('facheiro_db_version');
+delete_option('facheiro_job');
+delete_option('facheiro_job_lock');
+delete_option('facheiro_settings');
+delete_option('facheiro_false_positives');
+delete_option('facheiro_signatures');
 if (is_multisite()) {
-    delete_site_option('elderward_job');
+    delete_site_option('facheiro_job');
 }
 
-$elderward_uploads = wp_upload_dir(null, false);
-if (empty($elderward_uploads['error']) && !empty($elderward_uploads['basedir'])) {
-    $elderward_work = trailingslashit($elderward_uploads['basedir']) . 'elderward';
-    if (is_dir($elderward_work)) {
-        $elderward_files = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($elderward_work, RecursiveDirectoryIterator::SKIP_DOTS),
+$facheiro_uploads = wp_upload_dir(null, false);
+if (empty($facheiro_uploads['error']) && !empty($facheiro_uploads['basedir'])) {
+    $facheiro_work = trailingslashit($facheiro_uploads['basedir']) . 'facheiro';
+    if (is_dir($facheiro_work)) {
+        $facheiro_files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($facheiro_work, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::CHILD_FIRST
         );
-        foreach ($elderward_files as $elderward_entry) {
-            if ($elderward_entry->isDir()) {
-                @rmdir($elderward_entry->getPathname());
+        foreach ($facheiro_files as $facheiro_entry) {
+            if ($facheiro_entry->isDir()) {
+                @rmdir($facheiro_entry->getPathname());
             } else {
-                @unlink($elderward_entry->getPathname());
+                @unlink($facheiro_entry->getPathname());
             }
         }
-        @rmdir($elderward_work);
+        @rmdir($facheiro_work);
     }
 }

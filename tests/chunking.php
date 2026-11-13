@@ -3,8 +3,8 @@
 // deadline and serialised state, and compare the findings with one
 // uninterrupted run. Usage: php tests/chunking.php /path/to/wp-root [logdir]
 require_once dirname(__DIR__) . '/includes/engine/load.php';
-use Elderward\Engine\Context; use Elderward\Engine\BaseReporter; use Elderward\Engine\Runner;
-use Elderward\Engine\Scanner; use Elderward\Engine\CurlHttp; use Elderward\Engine\MysqliDb;
+use Facheiro\Engine\Context; use Facheiro\Engine\BaseReporter; use Facheiro\Engine\Runner;
+use Facheiro\Engine\Scanner; use Facheiro\Engine\CurlHttp; use Facheiro\Engine\MysqliDb;
 
 class CollectReporter extends BaseReporter {
     public $lines = array(); public $units = 0;

@@ -19,7 +19,7 @@ the code.
 | Files | Rules | `CLAUDE.md` section |
 |---|---|---|
 | `includes/engine/`, `bin/` | PHP 5.6 syntax, no WordPress functions, output only through the Reporter, Scanner/Layout/TreeWalk/adapter contracts | Engine contracts |
-| `includes/plugin/`, `elderward.php`, `uninstall.php` | WordPress.org rules: prefixes, capability and nonce, escaping, `$wpdb->prepare()`, translations, report-only admin | Plugin side rules |
+| `includes/plugin/`, `facheiro.php`, `uninstall.php` | WordPress.org rules: prefixes, capability and nonce, escaping, `$wpdb->prepare()`, translations, report-only admin | Plugin side rules |
 | `recovery.php`, `includes/recovery/` | no WordPress, own escaping and tokens, inert without a key | Invariants (recovery mode), Plugin side rules |
 | everything | the invariants | Invariants |
 | everything | code style | Style |
@@ -33,7 +33,7 @@ and line, and a reason taken from the code or from `CLAUDE.md`.
    functions do the same job (the sibling ajax handlers, the other scanners,
    the other queries). A change that does by hand what a helper already does
    (`Layout`, `TreeWalk`, `is_php_file()`, `resolve_log_path()`,
-   `read_site_file()`, `require_access()`, `Elderward_Seal::update()`) is the
+   `read_site_file()`, `require_access()`, `Facheiro_Seal::update()`) is the
    most common way a rule gets broken here.
 2. **Is the new behaviour tested, and does the test test it?** New engine
    behaviour needs a case in `tests/regress.sh` and an entry in
@@ -63,13 +63,13 @@ because the repository's own checks or its users break without them.
 | If the diff | It must also | How to tell |
 |---|---|---|
 | changes any tracked file, or adds a file git does not ignore | regenerate `checksums.json` in the same commit | `tests/checksums.sh` |
-| adds or changes an admin string | update `languages/elderward.pot`, the pt_BR `.po`, `.mo`, `.l10n.php` | the string appears in the `.pot` and `.po` |
-| adds a recovery-page string | add a line in `includes/recovery/i18n/pt_BR.php` with the same placeholders | grep the file |
+| adds or changes an admin string (written in Portuguese) | update `languages/facheiro.pot`, the en_US `.po` with its English translation, `.mo`, `.l10n.php` | the string appears in the `.pot` and `.po` |
+| adds a recovery-page string (written in Portuguese) | add its English line in `includes/recovery/i18n/en.php` with the same placeholders | grep the file |
 | adds a finding type, option or command | document it in `README.md` (and `readme.txt` when users see it), add it to `TESTPLAN.md` | grep the docs for the new name |
-| adds a finding type for files | consider `Elderward_False_Positives` (file types that bind to a SHA-256) | read that class |
+| adds a finding type for files | consider `Facheiro_False_Positives` (file types that bind to a SHA-256) | read that class |
 | adds a detection signature | add a positive fixture in `tests/fixtures/detection/` as `.txt`, plus negatives | list the folder |
 | adds a tracked development file or folder | keep `.distignore`, `.gitattributes` and `SelfCheckScanner::$dev_only` in step | `tests/checksums.sh`, read the three |
-| bumps the version | change `readme.txt` Stable tag, the `Version:` header and `ELDERWARD_VERSION` together | grep all three |
+| bumps the version | change `readme.txt` Stable tag, the `Version:` header and `FACHEIRO_VERSION` together | grep all three |
 | changes an engine contract or adds a class | update the matching paragraph of `CLAUDE.md` | read it |
 | adds an outbound request, a filesystem write or a shell call | disclose it in `readme.txt` and give the `phpcs:ignore` its reason | read `readme.txt` |
 
@@ -90,7 +90,7 @@ data, or request data, ends up:
   `wp-config*`; symlinks refused where a write follows.
 - **In a shell command, `include`, `unserialize()`, `eval`, a regex pattern,
   a URL or a file name**: the engine avoids all of these with outside data.
-- **In an action**: capability check (`Elderward_Plugin::can_manage()`) and a
+- **In an action**: capability check (`Facheiro_Plugin::can_manage()`) and a
   nonce on every ajax and admin-post handler; a nonce is not a permission
   check. Recovery actions need the session token.
 - **In a log, an export or an assistant's output**: no secrets, no

@@ -1,11 +1,11 @@
 /*
- * Drive Elderward through the WordPress MCP Adapter over STDIO, the way an
+ * Drive Facheiro through the WordPress MCP Adapter over STDIO, the way an
  * MCP client (Claude Desktop, Claude Code, Antigravity, Cursor) does.
  * Needs the MCP Adapter plugin active on the site.
  *
  *   node tests/mcp-stdio.js "wp --path=/path/to/wordpress" admin
  *
- * Runs: initialize, tools/list, discover the elderward abilities, get the
+ * Runs: initialize, tools/list, discover the facheiro abilities, get the
  * triage prompt, start a scan and wait for it (advance-scan if WP-Cron
  * does not move), list HIGH findings, read a flagged file, test and save a
  * signature (wp-config.php refused), mark and unmark a false positive
@@ -70,7 +70,7 @@ async function ability(srv, name, parameters) {
 }
 
 async function initialize(srv) {
-	const init = await srv.call('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'elderward-test', version: '1' } });
+	const init = await srv.call('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'facheiro-test', version: '1' } });
 	srv.notify('notifications/initialized');
 	return init;
 }
@@ -85,12 +85,12 @@ async function initialize(srv) {
 
 	const discovered = await srv.call('tools/call', { name: 'mcp-adapter-discover-abilities', arguments: {} });
 	const discoveredText = JSON.stringify(discovered.result);
-	const ours = (discoveredText.match(/elderward\/[a-z-]+/g) || []).filter((v, i, a) => a.indexOf(v) === i);
-	console.log('elderward abilities discovered:', ours.length, ours.join(' '));
+	const ours = (discoveredText.match(/facheiro\/[a-z-]+/g) || []).filter((v, i, a) => a.indexOf(v) === i);
+	console.log('facheiro abilities discovered:', ours.length, ours.join(' '));
 	if (ours.length < 14) { fail('not all abilities are exposed'); }
 
 	const prompts = await srv.call('prompts/list');
-	const triage = prompts.result.prompts.find((p) => /elderward/.test(p.name));
+	const triage = prompts.result.prompts.find((p) => /facheiro/.test(p.name));
 	console.log('prompt:', triage && triage.name);
 	if (!triage) { fail('triage prompt missing'); } else {
 		const got = await srv.call('prompts/get', { name: triage.name, arguments: { focus: 'spam redirects' } });
@@ -100,78 +100,78 @@ async function initialize(srv) {
 	}
 
 	console.log('== scan');
-	let status = await ability(srv, 'elderward/get-status');
-	if (status.scan && status.scan.status === 'running') { await ability(srv, 'elderward/cancel-scan'); }
-	status = await ability(srv, 'elderward/start-scan', {});
+	let status = await ability(srv, 'facheiro/get-status');
+	if (status.scan && status.scan.status === 'running') { await ability(srv, 'facheiro/cancel-scan'); }
+	status = await ability(srv, 'facheiro/start-scan', {});
 	console.log('started:', status.scan.status, 'origin', status.scan.origin, 'background', status.scan.background);
 	let advanced = 0;
 	for (let i = 0; i < 120 && status.scan.status === 'running'; i++) {
 		await new Promise((r) => setTimeout(r, 2000));
-		status = await ability(srv, 'elderward/get-status');
+		status = await ability(srv, 'facheiro/get-status');
 		if (status.scan.status === 'running' && status.scan.idle >= 120) {
-			status = await ability(srv, 'elderward/advance-scan');
+			status = await ability(srv, 'facheiro/advance-scan');
 			advanced++;
 		}
 	}
 	console.log('scan:', status.scan.status, JSON.stringify(status.scan.counts), 'advance-scan calls:', advanced);
 	if (status.scan.status !== 'done') { fail('scan did not finish'); }
 
-	const high = await ability(srv, 'elderward/list-findings', { severity: 'HIGH' });
+	const high = await ability(srv, 'facheiro/list-findings', { severity: 'HIGH' });
 	console.log('HIGH findings:', high.total, high.findings.map((f) => f.type + ' ' + f.path).join(' | '));
 	if (!high.untrusted_data_notice) { fail('no untrusted-data notice'); }
 	const fileFinding = high.findings.find((f) => f.can_read_file);
 	if (!fileFinding) { fail('no readable file finding'); } else {
-		const file = await ability(srv, 'elderward/read-flagged-file', { id: fileFinding.id });
+		const file = await ability(srv, 'facheiro/read-flagged-file', { id: fileFinding.id });
 		console.log('read', file.path, file.size, 'bytes, sha matches scan:', file.sha256 === file.sha256_at_scan);
 		if (file.sha256 !== fileFinding.sha256) { fail('hash mismatch'); }
 	}
-	const all = await ability(srv, 'elderward/list-findings', { limit: 200 });
+	const all = await ability(srv, 'facheiro/list-findings', { limit: 200 });
 	if (fileFinding) {
-		const one = await ability(srv, 'elderward/get-finding', { id: fileFinding.id });
+		const one = await ability(srv, 'facheiro/get-finding', { id: fileFinding.id });
 		if (!Array.isArray(one.context)) { fail('get-finding lost the context'); }
 	}
 	const dbFinding = all.findings.find((f) => /^DB_/.test(f.type));
 	if (dbFinding) {
-		try { await ability(srv, 'elderward/read-flagged-file', { id: dbFinding.id }); fail('read a database finding as a file'); } catch (e) { console.log('db finding read refused:', e.message.slice(0, 90)); }
+		try { await ability(srv, 'facheiro/read-flagged-file', { id: dbFinding.id }); fail('read a database finding as a file'); } catch (e) { console.log('db finding read refused:', e.message.slice(0, 90)); }
 	}
 
 	console.log('== signatures');
 	const candidate = { id: 'mcp-test', target: 'file', severity: 'LOW', description: 'MCP test signature', match: [{ string: 'acme_loader' }, { regex: '/base64_decode\\s*\\(\\s*\\$_POST/' }] };
-	const tested = await ability(srv, 'elderward/test-signature', { signature: candidate, path: 'wp-content/plugins/acme/loader.php' });
+	const tested = await ability(srv, 'facheiro/test-signature', { signature: candidate, path: 'wp-content/plugins/acme/loader.php' });
 	console.log('candidate:', JSON.stringify(tested.candidate), 'hits:', tested.hits.map((h) => h.id).join(','));
 	if (!tested.candidate.valid || !tested.candidate.matches) { fail('candidate should match the fixture'); }
-	const clean = await ability(srv, 'elderward/test-signature', { signature: candidate, path: 'wp-includes/version.php' });
+	const clean = await ability(srv, 'facheiro/test-signature', { signature: candidate, path: 'wp-includes/version.php' });
 	if (clean.candidate.matches) { fail('candidate matched a clean core file'); }
 	try {
-		await ability(srv, 'elderward/test-signature', { signature: candidate, path: 'wp-config.php' });
+		await ability(srv, 'facheiro/test-signature', { signature: candidate, path: 'wp-config.php' });
 		fail('test-signature read wp-config.php');
 	} catch (e) { console.log('wp-config test refused:', e.message.slice(0, 110)); }
-	const bad = await ability(srv, 'elderward/test-signature', { signature: Object.assign({}, candidate, { match: [{ regex: '/.*/' }] }) });
+	const bad = await ability(srv, 'facheiro/test-signature', { signature: Object.assign({}, candidate, { match: [{ regex: '/.*/' }] }) });
 	console.log('everything-matching regex:', bad.candidate.problem);
 	if (bad.candidate.valid) { fail('a regex matching everything was accepted'); }
-	await ability(srv, 'elderward/save-signature', { signature: candidate });
-	const sigs = await ability(srv, 'elderward/list-signatures');
+	await ability(srv, 'facheiro/save-signature', { signature: candidate });
+	const sigs = await ability(srv, 'facheiro/list-signatures');
 	if (!sigs.custom.some((s) => s.id === 'mcp-test')) { fail('saved signature not listed'); }
-	await ability(srv, 'elderward/delete-signature', { id: 'mcp-test' });
+	await ability(srv, 'facheiro/delete-signature', { id: 'mcp-test' });
 
 	console.log('== false positive');
 	const target = all.findings.find((f) => f.false_positive === 'no' && f.severity === 'MEDIUM');
-	const marked = await ability(srv, 'elderward/mark-false-positive', { id: target.id, note: 'MCP test: known benign' });
-	const afterMark = await ability(srv, 'elderward/list-findings', { limit: 200 });
+	const marked = await ability(srv, 'facheiro/mark-false-positive', { id: target.id, note: 'MCP test: known benign' });
+	const afterMark = await ability(srv, 'facheiro/list-findings', { limit: 200 });
 	if (afterMark.findings.some((f) => f.id === target.id)) { fail('marked finding still listed'); }
-	const fps = await ability(srv, 'elderward/list-false-positives');
+	const fps = await ability(srv, 'facheiro/list-false-positives');
 	console.log('false positives saved:', fps.false_positives.length, 'file bound:', marked.file_bound);
 	const saved = fps.false_positives.find((f) => f.fingerprint === marked.fingerprint);
 	console.log('marked via:', saved && saved.via);
 	if (!saved || saved.via !== 'assistant') { fail('assistant mark not recorded as such'); }
-	await ability(srv, 'elderward/unmark-false-positive', { fingerprint: marked.fingerprint });
+	await ability(srv, 'facheiro/unmark-false-positive', { fingerprint: marked.fingerprint });
 	srv.close();
 
 	console.log('== a subscriber gets nothing');
 	const sub = server(process.argv[4] || 'subscriber');
 	await initialize(sub);
 	try {
-		await ability(sub, 'elderward/list-findings', {});
+		await ability(sub, 'facheiro/list-findings', {});
 		fail('subscriber could list findings');
 	} catch (e) {
 		console.log('subscriber refused:', e.message.slice(0, 100));

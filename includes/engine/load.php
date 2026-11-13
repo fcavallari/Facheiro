@@ -1,21 +1,21 @@
 <?php
 ////////////////
-// Loads the Elderward scanning engine (namespace Elderward\Engine). The
+// Loads the Facheiro scanning engine (namespace Facheiro\Engine). The
 // engine has no WordPress dependency and only declares classes and
 // functions: nothing runs until an entry point builds a Context.
 //////////////
 
 // Loaded by the plugin (ABSPATH defined), the standalone CLI, or the
-// key-protected recovery page (ELDERWARD_RECOVERY); never
+// key-protected recovery page (FACHEIRO_RECOVERY); never
 // served directly over the web.
 if (!defined('ABSPATH')) {
-    if (!defined('ELDERWARD_RECOVERY') && PHP_SAPI !== 'cli') {
+    if (!defined('FACHEIRO_RECOVERY') && PHP_SAPI !== 'cli') {
         exit;
     }
 }
 
-if (!defined('ELDERWARD_ENGINE_LOADED')) {
-    define('ELDERWARD_ENGINE_LOADED', true);
+if (!defined('FACHEIRO_ENGINE_LOADED')) {
+    define('FACHEIRO_ENGINE_LOADED', true);
 
     require_once __DIR__ . '/context.php';
     require_once __DIR__ . '/reporter.php';

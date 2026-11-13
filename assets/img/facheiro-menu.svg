@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 8 84 84" width="20" height="20">
+<title>Facheiro</title>
+  <!-- The Facheiro mark redrawn for the 20px admin menu: same shapes, heavier lines, one colour (used as a mask). -->
+  <g fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 79V19" stroke-width="18.75"/>
+    <path d="M25 40V57Q25 66 34 66H50" stroke-width="14.38"/>
+    <path d="M75 29V45Q75 54 66 54H50" stroke-width="14.38"/>
+  </g>
+  <path d="M12 90H88" fill="none" stroke="#000" stroke-width="6.25" stroke-linecap="round"/>
+</svg>

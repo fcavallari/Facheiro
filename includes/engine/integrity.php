@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Integrity checking against wordpress.org reference packages.
@@ -48,7 +48,7 @@ class IntegrityScanner extends Scanner
         $own = $this->ctx->has('noselfcheck') ? array() : SelfCheckScanner::copies($this->ctx);
         foreach ($layout->plugin_dirs as $plugins) {
             foreach ((array) @glob($plugins . '/*', GLOB_ONLYDIR) as $plugin_dir) {
-                // Elderward's own copy is the self-check's job.
+                // Facheiro's own copy is the self-check's job.
                 $real = @realpath($plugin_dir);
                 if (false !== $real && in_array(rtrim(str_replace('\\', '/', $real), '/'), $own, true)) {
                     continue;
@@ -369,7 +369,7 @@ class IntegrityScanner extends Scanner
             return array(null, false, 'error');
         }
 
-        $zip_path = @tempnam($this->ctx->work_dir, 'elderward-zip');
+        $zip_path = @tempnam($this->ctx->work_dir, 'facheiro-zip');
         if (false === $zip_path) {
             return array(null, false, 'error');
         }
@@ -423,7 +423,7 @@ class IntegrityScanner extends Scanner
     {
         ///////////////
         // $manifest maps package-relative paths to expected hash(es) ($algo:
-        // md5 for the wordpress.org APIs, sha256 for Elderward's own list). Report
+        // md5 for the wordpress.org APIs, sha256 for Facheiro's own list). Report
         // mismatches (MODIFIED), files gone from disk (MISSING), and files on
         // disk that the official package does not contain (EXTRA). Extra or
         // modified PHP is the classic dropped/backdoored webshell: HIGH.

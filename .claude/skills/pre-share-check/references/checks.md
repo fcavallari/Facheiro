@@ -22,7 +22,7 @@ see it, and keep the exit code and the last lines of output for the report.
 | The diff touches | Run | Passing looks like |
 |---|---|---|
 | any `.php` file | `php -l <file>` for each changed file | `No syntax errors detected` |
-| `elderward.php`, `uninstall.php`, `recovery.php`, `bin/`, `includes/` | `composer phpcs` | exit 0, no output |
+| `facheiro.php`, `uninstall.php`, `recovery.php`, `bin/`, `includes/` | `composer phpcs` | exit 0, no output |
 | any tracked file, or a new file git does not ignore | `tests/checksums.sh` | `checksums: N passed, 0 failed` |
 | `includes/engine/`, `bin/`, `tests/regress.sh`, `tests/fixtures/` | `tests/regress.sh` | `passed=N failed=0` |
 
@@ -74,14 +74,14 @@ it on their test site. Never count them as passed.
 | The diff touches | Not checked | Command for the user |
 |---|---|---|
 | a scanner's `plan()`/`run()` units or state | resumability | `php tests/chunking.php /path/to/wp-root` (must print `IDENTICAL`) |
-| `Elderward_Seal`, settings, false positives, signature store | sealed settings | `WP_PATH=... WP_CLI="wp" tests/tamper.sh`, `tests/tamper-ui.js` |
-| `Elderward_Admin*`, `assets/admin.js`, `assets/admin.css` | admin pages | the matching Playwright file: `tests/admin-ui.js`, `background-ui.js`, `findings-ui.js`, `signatures-ui.js`, `hardening-ui.js` |
+| `Facheiro_Seal`, settings, false positives, signature store | sealed settings | `WP_PATH=... WP_CLI="wp" tests/tamper.sh`, `tests/tamper-ui.js` |
+| `Facheiro_Admin*`, `assets/admin.js`, `assets/admin.css` | admin pages | the matching Playwright file: `tests/admin-ui.js`, `background-ui.js`, `findings-ui.js`, `signatures-ui.js`, `hardening-ui.js` |
 | `recovery.php`, `includes/recovery/` | recovery page | `tests/recovery.js` |
-| `Elderward_Abilities` | assistant tools | `tests/mcp-stdio.js` |
-| database scan (`includes/engine/database.php`, `db.php`, `Elderward_WP_Db`) | DB cases | `tests/regress.sh` with the MariaDB fixture, `TESTPLAN.md` section E |
+| `Facheiro_Abilities` | assistant tools | `tests/mcp-stdio.js` |
+| database scan (`includes/engine/database.php`, `db.php`, `Facheiro_WP_Db`) | DB cases | `tests/regress.sh` with the MariaDB fixture, `TESTPLAN.md` section E |
 | integrity, restore, `Http` | live wordpress.org tests | `TESTPLAN.md` sections B and D |
 | any admin-facing string | translation files | the `wp i18n` commands in `README.md`, Translations |
-| anything headed for a release | Plugin Check | `php build/make-zip.php`, then Plugin Check on `dist/elderward.zip` (`TESTPLAN.md` F13) |
+| anything headed for a release | Plugin Check | `php build/make-zip.php`, then Plugin Check on `dist/facheiro.zip` (`TESTPLAN.md` F13) |
 
 `TESTPLAN.md` is the full list. Look there when the diff touches something
 this table does not name.

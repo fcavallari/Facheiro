@@ -2,7 +2,7 @@
 # Old-vs-new regression harness for the engine refactor.
 #
 # Runs the pre-refactor single-file script (taken from git) and the new
-# bin/elderward.php with identical arguments over synthetic fixtures, and
+# bin/facheiro.php with identical arguments over synthetic fixtures, and
 # diffs stdout (sorted: unit ordering inside a scanner is not a contract)
 # and exit codes. Any difference fails the run.
 #
@@ -17,8 +17,8 @@ set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 OLD_REF="${1:-1f5abde}"
 WORK="$(mktemp -d)"
-OLD="$WORK/old-elderward.php"
-NEW="$REPO/bin/elderward.php"
+OLD="$WORK/old-facheiro.php"
+NEW="$REPO/bin/facheiro.php"
 PASS=0
 FAIL=0
 SKIP=0
@@ -77,7 +77,7 @@ touch -t 202401010000 "$WP/wp-login.php"
 EMPTY="$WORK/empty"
 mkdir -p "$EMPTY"
 
-SP_DBROOT="${ELDERWARD_DBROOT:-/tmp/claude-0/-home-user-repo/17782ee5-9ca9-5ef3-84d1-5311e5ee9ae3/scratchpad/dbroot}"
+SP_DBROOT="${FACHEIRO_DBROOT:-/tmp/claude-0/-home-user-repo/17782ee5-9ca9-5ef3-84d1-5311e5ee9ae3/scratchpad/dbroot}"
 DB_UP=0
 if command -v mysqladmin >/dev/null 2>&1 && mysqladmin --socket=/run/mysqld/mysqld.sock ping >/dev/null 2>&1 && [ -f "$SP_DBROOT/wp-config.php" ]; then
     DB_UP=1
@@ -168,10 +168,10 @@ mkdir -p "$SIGSITE"
 printf '<?php // acme_loader\n$x = get_option("c"); eval($x);\n' > "$SIGSITE/hit.php"
 printf '<?php echo "hello";\n' > "$SIGSITE/clean.php"
 cat > "$WORK/sigs.json" <<'JSON'
-{"elderward_signatures":1,"signatures":[{"id":"acme-loader","target":"file","severity":"MEDIUM","description":"ACME loader","match":[{"string":"acme_loader"},{"regex":"/eval\\s*\\(\\s*\\$/"}]}]}
+{"facheiro_signatures":1,"signatures":[{"id":"acme-loader","target":"file","severity":"MEDIUM","description":"ACME loader","match":[{"string":"acme_loader"},{"regex":"/eval\\s*\\(\\s*\\$/"}]}]}
 JSON
 cat > "$WORK/sigs-bad.json" <<'JSON'
-{"elderward_signatures":1,"signatures":[{"id":"everything","target":"file","severity":"LOW","description":"matches all","match":[{"regex":"/.*/"}]}]}
+{"facheiro_signatures":1,"signatures":[{"id":"everything","target":"file","severity":"LOW","description":"matches all","match":[{"regex":"/.*/"}]}]}
 JSON
 sig_check() {
     local name="$1" want_rc="$2" want="$3" refuse="$4"; shift 4
@@ -230,7 +230,7 @@ REGEX="$WORK/regex-limit"; LONGCHR="$WORK/long-chr"
 mkdir -p "$REGEX" "$LONGCHR"
 { printf '<?php // backtrack_me\n$s = "'; head -c 30000 /dev/zero | tr '\0' 'a'; printf '";\n'; } > "$REGEX/heavy.php"
 cat > "$WORK/sigs-heavy.json" <<'JSON'
-{"elderward_signatures":1,"signatures":[{"id":"heavy","target":"file","severity":"LOW","description":"backtracks","match":[{"string":"backtrack_me"},{"regex":"/(?:a+)+$/"}]}]}
+{"facheiro_signatures":1,"signatures":[{"id":"heavy","target":"file","severity":"LOW","description":"backtracks","match":[{"string":"backtrack_me"},{"regex":"/(?:a+)+$/"}]}]}
 JSON
 php -r 'echo "<?php\n\$x = " . str_repeat("chr(101).", 60000) . "chr(59);\n";' > "$LONGCHR/one-line.php"
 sig_check "regex engine error is ERROR"     2 'ERROR,SIGNATURE_ERROR,.*heavy\.php,.*custom\.heavy' 'SIGNATURE_MATCH' dryrun=1 "signatures=$WORK/sigs-heavy.json" "scandirectory=$REGEX"
@@ -271,7 +271,7 @@ else
     FAIL=$((FAIL+1)); echo "FAIL  detection fixtures:$det_fail"; printf '%s\n' "$det_out" | grep MALWARE_FOUND | head -40
 fi
 det_missing=""
-for rule in $(php -r 'require $argv[1] . "/includes/engine/load.php"; echo implode(" ", array_keys(Elderward\Engine\Signatures::builtin_detection()));' "$REPO"); do
+for rule in $(php -r 'require $argv[1] . "/includes/engine/load.php"; echo implode(" ", array_keys(Facheiro\Engine\Signatures::builtin_detection()));' "$REPO"); do
     found=0
     for x in "$DET"/pos--"$rule".* "$DET"/pos--"$rule"--*; do [ -e "$x" ] && found=1; done
     [ "$found" = 1 ] || det_missing="$det_missing $rule"
@@ -407,14 +407,14 @@ check() {
 }
 LOOSE="$WORK/loose-home"
 mkdir -p "$LOOSE/public_html" "$LOOSE/bin" "$LOOSE/includes"
-cp "$REPO/bin/elderward.php" "$LOOSE/bin/"; cp -r "$REPO/includes/engine" "$LOOSE/includes/engine"
+cp "$REPO/bin/facheiro.php" "$LOOSE/bin/"; cp -r "$REPO/includes/engine" "$LOOSE/includes/engine"
 printf '%s\n' "$C_NDSW" > "$LOOSE/public_html/bad.js"
-out="$(cd "$WORK" && php "$LOOSE/bin/elderward.php" dryrun=1 "scandirectory=$LOOSE/public_html" 2>/dev/null)"; rc=$?
-check "tool beside the site is refused"     1 'inside the folder Elderward runs from' 'MALWARE_' "$rc" "$out"
-out="$(cd "$LOOSE" && php "$LOOSE/bin/elderward.php" dryrun=1 2>/dev/null)"; rc=$?
-check "tool folder as scan folder refused"  1 'inside the folder Elderward runs from' 'MALWARE_' "$rc" "$out"
-mkdir "$LOOSE/elderward"; mv "$LOOSE/bin" "$LOOSE/includes" "$LOOSE/elderward/"
-out="$(cd "$WORK" && php "$LOOSE/elderward/bin/elderward.php" dryrun=1 "scandirectory=$LOOSE/public_html" 2>/dev/null)"; rc=$?
+out="$(cd "$WORK" && php "$LOOSE/bin/facheiro.php" dryrun=1 "scandirectory=$LOOSE/public_html" 2>/dev/null)"; rc=$?
+check "tool beside the site is refused"     1 'inside the folder Facheiro runs from' 'MALWARE_' "$rc" "$out"
+out="$(cd "$LOOSE" && php "$LOOSE/bin/facheiro.php" dryrun=1 2>/dev/null)"; rc=$?
+check "tool folder as scan folder refused"  1 'inside the folder Facheiro runs from' 'MALWARE_' "$rc" "$out"
+mkdir "$LOOSE/facheiro"; mv "$LOOSE/bin" "$LOOSE/includes" "$LOOSE/facheiro/"
+out="$(cd "$WORK" && php "$LOOSE/facheiro/bin/facheiro.php" dryrun=1 "scandirectory=$LOOSE/public_html" 2>/dev/null)"; rc=$?
 check "tool in its own folder scans"        3 'MALWARE_FOUND,.*public_html/bad\.js' '' "$rc" "$out"
 
 ###############
@@ -535,7 +535,7 @@ $table_prefix = "wp_";
 printf '%s%s\n' "$MS_BASE" "define( 'MULTISITE', true );" > "$MSITE/on/wp-config.php"
 printf '%s%s\n' "$MS_BASE" "// define( 'MULTISITE', true );
 define( 'WP_ALLOW_MULTISITE', true );" > "$MSITE/off/wp-config.php"
-ms_flag() { php -r 'require $argv[1] . "/includes/engine/load.php"; $c = Elderward\Engine\MysqliDb::parse_wp_config($argv[2]); echo (is_array($c) && $c["multisite"]) ? "yes" : "no";' "$REPO" "$1"; }
+ms_flag() { php -r 'require $argv[1] . "/includes/engine/load.php"; $c = Facheiro\Engine\MysqliDb::parse_wp_config($argv[2]); echo (is_array($c) && $c["multisite"]) ? "yes" : "no";' "$REPO" "$1"; }
 if [ "$(ms_flag "$MSITE/on")" = yes ] && [ "$(ms_flag "$MSITE/off")" = no ]; then
     PASS=$((PASS+1)); echo "PASS  multisite is read from wp-config.php"
 else

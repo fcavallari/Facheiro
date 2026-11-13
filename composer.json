@@ -1,5 +1,5 @@
 {
-    "name": "fioa8c/elderward",
+    "name": "fcavallari/facheiro",
     "description": "Malware scanner and incident-response toolkit for WordPress (development dependencies only; the plugin itself has none).",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",

@@ -1,27 +1,27 @@
 /*
  * End-to-end check of the admin page with Playwright.
  *
- *   ELDERWARD_URL=http://127.0.0.1:8089 ELDERWARD_USER=admin ELDERWARD_PASS=adminpass \
- *   ELDERWARD_LOG=/path/to/logs node tests/admin-ui.js
+ *   FACHEIRO_URL=http://127.0.0.1:8089 FACHEIRO_USER=admin FACHEIRO_PASS=adminpass \
+ *   FACHEIRO_LOG=/path/to/logs node tests/admin-ui.js
  *
- * Logs in, starts a scan from the Elderward admin page, waits for it to finish,
+ * Logs in, starts a scan from the Facheiro admin page, waits for it to finish,
  * prints the severity counts from the findings table, downloads the JSON
  * export and checks it against the table, and verifies that the ajax
  * endpoints refuse requests without a nonce.
  */
 const { chromium } = require('playwright');
 
-const base = process.env.ELDERWARD_URL || 'http://127.0.0.1:8089';
-const user = process.env.ELDERWARD_USER || 'admin';
-const pass = process.env.ELDERWARD_PASS || 'adminpass';
-const logPath = process.env.ELDERWARD_LOG || '';
+const base = process.env.FACHEIRO_URL || 'http://127.0.0.1:8089';
+const user = process.env.FACHEIRO_USER || 'admin';
+const pass = process.env.FACHEIRO_PASS || 'adminpass';
+const logPath = process.env.FACHEIRO_LOG || '';
 
 (async () => {
 	const browser = await chromium.launch();
 	const page = await browser.newPage();
 	const errors = [];
 	page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
-	page.on('console', (m) => { if (m.type() === 'error' && /elderward/.test(m.text())) { errors.push('console: ' + m.text()); } });
+	page.on('console', (m) => { if (m.type() === 'error' && /facheiro/.test(m.text())) { errors.push('console: ' + m.text()); } });
 
 	await page.goto(base + '/wp-login.php');
 	await page.fill('#user_login', user);
@@ -31,33 +31,33 @@ const logPath = process.env.ELDERWARD_LOG || '';
 
 	// The access-log location is a setting used by every scan, on the
 	// Settings tab; saving comes back to that tab.
-	await page.goto(base + '/wp-admin/admin.php?page=elderward&tab=settings');
-	await page.fill('#elderward-settings-log', logPath || '');
-	await page.click('.elderward-settings #submit');
-	await page.waitForURL(/page=elderward&tab=settings/);
-	if (await page.locator('#elderward-start').count() !== 0) { console.error('FAIL: the Settings tab shows the scan controls'); process.exitCode = 1; }
-	await page.goto(base + '/wp-admin/admin.php?page=elderward');
-	if (await page.locator('.elderward-settings').count() !== 0) { console.error('FAIL: the Scan tab still shows the settings'); process.exitCode = 1; }
-	await page.waitForSelector('#elderward-start');
-	await page.click('#elderward-start');
-	await page.waitForSelector('#elderward-progress:not([hidden])');
+	await page.goto(base + '/wp-admin/admin.php?page=facheiro&tab=settings');
+	await page.fill('#facheiro-settings-log', logPath || '');
+	await page.click('.facheiro-settings #submit');
+	await page.waitForURL(/page=facheiro&tab=settings/);
+	if (await page.locator('#facheiro-start').count() !== 0) { console.error('FAIL: the Settings tab shows the scan controls'); process.exitCode = 1; }
+	await page.goto(base + '/wp-admin/admin.php?page=facheiro');
+	if (await page.locator('.facheiro-settings').count() !== 0) { console.error('FAIL: the Scan tab still shows the settings'); process.exitCode = 1; }
+	await page.waitForSelector('#facheiro-start');
+	await page.click('#facheiro-start');
+	await page.waitForSelector('#facheiro-progress:not([hidden])');
 
 	// The page reloads itself when the job completes.
 	await page.waitForFunction(() => {
-		const el = document.getElementById('elderward-status-text');
+		const el = document.getElementById('facheiro-status-text');
 		return el && /complete|failed|cancelled/i.test(el.textContent);
 	}, null, { timeout: 600000 });
 	await page.waitForLoadState('load');
 	await page.waitForTimeout(1500);
-	await page.goto(base + '/wp-admin/admin.php?page=elderward');
+	await page.goto(base + '/wp-admin/admin.php?page=facheiro');
 
-	const status = await page.textContent('.elderward-last');
+	const status = await page.textContent('.facheiro-last');
 	console.log('status line:', status.trim().replace(/\s+/g, ' '));
 
-	const counts = await page.$$eval('.elderward-filters li', (items) => items.map((li) => li.textContent.trim().replace(/\s+/g, ' ')));
+	const counts = await page.$$eval('.facheiro-filters li', (items) => items.map((li) => li.textContent.trim().replace(/\s+/g, ' ')));
 	console.log('filters:', counts.join(' '));
 
-	const rows = await page.$$eval('.elderward-table tbody tr', (trs) => trs.map((tr) => {
+	const rows = await page.$$eval('.facheiro-table tbody tr', (trs) => trs.map((tr) => {
 		const tds = tr.querySelectorAll('td');
 		return tds.length === 5 ? [tds[0].textContent.trim(), tds[1].textContent.trim(), tds[2].textContent.trim()] : null;
 	}).filter(Boolean));
@@ -82,7 +82,7 @@ const logPath = process.env.ELDERWARD_LOG || '';
 	// Security: no nonce, no service.
 	const noNonce = await page.evaluate(async (ajaxUrl) => {
 		const body = new FormData();
-		body.append('action', 'elderward_step');
+		body.append('action', 'facheiro_step');
 		const r = await fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body });
 		return r.status;
 	}, base + '/wp-admin/admin-ajax.php');
@@ -90,7 +90,7 @@ const logPath = process.env.ELDERWARD_LOG || '';
 
 	const anonContext = await browser.newContext();
 	const logged = await anonContext.newPage();
-	const anon = await logged.goto(base + '/wp-admin/admin-post.php?action=elderward_export&format=json');
+	const anon = await logged.goto(base + '/wp-admin/admin-post.php?action=facheiro_export&format=json');
 	const anonBody = await anon.text();
 	const anonOk = !/"event":"finding"/.test(anonBody);
 	console.log('anonymous export -> HTTP', anon.status(), 'leaked findings:', anonOk ? 'no' : 'YES');

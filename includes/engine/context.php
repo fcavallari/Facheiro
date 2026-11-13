@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Engine context: everything a scanner used to pull from $_GET and globals.

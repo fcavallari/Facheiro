@@ -1,0 +1,3 @@
+# the Portuguese page moved to the root when the site became Portuguese first
+/pt-br    /    301
+/pt-br/*  /    301
