@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Facheiro reference</title>
+<meta name="description" content="Facheiro reference: the output format, JSON events, exit codes and what each scanner checks.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#eceee6">
+<link rel="canonical" href="https://facheiro.space.fast/en/reference/">
+<link rel="alternate" hreflang="pt-BR" href="https://facheiro.space.fast/referencia/">
+<link rel="alternate" hreflang="en" href="https://facheiro.space.fast/en/reference/">
+<link rel="alternate" hreflang="x-default" href="https://facheiro.space.fast/referencia/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%2314302d'/%3E%3Cg fill='none' stroke='%23b9d3cd' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 26V6.5' stroke-width='5'/%3E%3Cpath d='M8.5 12.5v5.5q0 3 3 3H16' stroke-width='4'/%3E%3Cpath d='M23.5 9v5.5q0 3-3 3H16' stroke-width='4'/%3E%3C/g%3E%3Cpath d='M4.5 28h23' stroke='%23e2551d' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* caatinga: "mata branca", the white forest of the dry season */
+  --branco: #eceee6;
+  --papel: #f7f8f3;
+  --tinta: #14302d;
+  --glauco: #4f8f88;
+  --glauco-claro: #b9d3cd;
+  --glauco-texto: #2b6a64;
+  --espinho: #c1911f;
+  --espinho-texto: #7d5b0c;
+  --brasa: #c2410c;
+  --cinza: #55605a;
+  --regua: #c3c9bd;
+  --carvao: #1b1917;
+  --carvao-regua: #3a3631;
+
+  --display: "Alfa Slab One", "Rockwell", "Roboto Slab", Georgia, serif;
+  --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --measure: 66ch;
+  --gutter: clamp(16px, 4vw, 56px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--branco); }
+body { margin: 0; background: var(--branco); color: var(--tinta); font-family: var(--sans); font-size: 1.0625rem; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: var(--glauco-texto); text-underline-offset: .2em; text-decoration-thickness: 1px; }
+a:hover { color: var(--brasa); }
+:focus-visible { outline: 3px solid var(--brasa); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: .92em; color: var(--glauco-texto); overflow-wrap: anywhere; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--gutter); }
+
+/* ---------- top bar ---------- */
+
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 1em; padding-top: 20px; font-size: .95rem; }
+.top .home { font-family: var(--display); font-size: 1.35rem; color: var(--tinta); text-decoration: none; }
+.top .home:hover { color: var(--brasa); }
+
+/* ---------- header ---------- */
+
+header { padding: clamp(32px, 6vh, 72px) 0 clamp(28px, 4vh, 48px); border-bottom: 3px solid var(--tinta); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2.8rem, 7vw, 5.4rem); line-height: .95; margin: 0 0 .35em; }
+.lede { font-size: clamp(1.1rem, 1.5vw, 1.25rem); line-height: 1.5; max-width: 52ch; margin: 0; }
+
+/* ---------- layout ---------- */
+
+.doc { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: clamp(24px, 4vw, 64px); padding-top: clamp(32px, 5vw, 56px); }
+.toc { position: sticky; top: 24px; align-self: start; font-size: .95rem; }
+.toc p { margin: 0 0 .6em; font-weight: 700; }
+.toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--regua); }
+.toc li { margin: 0; }
+.toc a { display: block; padding: .3em 0 .3em 1em; text-decoration: none; }
+
+article { min-width: 0; max-width: 78ch; }
+section + section { margin-top: clamp(48px, 7vw, 88px); }
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(1.7rem, 3.4vw, 2.5rem); line-height: 1.1; margin: 0 0 .6em; scroll-margin-top: 24px; }
+article p, article li { max-width: var(--measure); }
+article ul { padding-left: 1.2em; }
+article li { margin-bottom: .7em; }
+article li::marker { color: var(--glauco); }
+article li ul { margin-top: .7em; }
+
+.code { background: var(--carvao); margin: 1.2em 0; }
+.code pre { margin: 0; padding: .85em 1em; overflow-x: auto; font-family: var(--mono); font-size: .88rem; line-height: 1.6; color: #ecebe4; scrollbar-width: thin; scrollbar-color: var(--carvao-regua) transparent; }
+
+.table { overflow-x: auto; margin: 1.2em 0; scrollbar-width: thin; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; background: var(--papel); }
+th, td { text-align: left; vertical-align: top; padding: .55em .8em; border-bottom: 1px solid var(--regua); }
+th { border-bottom: 2px solid var(--tinta); font-weight: 700; }
+
+/* ---------- footer ---------- */
+
+footer { margin-top: clamp(72px, 11vw, 140px); padding: 2.4em 0 3em; background: var(--tinta); color: #e3e8df; font-size: .95rem; }
+footer a { color: var(--glauco-claro); }
+footer a:hover { color: #fff; }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1em 2em; }
+
+@media (max-width: 900px) {
+  .doc { grid-template-columns: minmax(0, 1fr); }
+  .toc { position: static; }
+}
+@media (max-width: 640px) {
+  body { font-size: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<main>
+  <div class="wrap">
+    <nav class="top" aria-label="Language">
+      <a class="home" href="../">Facheiro</a>
+      <a href="../../referencia/" hreflang="pt-BR" lang="pt-BR">Leia em português</a>
+    </nav>
+    <header>
+      <h1>Reference</h1>
+      <p class="lede">The output format, JSON events, exit codes and what each scanner checks. The user guides are on the <a href="https://github.com/fcavallari/Facheiro/wiki">wiki</a>; installation is in the <a href="https://github.com/fcavallari/Facheiro/blob/main/README.en.md">README</a>.</p>
+    </header>
+    <div class="doc">
+      <nav class="toc" aria-labelledby="toc-title">
+        <p id="toc-title">On this page</p>
+        <ol>
+<li><a href="#output">Output</a></li>
+<li><a href="#json">JSON output and exit codes</a></li>
+<li><a href="#checks">What it checks</a></li>
+<li><a href="#php-extensions">PHP extensions</a></li>
+        </ol>
+      </nav>
+      <article>
+<section aria-labelledby="output">
+<h2 id="output">Output</h2>
+<p>Every scanner reports findings in one shared format, so results are easy to grep, sort, and paste into a ticket:</p>
+<div class="code"><pre>SEVERITY,TYPE,path,detail</pre></div>
+<p>The first three fields never contain commas; everything after the third comma is free-form detail. Because paths and log content come from a compromised host, <code>%</code>, control characters, and (in the path field) commas are percent-encoded, so a crafted filename can't shift fields or inject fake finding lines. Severities are <code>HIGH</code>, <code>MEDIUM</code>, <code>LOW</code>, <code>INFO</code>, and <code>ERROR</code>. Indented lines under a finding are supporting context (example log lines, top source IPs). For example:</p>
+<div class="code"><pre>HIGH,MALWARE_CLEANED,/path/to/file.js,javascript_ndsw
+HIGH,MALWARE_FOUND,/path/to/file.js,javascript_ndsw (dry run: file not modified)
+HIGH,MALWARE_FOUND,/path/to/link.js,javascript_ndsw (symbolic link to /shared/file.js: never modified, clean the file it points to)
+HIGH,CRONTAB_IOC,crontab,crontab.tmp.006: * * * * * echo ... | base64 --decode &gt; /tmp/x
+MEDIUM,LOG_IOC,/var/log/apache2/access.log,access.xmlrpc.flood: 4182 hit(s) - High volume of xmlrpc.php POSTs, ...</pre></div>
+<p>Log IoCs report as <code>MEDIUM</code> (attack attempts, including failed ones) except traffic to a shell already on disk, which is <code>HIGH</code>. Noisy-by-nature signatures (e.g. <code>wp-login.php</code> POSTs) only fire above a volume threshold, so normal traffic doesn't raise alarms.</p>
+</section>
+
+<section aria-labelledby="json">
+<h2 id="json">JSON output and exit codes</h2>
+<p><code>format=json</code> (CLI) or <code>--format=json</code> (WP-CLI) switches stdout to NDJSON — one event object per line, with raw (JSON-escaped) values:</p>
+<div class="code"><pre>{"event":"finding","severity":"HIGH","type":"LOG_IOC","path":"...","detail":"...","context":["e.g. ..."]}
+{"event":"summary","scan":"integrity","MODIFIED":1,"MISSING":0,...}</pre></div>
+<p>Bytes that are not valid UTF-8 (a file name, a log line, a database value cut in the middle of a character) cannot be JSON: they become U+FFFD in JSON output, in the admin page's table and in recovery mode, so the finding is still reported. Text output prints the raw bytes.</p>
+<p>Progress and informational text moves to stderr, so stdout is pure machine-readable events for pipelines. A usage/fatal error (bad arguments, unreadable target, DB unreachable in <code>scandb=1</code>) is emitted as <code>{"event":"error","detail":"..."}</code> before exiting 1, so the stream never carries loose text. The admin page's JSON export uses the same finding events.</p>
+<p>Anything that blocks a check is an <code>ERROR</code> finding (exit 2), never a silent skip: a content folder that can't be located reports <code>CONTENT_DIR_UNKNOWN</code>, inside <code>scanall</code> an unreachable database reports <code>DB_UNAVAILABLE</code>, a failed query reports <code>DB_QUERY_FAILED</code>, an unreadable file <code>INTEGRITY_UNREADABLE</code> (or, in the signature scan, <code>FILE_UNREADABLE</code>), a folder that can't be listed the same two types (it used to be skipped), a symbolic link to a folder that a run able to modify files did not follow <code>SYMLINK_NOT_FOLLOWED</code>, reference checksums that could not be fetched or read <code>INTEGRITY_NO_REFERENCE</code> as an <code>ERROR</code> (as <code>INFO</code> it means there is no official reference for that package, or none in <code>checksumdir=</code>), on a multisite network a list of sites that could not be read, or a site whose tables are missing, <code>DB_QUERY_FAILED</code> naming the table, a PHP file over the 2 MB signature-scan limit <code>FILE_TOO_LARGE</code> (larger non-PHP files report it as <code>INFO</code>), a signature whose regex the PCRE engine gave up on for one file (backtrack, recursion or JIT stack limit) <code>SIGNATURE_ERROR</code>, a log that can't be opened or decompressed <code>LOG_UNREADABLE</code>, and a crontab that can't be read (no <code>shell_exec</code>, no <code>crontab</code> binary) <code>CRONTAB_UNAVAILABLE</code>. A clean report means every scanner actually looked.</p>
+<p>The exit code reflects the worst finding, so cron jobs and CI can alert on it: <strong>0</strong> clean (or INFO-only), <strong>1</strong> usage/fatal error, <strong>2</strong> LOW/MEDIUM/ERROR findings, <strong>3</strong> HIGH findings. Note that a successful cleanup also exits 3 — malware was found.</p>
+</section>
+
+<section aria-labelledby="checks">
+<h2 id="checks">What it checks</h2>
+<ul>
+<li><strong>Files</strong> — signature-based detection and cleanup of known malware injections (e.g. the <code>ndsw</code>/<code>ndsx</code> and <code>wqpq</code> JavaScript campaigns), across common web extensions (<code>php</code>, <code>js</code>, <code>html</code>, ...). Cleaned files are written atomically (temp file + rename) so a failed write can never truncate the original. The plugin's own folder is never scanned. A built-in <strong>detection set</strong> of about 35 generic webshell and backdoor shapes reports <code>MALWARE_FOUND</code> and never cleans, not even in a real run: code or shell commands taken from the request (<code>eval($_POST[...])</code>, <code>system($_GET[...])</code>, request input used as a callback or include path), request-named file writes and uploaders that keep the client's file name (the looser forms, through a path or a variable, only in files with no WordPress capability, nonce or upload check), password-gated shells, known shell families (WSO/FilesMan, b374k, c99, r57, IndoXploit, Alfa), WP-VCD, NDSW with renamed variables, PHP behind an image header, includes of icons/images or of escape-coded paths, and obfuscation (<code>eval</code> of <code>base64_decode</code>/<code>gzinflate</code> output, <code>/e</code> regexes, reversed or rot13 function names, hex-escaped names, <code>chr()</code> chains, <code>$GLOBALS</code> array obfuscators, one-line dynamic calls). HIGH means a dangerous sink fed straight from the request, a password gate or a known family; MEDIUM is obfuscation that legitimate code almost never needs. A file nothing matched gets a second look with comments removed, <code>'ev'.'al'</code> fragments and <code>.=</code> appends joined, <code>${"_POST"}</code> read as <code>$_POST</code> and letter escapes decoded. The shapes are modelled on what php-malware-finder, AMWScan, signature-base, scr34m's scanner and Linux Malware Detect have in common, and are tested for false positives against WordPress core and about 2,200 popular plugins and 550 themes from wordpress.org: the remaining matches there are plugins that run PHP sent to them by design (Ad Inserter, VaultPress), a spam plugin's own scanner strings and one documentation comment.</li>
+<li><strong>Crontab</strong> — runs <code>crontab -l</code> for the user PHP executes as and checks it for known persistence patterns (piped base64 decoders, pastebin downloads, tmp-dir droppers). Other users' crontabs and <code>/etc/cron.*</code> are not covered; if the command can't run, <code>CRONTAB_UNAVAILABLE</code> says so.</li>
+<li><strong>Access logs</strong> — known attack traffic: webshell requests, PHP files served from <code>wp-content/uploads</code>, wp-file-manager / Slider Revolution / TimThumb exploit attempts, <code>.env</code> probes, directory traversal, code and PHP-CGI injection, user enumeration, and xmlrpc/wp-login brute-force floods. Correlation (<code>correlate=1</code> / <code>--correlate</code>, automatic in <code>scanall</code>) also reports files whose mtime falls within <code>window</code> seconds (default 300) of flagged traffic — <code>LOG_FILE_CORRELATION</code>, the "this request created that file" artifact. A hit is a strong lead; a miss clears nothing, since later edits or faked mtimes erase the link.</li>
+<li><strong>Integrity</strong> — verifies WordPress core, every plugin, and every theme against official wordpress.org packages for the installed version. The core locale is the one the install names in <code>wp-includes/version.php</code> (a localized package sets <code>$wp_local_package</code> there, and its translated core files only match that locale's checksums); <code>locale=xx_XX</code> / <code>--locale</code> overrides it. Reports <code>INTEGRITY_MODIFIED</code> (checksum mismatch), <code>INTEGRITY_MISSING</code> (file from the package gone), and <code>INTEGRITY_EXTRA</code> (file on disk that the package doesn't contain — extra PHP inside core or a plugin is the classic dropped webshell and reports as <code>HIGH</code>; commonly legitimate extras like <code>error_log</code> and the Wordfence WAF bootstrap report as <code>INFO</code> with an explanation). Packages that can't be verified (custom/premium plugins and themes, child themes, versions not in the archive) report as <code>INTEGRITY_NO_REFERENCE</code>, so a clean report never silently means "unchecked". Core and plugins use the checksum APIs; themes have no checksum API, so the manifest is built by hashing the official theme zip (requires the PHP zip extension). Bundled themes/plugins under <code>wp-content</code> are skipped in the core pass, and <code>wp-config.php</code> is ignored.</li>
+<li><strong>Quick checks</strong> — cheap, high-signal places attackers hide: executable PHP inside <code>wp-content/uploads</code> (<code>UPLOADS_PHP</code>, HIGH), <code>auto_prepend_file</code>/<code>auto_append_file</code> directives in <code>.user.ini</code>/<code>php.ini</code>/<code>.htaccess</code> that execute a file on every request (<code>PHP_PREPEND</code> — the Wordfence WAF bootstrap is recognized and reported as INFO), an inventory of mu-plugins, which load with no activation step (<code>MU_PLUGIN</code>, INFO), and hidden dotfile PHP (<code>HIDDEN_PHP</code>).</li>
+<li><strong>Database</strong> — read-only (SELECT-only) scan. Reports an inventory of administrator accounts (<code>DB_ADMIN_USER</code>, INFO — confirm each) with admins created in the last 30 days escalated to <code>DB_NEW_ADMIN</code> (MEDIUM, the classic takeover artifact); non-administrator roles that were granted takeover capabilities such as <code>manage_options</code>/<code>edit_users</code> in the <code>user_roles</code> option (<code>DB_ROLE_CAPS</code>, MEDIUM — role-editor plugins and shop-manager roles do this legitimately, so verify rather than assume); injected option values (<code>DB_OPTION_IOC</code> — PHP/eval, hidden iframes, obfuscated JS, remote scripts), <code>siteurl</code>/<code>home</code> hijacks (<code>DB_SITE_URL</code>), and <code>active_plugins</code> tampering (<code>DB_ACTIVE_PLUGIN</code> — path traversal or entries missing on disk); and script/PHP injections in post content (<code>DB_POST_IOC</code>, found via a server-side <code>LIKE</code> prefilter so the posts table isn't pulled wholesale; revisions are skipped so each injected post reports once). Every value is pattern-matched only and <strong>never <code>unserialize()</code>d</strong> — hostile serialized data can trigger PHP object injection. In the standalone CLI, if mysqli is missing, credentials can't be read (<code>getenv()</code>-style configs can't be parsed without executing them), or the DB is unreachable, <code>scandb=1</code> exits 1 with an error while <code>scanall=1</code> reports <code>DB_UNAVAILABLE</code> (ERROR) and continues; a query that fails mid-scan reports <code>DB_QUERY_FAILED</code> for that table. On a <strong>multisite network</strong> every site is scanned, whichever site the scan was started from: the sites are listed from <code>{prefix}blogs</code> a batch at a time (so a network with tens of thousands of sites is walked with a short queue and can pause and resume), and each site's own options and posts tables (<code>{prefix}{id}_options</code>, <code>{prefix}{id}_posts</code>), its roles option (<code>{prefix}{id}_user_roles</code>) and its administrators (<code>{prefix}{id}_capabilities</code> in the shared <code>usermeta</code>) get the same checks, with the finding path naming the site's table and administrator findings saying <code>administrator of site N</code>. The network's own settings in <code>{prefix}sitemeta</code> are scanned too: the super admins (<code>DB_SUPER_ADMIN</code>, INFO — each controls every site, so confirm each; one created in the last 30 days is a <code>DB_NEW_ADMIN</code>, a login on the list with no user account behind it is LOW because whoever registers that name becomes a super admin, and a list that is missing or cannot be read is reported rather than taken as "no super admins"), the network-activated plugins (<code>active_sitewide_plugins</code>, same <code>DB_ACTIVE_PLUGIN</code> checks as <code>active_plugins</code>) and injected values (<code>DB_OPTION_IOC</code>). The posts listing cap (100 flagged posts) counts per site. A site listed in <code>{prefix}blogs</code> whose tables are missing reports <code>DB_QUERY_FAILED</code> for each of them, and so does a list of sites that cannot be read, saying after which id the sites were not scanned.</li>
+<li><strong>Timestamps</strong> — report-only heuristics for when files were touched apart from their package. Every check is an outlier <em>within</em> one package (core, a plugin, a theme), never a comparison against a site-wide date, which would drown in false positives after any migration. <code>TIMESTAMP_OUTLIER</code> flags a handful of files modified after the package's dominant install/update cluster (the classic backdoored <code>functions.php</code> or dropped loader); a large newer cluster is a legitimate update and doesn't flag. <code>TIMESTAMP_TIMESTOMP</code> flags PHP files whose mtime sits far behind their ctime — <code>touch -t</code> can back-date content time, but the inode change time can't be set without root — and only when few files in the package show it, since migrations and <code>rsync -a</code> do that to whole trees. Timestamps are leads, not proof: attackers fake them and updates rewrite them, so these findings never feed a cleanup action and a clean result does not clear a file.</li>
+</ul>
+</section>
+
+<section aria-labelledby="php-extensions">
+<h2 id="php-extensions">PHP extensions</h2>
+<p>The signature scan, quick checks and timestamp checks need nothing else. The other scanners use PHP extensions that locked-down hosts sometimes lack; a missing one is reported as an <code>ERROR</code> finding rather than skipped:</p>
+<div class="table"><table>
+<thead><tr><th scope="col">Needed for</th><th scope="col">Requirement</th></tr></thead>
+<tbody>
+<tr><td><code>.gz</code> rotated logs</td><td>zlib extension</td></tr>
+<tr><td>Online integrity checks (standalone CLI)</td><td>curl extension, or <code>allow_url_fopen=On</code> (the plugin uses the WordPress HTTP API)</td></tr>
+<tr><td>Theme verification and every restore</td><td>zip extension</td></tr>
+<tr><td>Database scan (standalone CLI)</td><td>mysqli extension (the plugin uses WordPress' connection)</td></tr>
+<tr><td>Crontab scan</td><td><code>shell_exec</code> not in <code>disable_functions</code></td></tr>
+</tbody></table></div>
+</section>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>Facheiro is free, GPLv2 or later.</span>
+    <span><a href="https://github.com/fcavallari/Facheiro/wiki">Guides on the wiki</a> · <a href="https://github.com/fcavallari/Facheiro">github.com/fcavallari/Facheiro</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
