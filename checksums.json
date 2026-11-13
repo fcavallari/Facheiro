@@ -4,7 +4,7 @@
     "algorithm": "sha256",
     "files": {
         "LICENSE": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
-        "README.md": "c27ba884ce3725d4c727b33e0d76aaa5d9250b18fbbcf10d1984604fa51ac3e8",
+        "README.md": "c020cde2b25359bc0b59908071cdaa302b6ba8bbf4567ab5cdb896a5a7417cbe",
         "assets/admin.css": "bc664cc610fc0923a8407641320c250d5bd4cbfd5e28909fc82bef9438da6d1f",
         "assets/admin.js": "b952f09170df3a329cb0cbe1b837571478b56dd0573ce736303a53265b6d6630",
         "assets/img/elderward-logo-on-light.svg": "bb69a898e2e4443d91fc78156c3f8463129ac5779c5917722427b5b78bc12e1f",
@@ -67,6 +67,9 @@
     },
     "dev": {
         ".claude/launch.json": "01cf073f25d91d4e7008f06685c089f435775c99921488322e99ab1153e4e338",
+        ".claude/skills/pre-share-check/SKILL.md": "a3078957d22794c0b46c6ee34d18a36ee3779f0daaa231bc5b9b283c4d775950",
+        ".claude/skills/pre-share-check/references/checks.md": "17448d5ab468c9e91412d747b2e443c39b45ecc3175c3728098736fdb59dd9ba",
+        ".claude/skills/pre-share-check/references/review-guide.md": "bbccbc6dc5656d8f698049656ca88b838387b8c883edcabc085727dc96a794c8",
         ".distignore": "2068be47f2fdbb5cdebc5649739c00e64efce998cfd810f9539f9b68bf9a82df",
         ".gitattributes": "9f4b3465cff5c88d17e83140c3410b67846996b8aa4b02826cb37c4e85a2e029",
         ".gitignore": "1ebb70a5833d068300ccd771686c3b686c4f885b5cf8e76d60e2009c2611f4ed",
