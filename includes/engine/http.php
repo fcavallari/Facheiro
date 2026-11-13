@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Outbound HTTP. The engine only ever talks to api.wordpress.org and
@@ -11,7 +11,7 @@ namespace Elderward\Engine;
 // WordPress HTTP API; the standalone CLI uses CurlHttp below.
 //////////////
 
-// phpcs:disable WordPress.WP.AlternativeFunctions -- CurlHttp is the adapter for running without WordPress (standalone CLI, recovery mode), where the HTTP API and WP_Filesystem do not exist; inside WordPress the plugin passes Elderward_WP_Http, which uses the HTTP API. TLS verification is never disabled.
+// phpcs:disable WordPress.WP.AlternativeFunctions -- CurlHttp is the adapter for running without WordPress (standalone CLI, recovery mode), where the HTTP API and WP_Filesystem do not exist; inside WordPress the plugin passes Facheiro_WP_Http, which uses the HTTP API. TLS verification is never disabled.
 
 interface Http
 {
@@ -36,7 +36,7 @@ class CurlHttp implements Http
                 CURLOPT_TIMEOUT        => 60,
                 CURLOPT_SSL_VERIFYPEER => true,
                 CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_USERAGENT      => 'elderward',
+                CURLOPT_USERAGENT      => 'facheiro',
             ));
             $body = curl_exec($ch);
             $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -46,7 +46,7 @@ class CurlHttp implements Http
 
         $context = stream_context_create(array('http' => array(
             'timeout'       => 60,
-            'user_agent'    => 'elderward',
+            'user_agent'    => 'facheiro',
             'ignore_errors' => true,
         )));
         // fopen rather than file_get_contents: the stream's wrapper_data
@@ -79,7 +79,7 @@ class CurlHttp implements Http
                 CURLOPT_TIMEOUT        => 300,
                 CURLOPT_SSL_VERIFYPEER => true,
                 CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_USERAGENT      => 'elderward',
+                CURLOPT_USERAGENT      => 'facheiro',
             ));
             $ok = curl_exec($ch);
             $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -91,7 +91,7 @@ class CurlHttp implements Http
         // No curl: stream through fopen so the zip never sits in memory.
         $context = stream_context_create(array('http' => array(
             'timeout'       => 300,
-            'user_agent'    => 'elderward',
+            'user_agent'    => 'facheiro',
             'ignore_errors' => true,
         )));
         $src = @fopen($url, 'r', false, $context);

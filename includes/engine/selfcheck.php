@@ -1,12 +1,12 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
-// Self-check: verifies Elderward's own files, which every other scanner
+// Self-check: verifies Facheiro's own files, which every other scanner
 // skips (the signature strings in the source would match themselves).
 //
 // Reference, best first: the wordpress.org plugin checksums for this
-// version (or plugin-elderward-{version}.json in checksumdir=), else the
+// version (or plugin-facheiro-{version}.json in checksumdir=), else the
 // checksums.json shipped with the plugin. The shipped list is only as
 // trustworthy as the copy it came with: it catches mass injectors and
 // dropped files, not an attacker who rewrites the list too, and the
@@ -16,14 +16,14 @@ namespace Elderward\Engine;
 // ($ctx->preflight), so checks that must run once per scan (the plugin's
 // sealed settings) share this single-unit stage.
 //
-// Units: one per Elderward copy (the running one, plus the copy installed
+// Units: one per Facheiro copy (the running one, plus the copy installed
 // in the scanned site when the standalone CLI runs from another folder),
 // then one for the preflight checks.
 //////////////
 
 class SelfCheckScanner extends IntegrityScanner
 {
-    const SLUG = 'elderward';
+    const SLUG = 'facheiro';
     const MANIFEST = 'checksums.json';
 
     // Top-level names that a release never contains (.distignore). A git
@@ -54,19 +54,19 @@ class SelfCheckScanner extends IntegrityScanner
         );
     }
 
-    // The Elderward copies to verify: the running one, and the one
+    // The Facheiro copies to verify: the running one, and the one
     // installed in the scanned WordPress root if it is a different folder.
     public static function copies(Context $ctx)
     {
         $copies = array();
-        if (null !== $ctx->plugin_dir && '' !== $ctx->plugin_dir && is_file($ctx->plugin_dir . '/elderward.php')) {
+        if (null !== $ctx->plugin_dir && '' !== $ctx->plugin_dir && is_file($ctx->plugin_dir . '/facheiro.php')) {
             $copies[] = $ctx->plugin_dir;
         }
         // The copy installed in the scanned site, wherever its plugin folder is.
         $plugin_dirs = is_wordpress_root($ctx->root()) ? Layout::of($ctx)->plugin_dirs : array($ctx->root() . '/wp-content/plugins');
         foreach ($plugin_dirs as $plugins) {
             $installed = @realpath($plugins . '/' . self::SLUG);
-            if (false !== $installed && is_file($installed . '/elderward.php')) {
+            if (false !== $installed && is_file($installed . '/facheiro.php')) {
                 $installed = rtrim(str_replace('\\', '/', $installed), '/');
                 if (!in_array($installed, $copies, true)) {
                     $copies[] = $installed;
@@ -112,7 +112,7 @@ class SelfCheckScanner extends IntegrityScanner
     private function check_copy($dir, array &$totals)
     {
         $version = self::read_plugin_version($dir);
-        $name = 'Elderward' . (null === $version ? '' : ' ' . $version);
+        $name = 'Facheiro' . (null === $version ? '' : ' ' . $version);
         $present = array();
         $unlisted = array();
         foreach ($this->package_files($dir, $dir, $name, $totals) as $relative_path) {

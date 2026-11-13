@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Where the content folder lives.
@@ -240,7 +240,7 @@ final class Layout
         $where = $constant . ' in ' . $config['path'];
         if (null === $path) {
             $layout->notes[] = array('ERROR', 'CONTENT_DIR_UNKNOWN', $config['path'],
-                $constant . ' is set to an expression Elderward cannot evaluate without running wp-config.php: ' . substr($expression, 0, 200)
+                $constant . ' is set to an expression Facheiro cannot evaluate without running wp-config.php: ' . substr($expression, 0, 200)
                 . ' - that folder was NOT checked; pass ' . $option . '=/path');
             return (array(null, null));
         }

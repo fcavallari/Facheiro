@@ -3,13 +3,13 @@
 // Reporter for recovery mode: keeps findings in memory for the job file.
 //////////////
 
-namespace Elderward\Recovery;
+namespace Facheiro\Recovery;
 
-use Elderward\Engine\BaseReporter;
+use Facheiro\Engine\BaseReporter;
 
 // Outside WordPress only the recovery page, after sign-in, may load the file.
 if (!defined('ABSPATH')) {
-    if (!defined('ELDERWARD_RECOVERY')) {
+    if (!defined('FACHEIRO_RECOVERY')) {
         exit;
     }
 }

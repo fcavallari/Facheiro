@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<ruleset name="Elderward">
-	<description>Security, database, WordPress-API and compatibility sniffs for Elderward. Formatting sniffs are left out on purpose: the code keeps its existing style.</description>
+<ruleset name="Facheiro">
+	<description>Security, database, WordPress-API and compatibility sniffs for Facheiro. Formatting sniffs are left out on purpose: the code keeps its existing style.</description>
 
-	<file>elderward.php</file>
+	<file>facheiro.php</file>
 	<file>uninstall.php</file>
 	<file>recovery.php</file>
 	<file>bin</file>
@@ -16,9 +16,9 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
-				<element value="elderward"/>
-				<element value="Elderward"/>
-				<element value="ELDERWARD"/>
+				<element value="facheiro"/>
+				<element value="Facheiro"/>
+				<element value="FACHEIRO"/>
 			</property>
 		</properties>
 	</rule>
@@ -47,7 +47,7 @@
 		<exclude-pattern>includes/plugin/*</exclude-pattern>
 	</rule>
 
-	<!-- bin/elderward.php is a command-line script that never loads inside
+	<!-- bin/facheiro.php is a command-line script that never loads inside
 	     WordPress: its top-level variables are its own, and it sets the
 	     error/runtime configuration it needs like any CLI tool. -->
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">

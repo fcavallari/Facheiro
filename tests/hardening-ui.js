@@ -2,7 +2,7 @@
  * Playwright check of the Hardening tab. Needs a site served by Apache (or
  * LiteSpeed) with AllowOverride All, since the rules are .htaccess files:
  *
- *   ELDERWARD_URL=http://127.0.0.1:8090 ELDERWARD_USER=admin ELDERWARD_PASS=adminpass \
+ *   FACHEIRO_URL=http://127.0.0.1:8090 FACHEIRO_USER=admin FACHEIRO_PASS=adminpass \
  *   node tests/hardening-ui.js
  *
  * Steps: Recommended template applied from the page; "Check now" reports
@@ -12,10 +12,10 @@
  */
 const { chromium } = require('playwright');
 
-const base = process.env.ELDERWARD_URL || 'http://127.0.0.1:8090';
-const user = process.env.ELDERWARD_USER || 'admin';
-const pass = process.env.ELDERWARD_PASS || 'adminpass';
-const tabUrl = base + '/wp-admin/admin.php?page=elderward&tab=hardening';
+const base = process.env.FACHEIRO_URL || 'http://127.0.0.1:8090';
+const user = process.env.FACHEIRO_USER || 'admin';
+const pass = process.env.FACHEIRO_PASS || 'adminpass';
+const tabUrl = base + '/wp-admin/admin.php?page=facheiro&tab=hardening';
 const recommended = ['uploads_php', 'core_includes', 'config', 'sensitive', 'dotfiles', 'indexes'];
 
 function fail(msg) {
@@ -28,9 +28,9 @@ async function notices(page) {
 }
 
 async function check(page) {
-	await page.click('#elderward-harden-check-run');
-	await page.waitForFunction(() => /just now/.test(document.getElementById('elderward-harden-check-when').textContent), null, { timeout: 120000 });
-	return page.$$eval('.elderward-check[data-feature]', (els) => Object.fromEntries(els.map((el) => [el.getAttribute('data-feature'), el.className.replace(/.*elderward-check-(\w+).*/, '$1')])));
+	await page.click('#facheiro-harden-check-run');
+	await page.waitForFunction(() => /just now/.test(document.getElementById('facheiro-harden-check-when').textContent), null, { timeout: 120000 });
+	return page.$$eval('.facheiro-check[data-feature]', (els) => Object.fromEntries(els.map((el) => [el.getAttribute('data-feature'), el.className.replace(/.*facheiro-check-(\w+).*/, '$1')])));
 }
 
 (async () => {
@@ -49,10 +49,10 @@ async function check(page) {
 	await page.goto(tabUrl);
 
 	console.log('== apply Recommended (Apache)');
-	await page.click('label.elderward-choice:has-text("Apache")');
-	await page.click('label.elderward-choice:has-text("Recommended")');
-	await page.waitForSelector('#elderward-harden-preview pre');
-	const files = await page.$$eval('.elderward-preview-file', (n) => n.map((x) => x.textContent.trim()));
+	await page.click('label.facheiro-choice:has-text("Apache")');
+	await page.click('label.facheiro-choice:has-text("Recommended")');
+	await page.waitForSelector('#facheiro-harden-preview pre');
+	const files = await page.$$eval('.facheiro-preview-file', (n) => n.map((x) => x.textContent.trim()));
 	console.log('preview files:', files.join(', '));
 	if (!files.includes('wp-content/uploads/.htaccess')) { fail('preview does not list the uploads .htaccess'); }
 	await Promise.all([page.waitForURL(/tab=hardening/), page.click('button[value="apply"]')]);
@@ -64,12 +64,12 @@ async function check(page) {
 	let status = await check(page);
 	console.log(status);
 	recommended.forEach((id) => { if (status[id] !== 'protected') { fail(id + ' is ' + status[id] + ' after applying'); } });
-	const probe = await context.request.get(base + '/wp-content/uploads/elderward-ui-probe.php', { maxRedirects: 0 });
+	const probe = await context.request.get(base + '/wp-content/uploads/facheiro-ui-probe.php', { maxRedirects: 0 });
 	console.log('PHP request in uploads -> HTTP', probe.status());
 	if (probe.status() !== 403) { fail('PHP in uploads not refused'); }
 
 	console.log('== Nginx download');
-	await page.click('label.elderward-choice:has-text("Nginx")');
+	await page.click('label.facheiro-choice:has-text("Nginx")');
 	const [download] = await Promise.all([page.waitForEvent('download'), page.click('button[value="download"]')]);
 	const conf = require('fs').readFileSync(await download.path(), 'utf8');
 	console.log('nginx file:', conf.split('\n').filter((l) => /^location|^autoindex/.test(l)).length, 'rules');
@@ -77,7 +77,7 @@ async function check(page) {
 
 	console.log('== remove');
 	await page.goto(tabUrl);
-	await page.click('label.elderward-choice:has-text("Apache")');
+	await page.click('label.facheiro-choice:has-text("Apache")');
 	await Promise.all([page.waitForURL(/tab=hardening/), page.click('button[value="remove"]')]);
 	n = await notices(page);
 	console.log(n);

@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Mode dispatch shared by every entry point (standalone CLI, WP-CLI, the
@@ -62,7 +62,7 @@ final class Runner
                 Scanner::run_all(new SelfCheckScanner($ctx));
                 return;
             case 'scanintegrity':
-                // Elderward's own folder is verified by the self-check, which
+                // Facheiro's own folder is verified by the self-check, which
                 // the integrity scan leaves out.
                 if (!$ctx->has('noselfcheck')) {
                     Scanner::run_all(new SelfCheckScanner($ctx));
@@ -118,7 +118,7 @@ final class Runner
     public static function stage_label($stage)
     {
         $labels = array(
-            'self'       => 'Elderward self-check',
+            'self'       => 'Facheiro self-check',
             'quick'      => 'Quick checks',
             'integrity'  => 'Integrity',
             'timestamps' => 'Timestamps',

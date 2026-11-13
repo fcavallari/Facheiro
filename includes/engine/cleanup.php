@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Signature-based malware detection and cleanup (the default scan mode).
@@ -59,7 +59,7 @@ class SignatureScanner extends Scanner
         // and bytes that are not valid UTF-8).
         // Later chunks read from a byte offset, so no list sits in memory.
         //////////////
-        $list_path = @tempnam($this->ctx->work_dir, 'elderward-files');
+        $list_path = @tempnam($this->ctx->work_dir, 'facheiro-files');
         if (false === $list_path) {
             throw new Fatal('cannot create a work file in ' . $this->ctx->work_dir);
         }

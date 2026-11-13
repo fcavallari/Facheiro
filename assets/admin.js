@@ -1,15 +1,15 @@
-/* global elderwardAdmin */
+/* global facheiroAdmin */
 (function () {
 	'use strict';
 
-	var cfg = window.elderwardAdmin || {};
-	var startBtn = document.getElementById('elderward-start');
-	var cancelBtn = document.getElementById('elderward-cancel');
-	var logInput = document.getElementById('elderward-log');
-	var progress = document.getElementById('elderward-progress');
-	var bar = progress ? progress.querySelector('.elderward-bar-fill') : null;
-	var statusText = document.getElementById('elderward-status-text');
-	var runnerNote = document.getElementById('elderward-runner-note');
+	var cfg = window.facheiroAdmin || {};
+	var startBtn = document.getElementById('facheiro-start');
+	var cancelBtn = document.getElementById('facheiro-cancel');
+	var logInput = document.getElementById('facheiro-log');
+	var progress = document.getElementById('facheiro-progress');
+	var bar = progress ? progress.querySelector('.facheiro-bar-fill') : null;
+	var statusText = document.getElementById('facheiro-status-text');
+	var runnerNote = document.getElementById('facheiro-runner-note');
 	var stopped = false;
 	// Background mode: the page only watches. If WP-Cron stops reporting
 	// progress for `stale` seconds it is kicked once; if that changes nothing
@@ -92,7 +92,7 @@
 		if (stopped) {
 			return;
 		}
-		post('elderward_step').then(function (result) {
+		post('facheiro_step').then(function (result) {
 			if (!result || !result.success) {
 				setText((result && result.data && result.data.message) || cfg.i18n.network);
 				window.setTimeout(loop, 3000);
@@ -116,7 +116,7 @@
 		if (stopped) {
 			return;
 		}
-		post('elderward_status').then(function (result) {
+		post('facheiro_status').then(function (result) {
 			if (!result || !result.success) {
 				setText((result && result.data && result.data.message) || cfg.i18n.network);
 				window.setTimeout(watch, 3000);
@@ -131,7 +131,7 @@
 			if (typeof data.idle === 'number' && data.idle >= STALE) {
 				if (!kickedAt) {
 					kickedAt = Date.now();
-					post('elderward_kick').catch(function () {});
+					post('facheiro_kick').catch(function () {});
 				} else if (Date.now() - kickedAt > KICK_GRACE_MS) {
 					tookOver = true;
 					setNote(cfg.i18n.takeover);
@@ -169,7 +169,7 @@
 
 	startBtn.addEventListener('click', function () {
 		begin();
-		post('elderward_start', { log: logInput ? logInput.value : '' }).then(function (result) {
+		post('facheiro_start', { log: logInput ? logInput.value : '' }).then(function (result) {
 			if (!result || !result.success) {
 				startBtn.disabled = false;
 				cancelBtn.disabled = true;
@@ -190,7 +190,7 @@
 			return;
 		}
 		stopped = true;
-		post('elderward_cancel').then(function (result) {
+		post('facheiro_cancel').then(function (result) {
 			finished(result && result.data ? result.data : { status: 'cancelled' });
 		});
 	});
@@ -233,7 +233,7 @@
 				return;
 			}
 			button.disabled = true;
-			post('elderward_fp', fields).then(function (result) {
+			post('facheiro_fp', fields).then(function (result) {
 				if (!result || !result.success) {
 					button.disabled = false;
 					window.alert((result && result.data && result.data.message) || cfg.i18n.network);
@@ -255,7 +255,7 @@
 	function replaceRow(row, text, undo) {
 		var cell = document.createElement('td');
 		cell.colSpan = row.children.length;
-		cell.className = 'elderward-row-message';
+		cell.className = 'facheiro-row-message';
 		cell.appendChild(document.createTextNode(text + ' '));
 		if (undo) {
 			var link = document.createElement('button');
@@ -280,17 +280,17 @@
 				}
 			});
 		});
-		var run = document.getElementById('elderward-test-run');
+		var run = document.getElementById('facheiro-test-run');
 		if (!run) {
 			return;
 		}
-		var out = document.getElementById('elderward-test-result');
+		var out = document.getElementById('facheiro-test-result');
 		run.addEventListener('click', function () {
 			run.disabled = true;
 			out.textContent = '';
-			post('elderward_sig_test', {
-				path: document.getElementById('elderward-test-path').value,
-				text: document.getElementById('elderward-test-text').value
+			post('facheiro_sig_test', {
+				path: document.getElementById('facheiro-test-path').value,
+				text: document.getElementById('facheiro-test-text').value
 			}).then(function (result) {
 				run.disabled = false;
 				if (!result || !result.success) {
@@ -324,7 +324,7 @@
 
 	// AI assistants tab: select-on-focus and copy buttons.
 	function copyButtons() {
-		document.querySelectorAll('textarea.elderward-copy').forEach(function (area) {
+		document.querySelectorAll('textarea.facheiro-copy').forEach(function (area) {
 			area.addEventListener('focus', function () { area.select(); });
 		});
 		document.querySelectorAll('[data-copy]').forEach(function (button) {
@@ -352,7 +352,7 @@
 	// Recovery tab: the key comes back in the ajax response, is shown once
 	// in place, and is never stored by WordPress.
 	function recoveryKey() {
-		var button = document.getElementById('elderward-recovery-create');
+		var button = document.getElementById('facheiro-recovery-create');
 		if (!button) {
 			return;
 		}
@@ -361,9 +361,9 @@
 				return;
 			}
 			var body = new FormData();
-			body.append('action', 'elderward_recovery_create');
+			body.append('action', 'facheiro_recovery_create');
 			body.append('nonce', button.getAttribute('data-nonce'));
-			body.append('expiry', document.getElementById('elderward-recovery-expiry').value);
+			body.append('expiry', document.getElementById('facheiro-recovery-expiry').value);
 			button.disabled = true;
 			fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body }).then(function (r) { return r.json(); }).then(function (result) {
 				button.disabled = false;
@@ -371,12 +371,12 @@
 					window.alert((result && result.data && result.data.message) || cfg.i18n.network);
 					return;
 				}
-				document.getElementById('elderward-recovery-key').value = result.data.key;
-				document.getElementById('elderward-key-reveal').hidden = false;
-				document.getElementById('elderward-recovery-status').textContent = result.data.status;
-				var pill = document.querySelector('.elderward-card-head .elderward-check');
+				document.getElementById('facheiro-recovery-key').value = result.data.key;
+				document.getElementById('facheiro-key-reveal').hidden = false;
+				document.getElementById('facheiro-recovery-status').textContent = result.data.status;
+				var pill = document.querySelector('.facheiro-card-head .facheiro-check');
 				if (pill) {
-					pill.className = 'elderward-check elderward-check-protected';
+					pill.className = 'facheiro-check facheiro-check-protected';
 					pill.textContent = cfg.i18n.recoveryOn;
 				}
 				var revoke = document.querySelector('button[value="revoke"]');
@@ -385,7 +385,7 @@
 				}
 				button.setAttribute('data-replace', '1');
 				button.textContent = cfg.i18n.recoveryNew;
-				document.getElementById('elderward-recovery-key').focus();
+				document.getElementById('facheiro-recovery-key').focus();
 			}).catch(function () {
 				button.disabled = false;
 				window.alert(cfg.i18n.network);
@@ -423,12 +423,12 @@
 	// Hardening tab: templates set the switches, any switch makes it Custom,
 	// the preview follows every change, buttons follow the server choice.
 	function hardening() {
-		var form = document.getElementById('elderward-harden-form');
+		var form = document.getElementById('facheiro-harden-form');
 		if (!form) {
 			return;
 		}
 		var nonce = form.getAttribute('data-nonce');
-		var preview = document.getElementById('elderward-harden-preview');
+		var preview = document.getElementById('facheiro-harden-preview');
 		var boxes = form.querySelectorAll('input[name="features[]"]');
 		var presets = form.querySelectorAll('input[name="preset"]');
 		var timer = null;
@@ -458,7 +458,7 @@
 		function refresh() {
 			window.clearTimeout(timer);
 			timer = window.setTimeout(function () {
-				hpost('elderward_harden_preview', { server: server(), 'features[]': selected() }).then(function (result) {
+				hpost('facheiro_harden_preview', { server: server(), 'features[]': selected() }).then(function (result) {
 					if (!result || !result.success) {
 						return;
 					}
@@ -466,14 +466,14 @@
 					result.data.forEach(function (file) {
 						if (file.file) {
 							var name = document.createElement('p');
-							name.className = 'elderward-preview-file';
+							name.className = 'facheiro-preview-file';
 							var code = document.createElement('code');
 							code.textContent = file.file;
 							name.appendChild(code);
 							preview.appendChild(name);
 						}
 						var pre = document.createElement('pre');
-						pre.className = 'elderward-cli';
+						pre.className = 'facheiro-cli';
 						pre.textContent = file.content;
 						preview.appendChild(pre);
 					});
@@ -507,7 +507,7 @@
 		form.querySelectorAll('input[name="server"]').forEach(function (radio) {
 			radio.addEventListener('change', function () { showServer(); refresh(); });
 		});
-		var copy = document.getElementById('elderward-harden-copy');
+		var copy = document.getElementById('facheiro-harden-copy');
 		if (copy) {
 			copy.addEventListener('click', function () {
 				var pre = preview.querySelector('pre');
@@ -521,13 +521,13 @@
 			});
 		}
 
-		var run = document.getElementById('elderward-harden-check-run');
+		var run = document.getElementById('facheiro-harden-check-run');
 		if (run) {
 			run.addEventListener('click', function () {
 				var label = run.textContent;
 				run.disabled = true;
 				run.textContent = cfg.i18n.hardenChecking;
-				hpost('elderward_harden_check', {}).then(function (result) {
+				hpost('facheiro_harden_check', {}).then(function (result) {
 					run.disabled = false;
 					run.textContent = label;
 					if (!result || !result.success) {
@@ -535,13 +535,13 @@
 						return;
 					}
 					var words = { protected: cfg.i18n.statusProtected, exposed: cfg.i18n.statusExposed, unknown: cfg.i18n.statusUnknown };
-					var list = document.getElementById('elderward-harden-check-list');
+					var list = document.getElementById('facheiro-harden-check-list');
 					list.textContent = '';
 					Object.keys(result.data.results).forEach(function (id) {
 						var item = result.data.results[id];
 						var li = document.createElement('li');
 						var pill = document.createElement('span');
-						pill.className = 'elderward-check elderward-check-' + item.status;
+						pill.className = 'facheiro-check facheiro-check-' + item.status;
 						pill.textContent = words[item.status] || item.status;
 						var name = document.createElement('strong');
 						name.textContent = result.data.labels[id] || id;
@@ -550,14 +550,14 @@
 						li.appendChild(name);
 						li.appendChild(document.createTextNode(' ' + item.detail));
 						list.appendChild(li);
-						var inline = form.querySelector('.elderward-check[data-feature="' + id + '"]');
+						var inline = form.querySelector('.facheiro-check[data-feature="' + id + '"]');
 						if (inline) {
 							inline.hidden = false;
-							inline.className = 'elderward-check elderward-check-' + item.status;
+							inline.className = 'facheiro-check facheiro-check-' + item.status;
 							inline.textContent = words[item.status] || item.status;
 						}
 					});
-					document.getElementById('elderward-harden-check-when').textContent = cfg.i18n.checkedNow;
+					document.getElementById('facheiro-harden-check-when').textContent = cfg.i18n.checkedNow;
 				}).catch(function () {
 					run.disabled = false;
 					run.textContent = label;
@@ -572,7 +572,7 @@
 
 	// "?" buttons: show or hide the help text they point at.
 	function helpToggles() {
-		document.querySelectorAll('.elderward-help-toggle').forEach(function (button) {
+		document.querySelectorAll('.facheiro-help-toggle').forEach(function (button) {
 			var text = document.getElementById(button.getAttribute('aria-controls'));
 			if (!text) {
 				return;
@@ -587,12 +587,12 @@
 
 	// Settings: show the time and weekday fields only when they apply.
 	function scheduleForm() {
-		var select = document.getElementById('elderward-schedule');
+		var select = document.getElementById('facheiro-schedule');
 		if (!select) {
 			return;
 		}
-		var when = document.querySelector('.elderward-schedule-when');
-		var day = document.querySelector('.elderward-schedule-day');
+		var when = document.querySelector('.facheiro-schedule-when');
+		var day = document.querySelector('.facheiro-schedule-day');
 		function update() {
 			if (when) {
 				when.hidden = select.value === 'off';

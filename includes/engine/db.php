@@ -1,5 +1,5 @@
 <?php
-namespace Elderward\Engine;
+namespace Facheiro\Engine;
 
 ////////////////
 // Database access for the read-only database scan.
@@ -13,7 +13,7 @@ namespace Elderward\Engine;
 // primary key. Both iterate in primary-key order so the output is the same.
 //////////////
 
-// phpcs:disable WordPress.DB.RestrictedFunctions -- MysqliDb is the adapter for running without WordPress (standalone CLI, recovery mode), where there is no $wpdb; inside WordPress the plugin passes Elderward_WP_Db, which uses $wpdb.
+// phpcs:disable WordPress.DB.RestrictedFunctions -- MysqliDb is the adapter for running without WordPress (standalone CLI, recovery mode), where there is no $wpdb; inside WordPress the plugin passes Facheiro_WP_Db, which uses $wpdb.
 
 interface Db
 {

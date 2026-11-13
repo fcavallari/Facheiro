@@ -1,16 +1,16 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/img/elderward-logo.svg">
-    <img src="assets/img/elderward-logo-on-light.svg" alt="Elderward" width="400">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/img/facheiro-logo.svg">
+    <img src="assets/img/facheiro-logo-on-light.svg" alt="Facheiro" width="400">
   </picture>
 </p>
 
 
-Elderward is a free malware scanner and incident-response toolkit for WordPress sites. It checks files for signs of compromise and can remove known malware, verifies core, plugins and themes against the official wordpress.org packages, scans the database for rogue administrators and injected content, and reads access logs for known indicators of compromise (IoCs) so you can understand how the attack happened — not just clean up after it.
+Facheiro is a free malware scanner and incident-response toolkit for WordPress sites. It checks files for signs of compromise and can remove known malware, verifies core, plugins and themes against the official wordpress.org packages, scans the database for rogue administrators and injected content, and reads access logs for known indicators of compromise (IoCs) so you can understand how the attack happened — not just clean up after it.
 
 What you get:
 
-- **A report-only scan of everything** from its own **Elderward** admin menu, in the background through WP-Cron or on a schedule, with findings worst-first, false-positive marks bound to the reviewed file, encrypted sample downloads and NDJSON export.
+- **A report-only scan of everything** from its own **Facheiro** admin menu, in the background through WP-Cron or on a schedule, with findings worst-first, false-positive marks bound to the reviewed file, encrypted sample downloads and NDJSON export.
 - **Custom signatures** written and tested in the admin (detection-only), shared as JSON with the CLI.
 - **Server hardening** for Apache/LiteSpeed (`.htaccess`, applied with a health check and automatic rollback) and Nginx (a configuration file to include), from a Recommended or Strict template or protection by protection, and a live check of what the server enforces.
 - **Recovery mode**: a key-protected page that works when WordPress itself does not load (white screen, critical error), shows what broke the site and runs the full scan.
@@ -21,9 +21,9 @@ What you get:
 It runs four ways, all on the same engine:
 
 - **WordPress plugin** — the admin pages above.
-- **WP-CLI** — `wp elderward ...` runs every scanner, cleanup, restore and hardening command, with text or NDJSON output and alerting exit codes.
+- **WP-CLI** — `wp facheiro ...` runs every scanner, cleanup, restore and hardening command, with text or NDJSON output and alerting exit codes.
 - **Recovery mode** — `recovery.php` in the plugin folder, when WordPress no longer loads but the web server still runs PHP.
-- **Standalone CLI** — `php bin/elderward.php ...` needs no working WordPress at all: upload the folder to a dead site and scan it from a shell.
+- **Standalone CLI** — `php bin/facheiro.php ...` needs no working WordPress at all: upload the folder to a dead site and scan it from a shell.
 
 Nothing leaves the server on its own. The only outbound requests go to wordpress.org during the integrity check (checksum manifests and official packages); hardening checks only request the site itself.
 
@@ -36,7 +36,7 @@ The project homepage (English and Brazilian Portuguese) lives in `site/`.
 - WordPress 6.0+ and PHP 7.2+ for the plugin; the standalone CLI and recovery mode run on PHP 5.6+
 - Shell access (WP-CLI or `php`) to clean or restore files; the admin pages need no shell
 - WordPress 6.9+ and the [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin for the AI assistant tools
-- Apache or LiteSpeed with `AllowOverride` for hardening rules Elderward writes itself; on Nginx you include the generated file in the server configuration
+- Apache or LiteSpeed with `AllowOverride` for hardening rules Facheiro writes itself; on Nginx you include the generated file in the server configuration
 
 The signature scan, quick checks and timestamp checks need nothing else. The other scanners use PHP extensions that locked-down hosts sometimes lack; a missing one is reported as an `ERROR` finding rather than skipped:
 
@@ -50,53 +50,53 @@ The signature scan, quick checks and timestamp checks need nothing else. The oth
 
 ## The plugin
 
-Elderward is not on WordPress.org yet. Install it from this repository; the folder must be named `elderward`:
+Facheiro is not on WordPress.org yet. Install it from this repository; the folder must be named `facheiro`:
 
 ```
 cd wp-content/plugins
-git clone https://github.com/fioa8c/elderward.git elderward
-wp plugin activate elderward
+git clone https://github.com/fcavallari/Facheiro.git facheiro
+wp plugin activate facheiro
 ```
 
-(or download the repository as a zip, unpack it as `wp-content/plugins/elderward/`, and activate it on the Plugins screen). Activation creates one table, `{prefix}elderward_findings`. Then:
+(or download the repository as a zip, unpack it as `wp-content/plugins/facheiro/`, and activate it on the Plugins screen). Activation creates one table, `{prefix}facheiro_findings`. Then:
 
-1. **Elderward (admin menu) → Start scan.** The scan runs in the background through WP-Cron, so you can close the tab and come back; it changes nothing on the site. Findings appear worst-first with severity filters and can be exported as text or NDJSON. The **Settings** tab sets the access log file or directory that every scan checks, switch scans to run only while the page is open (for hosts where WP-Cron is unreliable), and set up daily, twice-daily or weekly automatic scans. Each setting has a **?** with more detail, and the screen's **Help** tab explains the whole page.
-2. **Review the findings.** *False positive* records a reviewed, benign finding with a note: later scans keep it in the record (and in the JSON export, flagged `"false_positive": true`) but out of the counts and the default view. A mark on a file stores the file's SHA-256 and stops applying as soon as the file changes, so the finding comes back. A mark on a database finding (an option, a post, `siteurl`/`home`, role definitions) does the same with the SHA-256 of the value the scan read, so a payload swapped inside a cleared option row comes back even while the same signature matches. Database marks saved before values were hashed come back once; mark them again. *Download sample* packs a flagged file into a zip encrypted with the password `infected` (AES-256), with a `manifest.json`, for you to submit to an analyst or sandbox; Elderward never uploads anything, and never packages `wp-config.php` or files outside the WordPress root. File findings also show the SHA-256 with a VirusTotal lookup link (hash only, opened by your browser).
+1. **Facheiro (admin menu) → Start scan.** The scan runs in the background through WP-Cron, so you can close the tab and come back; it changes nothing on the site. Findings appear worst-first with severity filters and can be exported as text or NDJSON. The **Settings** tab sets the access log file or directory that every scan checks, switch scans to run only while the page is open (for hosts where WP-Cron is unreliable), and set up daily, twice-daily or weekly automatic scans. Each setting has a **?** with more detail, and the screen's **Help** tab explains the whole page.
+2. **Review the findings.** *False positive* records a reviewed, benign finding with a note: later scans keep it in the record (and in the JSON export, flagged `"false_positive": true`) but out of the counts and the default view. A mark on a file stores the file's SHA-256 and stops applying as soon as the file changes, so the finding comes back. A mark on a database finding (an option, a post, `siteurl`/`home`, role definitions) does the same with the SHA-256 of the value the scan read, so a payload swapped inside a cleared option row comes back even while the same signature matches. Database marks saved before values were hashed come back once; mark them again. *Download sample* packs a flagged file into a zip encrypted with the password `infected` (AES-256), with a `manifest.json`, for you to submit to an analyst or sandbox; Facheiro never uploads anything, and never packages `wp-config.php` or files outside the WordPress root. File findings also show the SHA-256 with a VirusTotal lookup link (hash only, opened by your browser).
 3. **Signatures tab.** Add custom signatures for files, option values or post content, test them against a pasted sample or a file of the site, and import/export them as JSON (see [Custom signatures](#custom-signatures)). Custom signatures only detect.
 4. **Hardening tab.** Server rules that refuse what should never be served (see [Hardening](#hardening)).
 5. **Recovery tab.** A key for recovery mode, the page that scans the site when WordPress no longer loads (see [Recovery mode](#recovery-mode)).
 6. **Act on the results from WP-CLI**, after taking a backup:
 
 ```
-wp elderward scan --dryrun                        # preview the signature cleanup
-wp elderward scan                                 # remove known malware from infected files
-wp elderward scan --allfiles                      # ... scanning every file, not just risky extensions
-wp elderward integrity --restore --dryrun         # preview restoring modified/missing core, plugin, theme files
-wp elderward integrity --restore --quarantine-dir=/path/outside/webroot
+wp facheiro scan --dryrun                        # preview the signature cleanup
+wp facheiro scan                                 # remove known malware from infected files
+wp facheiro scan --allfiles                      # ... scanning every file, not just risky extensions
+wp facheiro integrity --restore --dryrun         # preview restoring modified/missing core, plugin, theme files
+wp facheiro integrity --restore --quarantine-dir=/path/outside/webroot
 ```
 
 Every scanner is also a WP-CLI command, with `--format=json` for NDJSON and the exit codes described below:
 
 ```
-wp elderward scanall [--log=/var/log/apache2] [--format=json]   # every scanner, report-only
-wp elderward quick                                # PHP in uploads, prepend hooks, mu-plugins, hidden PHP
-wp elderward integrity [--checksum-dir=/path] [--locale=pt_BR]
-wp elderward times                                # timestamp anomaly report
-wp elderward db                                   # read-only database scan
-wp elderward cron                                 # current user's crontab
-wp elderward log /var/log/apache2 [--correlate] [--window=300]
+wp facheiro scanall [--log=/var/log/apache2] [--format=json]   # every scanner, report-only
+wp facheiro quick                                # PHP in uploads, prepend hooks, mu-plugins, hidden PHP
+wp facheiro integrity [--checksum-dir=/path] [--locale=pt_BR]
+wp facheiro times                                # timestamp anomaly report
+wp facheiro db                                   # read-only database scan
+wp facheiro cron                                 # current user's crontab
+wp facheiro log /var/log/apache2 [--correlate] [--window=300]
 ```
 
 ```
-wp elderward harden [--server=apache|nginx] [--preset=recommended|strict] [--features=a,b] [--print|--apply [--unverified]|--remove|--check]
-wp elderward recovery-key create|status|revoke [--expires=<days>|never]
+wp facheiro harden [--server=apache|nginx] [--preset=recommended|strict] [--features=a,b] [--print|--apply [--unverified]|--remove|--check]
+wp facheiro recovery-key create|status|revoke [--expires=<days>|never]
 ```
 
-`wp help elderward <command>` lists each command's options. On multisite the menu is in the Network Admin and limited to super admins.
+`wp help facheiro <command>` lists each command's options. On multisite the menu is in the Network Admin and limited to super admins.
 
 ### Hardening
 
-The Hardening tab (and `wp elderward harden`) writes web server rules for a template (**Recommended** or **Strict**) or any mix of protections:
+The Hardening tab (and `wp facheiro harden`) writes web server rules for a template (**Recommended** or **Strict**) or any mix of protections:
 
 | Protection | Template | Apache/LiteSpeed (`.htaccess`) | Nginx |
 |---|---|---|---|
@@ -109,58 +109,58 @@ The Hardening tab (and `wp elderward harden`) writes web server rules for a temp
 | Block direct PHP in themes | Strict | `themes/.htaccess` | regex location |
 | Security headers | Strict | `nosniff`, `X-Frame-Options SAMEORIGIN`, `Referrer-Policy` | `add_header ... always` |
 | Turn off XML-RPC | Strict | `xmlrpc.php` deny | `location = /xmlrpc.php` |
-| Block direct PHP in plugins | custom only | rewrite rule, `elderward/recovery.php` allowed | regex location, same exception |
+| Block direct PHP in plugins | custom only | rewrite rule, `facheiro/recovery.php` allowed | regex location, same exception |
 
-On Apache/LiteSpeed the rules go between `# BEGIN Elderward` and `# END Elderward` (`insert_with_markers()`). Before writing, every needed file must be writable and the site must be able to reach itself over HTTP: the home page, login, admin-ajax and one address inside every other folder being written (a stylesheet in `wp-includes`, the active theme's `style.css`…) are requested before and after, and if any starts failing (a 5xx because `Options` is not allowed by `AllowOverride`, no answer, or a page that was served and is now refused) every file is restored byte-for-byte. A rule the server rejects answers every request with a 500, the admin included, so when the site cannot reach itself (loopback requests blocked by the host) nothing is written unless you tick **Apply without the safety check** (`--unverified`); removing rules never needs it. Removing takes the blocks out and deletes files Elderward created. Nginx configuration is downloaded (or printed with `--print`) and included in the `server { }` block above the PHP location. **Check now** / `--check` requests files that do not exist (a PHP file in uploads, a `.sql` dump, a dot-folder…) and reports a protection as active only when the server refuses them, so it verifies hand-made rules too and creates nothing.
+On Apache/LiteSpeed the rules go between `# BEGIN Facheiro` and `# END Facheiro` (`insert_with_markers()`). Before writing, every needed file must be writable and the site must be able to reach itself over HTTP: the home page, login, admin-ajax and one address inside every other folder being written (a stylesheet in `wp-includes`, the active theme's `style.css`…) are requested before and after, and if any starts failing (a 5xx because `Options` is not allowed by `AllowOverride`, no answer, or a page that was served and is now refused) every file is restored byte-for-byte. A rule the server rejects answers every request with a 500, the admin included, so when the site cannot reach itself (loopback requests blocked by the host) nothing is written unless you tick **Apply without the safety check** (`--unverified`); removing rules never needs it. Removing takes the blocks out and deletes files Facheiro created. Nginx configuration is downloaded (or printed with `--print`) and included in the `server { }` block above the PHP location. **Check now** / `--check` requests files that do not exist (a PHP file in uploads, a `.sql` dump, a dot-folder…) and reports a protection as active only when the server refuses them, so it verifies hand-made rules too and creates nothing.
 
 ### Recovery mode
 
-`wp-content/plugins/elderward/recovery.php` scans the site **without loading WordPress**, for when a fatal error or malware takes the site (and its admin) down. It shows the latest PHP fatal errors from the logs with the plugin or theme they point at, the WordPress version and `.maintenance` state, and runs the same report-only scan as the admin page, database included (credentials parsed from `wp-config.php`, never executed), stepping it in short requests.
+`wp-content/plugins/facheiro/recovery.php` scans the site **without loading WordPress**, for when a fatal error or malware takes the site (and its admin) down. It shows the latest PHP fatal errors from the logs with the plugin or theme they point at, the WordPress version and `.maintenance` state, and runs the same report-only scan as the admin page, database included (credentials parsed from `wp-config.php`, never executed), stepping it in short requests.
 
-It is inert unless a key exists: without `wp-content/elderward-recovery-key.php` (or with an expired one) it answers 404. Create the key on the Recovery tab or with `wp elderward recovery-key create --expires=7`; Elderward stores only its SHA-256. If the site is already broken, create the file by hand:
+It is inert unless a key exists: without `wp-content/facheiro-recovery-key.php` (or with an expired one) it answers 404. Create the key on the Recovery tab or with `wp facheiro recovery-key create --expires=7`; Facheiro stores only its SHA-256. If the site is already broken, create the file by hand:
 
 ```
 <?php exit; ?>
 {"key":"at-least-24-random-characters-of-your-own"}
 ```
 
-Sign-in sets an HMAC-signed, HttpOnly, SameSite=Strict cookie for one hour, bound to the key (replacing or revoking the key ends every session); actions carry a session-bound token; a wrong generated key is simply refused (at ~190 bits a delay adds nothing and would only let anyone tie up PHP workers), and for hand-written keys each wrong try costs a second and a client is locked out for 15 minutes after 10 wrong tries (behind a proxy, the forwarded client address counts; at most 500 clients are tracked). Generated keys never lock anyone out, so an attacker cannot block the owner. The state folder must be owned by the PHP user and closed to everyone else (a shared `/tmp` folder created by another account is ignored), and every step rebuilds the scan options, so a tampered state file cannot turn the scan into a cleanup. The page keeps its state in exit-guarded files in the system temp folder (or `wp-content/elderward-recovery/`). Revoke the key when you are done.
+Sign-in sets an HMAC-signed, HttpOnly, SameSite=Strict cookie for one hour, bound to the key (replacing or revoking the key ends every session); actions carry a session-bound token; a wrong generated key is simply refused (at ~190 bits a delay adds nothing and would only let anyone tie up PHP workers), and for hand-written keys each wrong try costs a second and a client is locked out for 15 minutes after 10 wrong tries (behind a proxy, the forwarded client address counts; at most 500 clients are tracked). Generated keys never lock anyone out, so an attacker cannot block the owner. The state folder must be owned by the PHP user and closed to everyone else (a shared `/tmp` folder created by another account is ignored), and every step rebuilds the scan options, so a tampered state file cannot turn the scan into a cleanup. The page keeps its state in exit-guarded files in the system temp folder (or `wp-content/facheiro-recovery/`). Revoke the key when you are done.
 
 ### Tamper detection
 
-Malware that runs PHP on a site has the same rights as Elderward, so no plugin can stop it from changing Elderward. Elderward makes the change visible instead, in two ways, and reports both in every scan (admin page, WP-Cron, WP-CLI, assistants and the recovery page):
+Malware that runs PHP on a site has the same rights as Facheiro, so no plugin can stop it from changing Facheiro. Facheiro makes the change visible instead, in two ways, and reports both in every scan (admin page, WP-Cron, WP-CLI, assistants and the recovery page):
 
-- **Self-check.** Every other check skips Elderward's own folder (its signatures would match themselves), so the scan starts with the *Elderward self-check* stage: each file of the plugin is compared with the wordpress.org checksums for this version, or, when wordpress.org has none (or cannot be reached), with the `checksums.json` the plugin ships with. Modified or added PHP files are HIGH, and the admin pages then warn that the results may not be trustworthy (until the scan is clean or you mark those findings as false positives). Nothing in the folder is skipped: in a git checkout the development files (tests, build tools) are verified against the same list, a PHP file inside `.git` is reported, and a `vendor/` or `node_modules/` folder is reported as unverified, since no list covers installed dependencies. The shipped list catches mass injectors and dropped files, but an attacker who can write files can rewrite it too; only the wordpress.org reference (or a fresh download, run as the standalone CLI) covers that. `selfcheck=1` / `wp elderward selfcheck` runs it alone; `noselfcheck=1` skips it.
-- **Sealed settings.** Saved false positives, custom signatures and the scan settings live in the database, where SQL injection alone could add a false positive for a backdoor or delete the signature that catches it. Every change made through Elderward also writes the SHA-256 of each entry to `wp-content/elderward-seal.php` (guarded like the recovery key file), which a database-only attacker cannot rewrite. A false positive that does not match the seal is ignored, so its finding comes back (`TAMPER_FALSE_POSITIVE`); custom signatures and settings changed outside Elderward are reported (`TAMPER_SIGNATURE`, `TAMPER_SETTINGS`), and a deleted or garbled seal is recreated and reported (`TAMPER_SEAL_MISSING`). The admin pages list each change with **Keep** (after review) or **Remove**; `wp elderward seal status` and `wp elderward seal accept [--collection=<name>]` do the same from the command line. After restoring the database from a backup or moving the site without the seal file, review and accept.
+- **Self-check.** Every other check skips Facheiro's own folder (its signatures would match themselves), so the scan starts with the *Facheiro self-check* stage: each file of the plugin is compared with the wordpress.org checksums for this version, or, when wordpress.org has none (or cannot be reached), with the `checksums.json` the plugin ships with. Modified or added PHP files are HIGH, and the admin pages then warn that the results may not be trustworthy (until the scan is clean or you mark those findings as false positives). Nothing in the folder is skipped: in a git checkout the development files (tests, build tools) are verified against the same list, a PHP file inside `.git` is reported, and a `vendor/` or `node_modules/` folder is reported as unverified, since no list covers installed dependencies. The shipped list catches mass injectors and dropped files, but an attacker who can write files can rewrite it too; only the wordpress.org reference (or a fresh download, run as the standalone CLI) covers that. `selfcheck=1` / `wp facheiro selfcheck` runs it alone; `noselfcheck=1` skips it.
+- **Sealed settings.** Saved false positives, custom signatures and the scan settings live in the database, where SQL injection alone could add a false positive for a backdoor or delete the signature that catches it. Every change made through Facheiro also writes the SHA-256 of each entry to `wp-content/facheiro-seal.php` (guarded like the recovery key file), which a database-only attacker cannot rewrite. A false positive that does not match the seal is ignored, so its finding comes back (`TAMPER_FALSE_POSITIVE`); custom signatures and settings changed outside Facheiro are reported (`TAMPER_SIGNATURE`, `TAMPER_SETTINGS`), and a deleted or garbled seal is recreated and reported (`TAMPER_SEAL_MISSING`). The admin pages list each change with **Keep** (after review) or **Remove**; `wp facheiro seal status` and `wp facheiro seal accept [--collection=<name>]` do the same from the command line. After restoring the database from a backup or moving the site without the seal file, review and accept.
 
 This is detection, not prevention: an attacker who can write files can rewrite the seal and the shipped checksum list as well.
 
 ### AI assistants (MCP)
 
-On WordPress 6.9+ Elderward registers WordPress abilities (category `elderward`) that the official [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin exposes to any MCP client: Claude Desktop and Claude Code, Antigravity, Cursor, and ChatGPT where custom MCP connectors are available. The **AI assistants** tab shows the client configuration for the site, either STDIO through WP-CLI (`wp mcp-adapter serve --user=<admin>`) or HTTP through `@automattic/mcp-wordpress-remote` with an application password.
+On WordPress 6.9+ Facheiro registers WordPress abilities (category `facheiro`) that the official [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin exposes to any MCP client: Claude Desktop and Claude Code, Antigravity, Cursor, and ChatGPT where custom MCP connectors are available. The **AI assistants** tab shows the client configuration for the site, either STDIO through WP-CLI (`wp mcp-adapter serve --user=<admin>`) or HTTP through `@automattic/mcp-wordpress-remote` with an application password.
 
 | Ability | What it does |
 |---|---|
-| `elderward/get-status`, `start-scan`, `advance-scan`, `cancel-scan` | Run a report-only background scan and follow it; `advance-scan` steps it from the request when WP-Cron is stalled |
-| `elderward/list-findings`, `get-finding`, `read-flagged-file` | Read results and the first 64 KB of a flagged file (inside the root, never `wp-config.php`) |
-| `elderward/mark-false-positive`, `unmark-false-positive`, `list-false-positives` | Review decisions, with a mandatory note |
-| `elderward/list-signatures`, `test-signature`, `save-signature`, `delete-signature` | Draft, prove and save detection-only signatures |
-| `elderward/triage` (MCP prompt) | A guided investigation: verdict, evidence, cleanup plan the user runs |
+| `facheiro/get-status`, `start-scan`, `advance-scan`, `cancel-scan` | Run a report-only background scan and follow it; `advance-scan` steps it from the request when WP-Cron is stalled |
+| `facheiro/list-findings`, `get-finding`, `read-flagged-file` | Read results and the first 64 KB of a flagged file (inside the root, never `wp-config.php`) |
+| `facheiro/mark-false-positive`, `unmark-false-positive`, `list-false-positives` | Review decisions, with a mandatory note |
+| `facheiro/list-signatures`, `test-signature`, `save-signature`, `delete-signature` | Draft, prove and save detection-only signatures |
+| `facheiro/triage` (MCP prompt) | A guided investigation: verdict, evidence, cleanup plan the user runs |
 
-Only administrators (`Elderward_Plugin::can_manage()`) can call them. There is no ability that cleans, restores or writes site files. Every output that carries scanned data has an `untrusted_data_notice`, and the triage prompt tells the assistant to treat file names, paths, details and file contents as attacker-controlled data, never as instructions. Without MCP, the tab offers a brief (instructions plus the top 100 findings as JSON lines between untrusted-data markers) to paste into any chatbot. `tests/mcp-stdio.js` drives a whole session over STDIO.
+Only administrators (`Facheiro_Plugin::can_manage()`) can call them. There is no ability that cleans, restores or writes site files. Every output that carries scanned data has an `untrusted_data_notice`, and the triage prompt tells the assistant to treat file names, paths, details and file contents as attacker-controlled data, never as instructions. Without MCP, the tab offers a brief (instructions plus the top 100 findings as JSON lines between untrusted-data markers) to paste into any chatbot. `tests/mcp-stdio.js` drives a whole session over STDIO.
 
-The plugin stores the latest report in one table (`{prefix}elderward_findings`) and its scan state in an option; uninstalling removes both, the work folder under `wp-content/uploads/elderward/`, Elderward's `.htaccess` blocks, the recovery key and state, and the tamper seal.
+The plugin stores the latest report in one table (`{prefix}facheiro_findings`) and its scan state in an option; uninstalling removes both, the work folder under `wp-content/uploads/facheiro/`, Facheiro's `.htaccess` blocks, the recovery key and state, and the tamper seal.
 
 ## The standalone CLI
 
 For a site that no longer loads, or a host without WP-CLI, run the same scanners straight from the plugin folder. Options are `key=value` arguments:
 
-Keep Elderward in a folder of its own: the plugin folder, or any folder that holds only its `bin/` and `includes/`. Its own folder is never scanned (the signatures in its source would match themselves), so a scan directory that is that folder or sits inside it is refused with an error instead of being reported clean. Uploading `bin/` and `includes/` straight into the home folder above `public_html` is the usual way to run into this.
+Keep Facheiro in a folder of its own: the plugin folder, or any folder that holds only its `bin/` and `includes/`. Its own folder is never scanned (the signatures in its source would match themselves), so a scan directory that is that folder or sits inside it is refused with an error instead of being reported clean. Uploading `bin/` and `includes/` straight into the home folder above `public_html` is the usual way to run into this.
 
 ```
-php bin/elderward.php scanall=1 scandirectory=/path/to/wp-root         # every scanner, report-only
-php bin/elderward.php scanall=1 scanlog=/var/log/apache2 scandirectory=/path/to/wp-root  # ... incl. logs
-php bin/elderward.php scanall=1 format=json scandirectory=/path/to/wp-root               # machine-readable
+php bin/facheiro.php scanall=1 scandirectory=/path/to/wp-root         # every scanner, report-only
+php bin/facheiro.php scanall=1 scanlog=/var/log/apache2 scandirectory=/path/to/wp-root  # ... incl. logs
+php bin/facheiro.php scanall=1 format=json scandirectory=/path/to/wp-root               # machine-readable
 ```
 
 `scanall=1` runs the quick checks, integrity, timestamp, crontab, database and (with `scanlog=`) access log scanners, then the malware signature scan, and **changes nothing**. In text mode the findings are collected and printed once at the end, sorted worst-first; with `format=json` they stream as each scanner produces them. Only one scan mode is accepted per invocation.
@@ -168,11 +168,11 @@ php bin/elderward.php scanall=1 format=json scandirectory=/path/to/wp-root      
 Fixing what was found:
 
 ```
-php bin/elderward.php dryrun=1 scandirectory=/path/to/site   # preview the signature cleanup, write nothing
-php bin/elderward.php scandirectory=/path/to/site            # remove known malware from infected files
-php bin/elderward.php allfiles=1 scandirectory=/path/to/site # ... scanning every file, not just risky extensions
-php bin/elderward.php scanintegrity=1 restore=1 dryrun=1 scandirectory=/path/to/wp-root  # preview restore
-php bin/elderward.php scanintegrity=1 restore=1 quarantinedir=/safe/place scandirectory=/path/to/wp-root
+php bin/facheiro.php dryrun=1 scandirectory=/path/to/site   # preview the signature cleanup, write nothing
+php bin/facheiro.php scandirectory=/path/to/site            # remove known malware from infected files
+php bin/facheiro.php allfiles=1 scandirectory=/path/to/site # ... scanning every file, not just risky extensions
+php bin/facheiro.php scanintegrity=1 restore=1 dryrun=1 scandirectory=/path/to/wp-root  # preview restore
+php bin/facheiro.php scanintegrity=1 restore=1 quarantinedir=/safe/place scandirectory=/path/to/wp-root
 ```
 
 The signature cleanup is the default mode, so with no mode option the script modifies files; `dryrun=1` is the switch that makes it report-only. (`allfiles=1` was called `scan_all=1` in earlier versions; the old name now stops with an error because it was too easy to confuse with `scanall=1`.)
@@ -180,17 +180,17 @@ The signature cleanup is the default mode, so with no mode option the script mod
 Running one scanner at a time:
 
 ```
-php bin/elderward.php scancron=1               # check the current user's crontab for malware
-php bin/elderward.php scanlog=/var/log/apache2/access.log   # scan one access log for IoCs
-php bin/elderward.php scanlog=/var/log/apache2 # scan every access log in a directory (.gz included)
-php bin/elderward.php scanlog=/var/log/apache2 correlate=1 scandirectory=/path/to/wp-root  # link traffic to files
-php bin/elderward.php scanintegrity=1 scandirectory=/path/to/wp-root   # verify core, plugins and themes
-php bin/elderward.php scanintegrity=1 checksumdir=/path/to/manifests   # ... without network access
-php bin/elderward.php scanintegrity=1 locale=pt_BR scandirectory=/path/to/wp-root  # non-English core
-php bin/elderward.php scantimes=1 scandirectory=/path/to/wp-root       # timestamp anomaly report
-php bin/elderward.php scandb=1 scandirectory=/path/to/wp-root          # scan the database (read-only)
-php bin/elderward.php quickscan=1 scandirectory=/path/to/wp-root       # uploads PHP, prepend hooks, mu-plugins
-php bin/elderward.php help=1                   # show usage
+php bin/facheiro.php scancron=1               # check the current user's crontab for malware
+php bin/facheiro.php scanlog=/var/log/apache2/access.log   # scan one access log for IoCs
+php bin/facheiro.php scanlog=/var/log/apache2 # scan every access log in a directory (.gz included)
+php bin/facheiro.php scanlog=/var/log/apache2 correlate=1 scandirectory=/path/to/wp-root  # link traffic to files
+php bin/facheiro.php scanintegrity=1 scandirectory=/path/to/wp-root   # verify core, plugins and themes
+php bin/facheiro.php scanintegrity=1 checksumdir=/path/to/manifests   # ... without network access
+php bin/facheiro.php scanintegrity=1 locale=pt_BR scandirectory=/path/to/wp-root  # non-English core
+php bin/facheiro.php scantimes=1 scandirectory=/path/to/wp-root       # timestamp anomaly report
+php bin/facheiro.php scandb=1 scandirectory=/path/to/wp-root          # scan the database (read-only)
+php bin/facheiro.php quickscan=1 scandirectory=/path/to/wp-root       # uploads PHP, prepend hooks, mu-plugins
+php bin/facheiro.php help=1                   # show usage
 ```
 
 **Moved content folder.** Plugins, themes, uploads and mu-plugins are looked for where WordPress loads them, not only in `<root>/wp-content`. Inside WordPress (admin page, WP-CLI, assistants) the plugin passes `WP_CONTENT_DIR` and `WP_PLUGIN_DIR`, and the recovery page passes the plugin folder it runs from. The standalone CLI reads `WP_CONTENT_DIR` and `WP_PLUGIN_DIR` out of `wp-config.php` when they are a plain string or `__DIR__`, `dirname(__FILE__)` or `ABSPATH` followed by a string; anything else (Bedrock's `Config::define()`, variables, `getenv()`) needs `contentdir=/path` (and `plugindir=/path` when plugins live elsewhere). A folder outside the root is walked by every scanner, and `<root>/wp-content` is scanned too whenever it exists. A relocated folder that was found reports `CONTENT_DIR` (INFO), so the report says where it looked. One that can't be found, a define that can't be evaluated, or a define pointing at `/`, the root or one of its parents (a tampered `wp-config.php` can point anywhere) reports `CONTENT_DIR_UNKNOWN` (ERROR). A cleanup or restore run never follows a `wp-config.php` define out of the root (the file is attacker-writable and the operator may run with more privileges than the web user): it reports `CONTENT_DIR_UNKNOWN` until `contentdir=` confirms the folder, or `dryrun=1` makes the run report-only.
@@ -248,7 +248,7 @@ The exit code reflects the worst finding, so cron jobs and CI can alert on it: *
 
 ### Restoring files
 
-With `scanintegrity=1 restore=1` (CLI) or `wp elderward integrity --restore`, every `INTEGRITY_MODIFIED` and `INTEGRITY_MISSING` file is restored from the official package zip for the exact installed version. Safety properties:
+With `scanintegrity=1 restore=1` (CLI) or `wp facheiro integrity --restore`, every `INTEGRITY_MODIFIED` and `INTEGRITY_MISSING` file is restored from the official package zip for the exact installed version. Safety properties:
 
 - **Take a backup first**, and preview with `dryrun=1` / `--dryrun` (reports `INTEGRITY_RESTORABLE` without writing).
 - Every file is **byte-verified against the reference checksum manifest before writing** — a tampered or mismatched zip is refused (`RESTORE_FAILED`), never written.
@@ -297,42 +297,42 @@ File cleanup signatures live in `Signatures::builtin_cleanup()` in `includes/eng
 Site-specific signatures do not need code changes. Write them in the plugin's Signatures tab or in a JSON file, the same format the tab exports. **[Writing malware signatures](docs/writing-signatures.md)** is the full guide: what each target sees, turning a sample into a rule, keeping it fast and free of false positives, testing, sharing, and worked examples ([`docs/examples/signatures.json`](docs/examples/signatures.json)).
 
 ```json
-{"elderward_signatures": 1, "signatures": [
+{"facheiro_signatures": 1, "signatures": [
   {"id": "acme-loader", "target": "file", "severity": "HIGH", "description": "ACME loader backdoor",
    "match": [{"string": "acme_loader"}, {"regex": "/eval\\s*\\(\\s*\\$/"}]},
   {"id": "casino-spam", "target": "db_post", "severity": "LOW", "pattern": "@casino-bonus\\.example@i"}
 ]}
 ```
 
-`target` is `file`, `db_option` or `db_post`. File signatures list 1 to 10 conditions that must all match, the first being the prefilter. Database signatures take one `pattern`; post signatures see the content of every live post (with a custom post signature installed, the scan reads all posts instead of only those with code-like markers). A custom signature always reports, as `SIGNATURE_MATCH` for files with its own severity, and never cleans, not even in a real `wp elderward scan` run. Built-in signatures are checked first. A regex that does not compile, or that matches an empty string, is refused. The standalone CLI takes the same file:
+`target` is `file`, `db_option` or `db_post`. File signatures list 1 to 10 conditions that must all match, the first being the prefilter. Database signatures take one `pattern`; post signatures see the content of every live post (with a custom post signature installed, the scan reads all posts instead of only those with code-like markers). A custom signature always reports, as `SIGNATURE_MATCH` for files with its own severity, and never cleans, not even in a real `wp facheiro scan` run. Built-in signatures are checked first. A regex that does not compile, or that matches an empty string, is refused. The standalone CLI takes the same file:
 
 ```
-php bin/elderward.php scanall=1 scandirectory=/var/www/html signatures=/path/signatures.json
+php bin/facheiro.php scanall=1 scandirectory=/var/www/html signatures=/path/signatures.json
 ```
 
 Regexes are full PCRE patterns with delimiters and flags. Every pattern (including the crontab, access log and database sets) is compile-checked before a scan starts, so a malformed regex stops the run and names the broken signature instead of silently never matching. `remove_regex` fails loudly if it matched nothing, and dry run covers both action types.
 
 ## Translations
 
-The admin pages use the `elderward` text domain; translations ship in `languages/` (Brazilian Portuguese: `elderward-pt_BR.po`, compiled to `.mo` and `.l10n.php`) and follow each user's language. Language packs from translate.wordpress.org, once the plugin is in the directory, take precedence. The recovery page runs without WordPress, so it has its own table, `includes/recovery/i18n/pt_BR.php` (English text => translation); it picks the language from the browser and offers a switch in its header. Finding details from the engine stay in English everywhere, like the CLI output and exports.
+The plugin's own text is Brazilian Portuguese: that is the language of the strings in the source, under the `facheiro` text domain. English ships in `languages/` (`facheiro-en_US.po`, compiled to `.mo` and `.l10n.php`) and is shown to every user whose language is an English one; any other language sees the Portuguese text. Language packs from translate.wordpress.org, once the plugin is in the directory, take precedence. The recovery page runs without WordPress, so it has its own table, `includes/recovery/i18n/en.php` (Portuguese text => English); it picks the language from the browser and offers a switch in its header. Finding details from the engine stay in English everywhere, like the CLI output and exports; `includes/recovery/i18n/pt_BR.php` only translates the engine's stage names for the recovery page.
 
-After changing interface strings, refresh the template and the translations (WP-CLI 2.8+):
+After changing interface strings, refresh the template and the English translation (WP-CLI 2.8+):
 
 ```
-wp i18n make-pot . languages/elderward.pot --slug=elderward --domain=elderward \
+wp i18n make-pot . languages/facheiro.pot --slug=facheiro --domain=facheiro \
     --exclude=tests,site,vendor,node_modules,includes/engine,includes/recovery,bin
-wp i18n update-po languages/elderward.pot languages/elderward-pt_BR.po   # then translate the new entries
+wp i18n update-po languages/facheiro.pot languages/facheiro-en_US.po   # then translate the new entries into English
 wp i18n make-mo languages && wp i18n make-php languages
 ```
 
-A string added to the recovery page goes through `App::t()` / `App::e()` and needs its line in `includes/recovery/i18n/pt_BR.php`; keep the placeholders (`%s`, `%1$s`, `%d`) identical.
+A string added to the recovery page is written in Portuguese, goes through `App::t()` / `App::e()` and needs its English line in `includes/recovery/i18n/en.php`; keep the placeholders (`%s`, `%1$s`, `%d`) identical.
 
 ## Development
 
 ```
-includes/engine/   the scanner engine (namespace Elderward\Engine, PHP 5.6 syntax, no WordPress dependency)
+includes/engine/   the scanner engine (namespace Facheiro\Engine, PHP 5.6 syntax, no WordPress dependency)
 includes/plugin/   the WordPress side (PHP 7.2+): admin page, WP-CLI, $wpdb and HTTP API adapters
-bin/elderward.php  the standalone CLI entry
+bin/facheiro.php  the standalone CLI entry
 tests/regress.sh   old-vs-new output diff over synthetic fixtures (needs the MariaDB fixture for the DB cases)
 tests/chunking.php proves a scan run one unit per request yields the same findings as one uninterrupted run
 tests/admin-ui.js  Playwright run through the admin page
@@ -343,13 +343,13 @@ tests/mcp-stdio.js MCP client session over STDIO through the MCP Adapter
 tests/checksums.sh checksums.json is current; the self-check on a release-like copy
 tests/tamper.sh    sealed settings on a test site (WP-CLI); tests/tamper-ui.js: the review notices
 build/make-checksums.php   writes checksums.json (run it after changing any shipped file)
-build/make-zip.php         builds dist/elderward.zip, the release package
+build/make-zip.php         builds dist/facheiro.zip, the release package
 .claude/skills/pre-share-check/   Claude Code skill: checks a branch's changes before they are shared (runs the checks above, reviews the diff, changes nothing)
 recovery.php, includes/recovery/   recovery mode (runs without WordPress; PHP 5.6 syntax)
 site/              the project homepage (static HTML, not part of the plugin zip)
 ```
 
-`.distignore` lists what stays out of the WordPress.org package (tests, tooling, docs for contributors, the homepage); `.gitattributes` leaves the same files out of `git archive` and GitHub's Download ZIP, and `build/make-checksums.php` refuses when the two lists disagree. Build the package with `php build/make-zip.php`: it writes `dist/elderward.zip` with exactly the files listed under `files` in `checksums.json`, each checked against its checksum, and refuses when `checksums.json` is out of date. That zip is what to upload to WordPress.org, install on a test site and run Plugin Check on. A git checkout is not a release: Plugin Check reports its `tests/`, `build/`, `.claude/`, `CLAUDE.md` and the like as `application_detected`, `hidden_files`, `ai_instruction_directory`, `unexpected_markdown_file` and unguarded PHP.
+`.distignore` lists what stays out of the WordPress.org package (tests, tooling, docs for contributors, the homepage); `.gitattributes` leaves the same files out of `git archive` and GitHub's Download ZIP, and `build/make-checksums.php` refuses when the two lists disagree. Build the package with `php build/make-zip.php`: it writes `dist/facheiro.zip` with exactly the files listed under `files` in `checksums.json`, each checked against its checksum, and refuses when `checksums.json` is out of date. That zip is what to upload to WordPress.org, install on a test site and run Plugin Check on. A git checkout is not a release: Plugin Check reports its `tests/`, `build/`, `.claude/`, `CLAUDE.md` and the like as `application_detected`, `hidden_files`, `ai_instruction_directory`, `unexpected_markdown_file` and unguarded PHP.
 
 `composer install` brings PHPCS with the WordPress and PHPCompatibility standards; `composer phpcs` must come back clean before a release. `TESTPLAN.md` lists the fixtures and the live wordpress.org tests that need a networked site.
 

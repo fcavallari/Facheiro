@@ -1,7 +1,7 @@
 /*
  * Playwright check of recovery mode, end to end:
  *
- *   ELDERWARD_URL=http://127.0.0.1:8090 ELDERWARD_USER=admin ELDERWARD_PASS=adminpass \
+ *   FACHEIRO_URL=http://127.0.0.1:8090 FACHEIRO_USER=admin FACHEIRO_PASS=adminpass \
  *   node tests/recovery.js [path/to/wordpress]
  *
  * Creates a key on the Recovery tab (shown once), then - with WordPress
@@ -14,12 +14,12 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const base = process.env.ELDERWARD_URL || 'http://127.0.0.1:8090';
-const user = process.env.ELDERWARD_USER || 'admin';
-const pass = process.env.ELDERWARD_PASS || 'adminpass';
+const base = process.env.FACHEIRO_URL || 'http://127.0.0.1:8090';
+const user = process.env.FACHEIRO_USER || 'admin';
+const pass = process.env.FACHEIRO_PASS || 'adminpass';
 const wpRoot = process.argv[2] || '';
-const recoveryUrl = base + '/wp-content/plugins/elderward/recovery.php';
-const broken = wpRoot ? path.join(wpRoot, 'wp-content/mu-plugins/zz-elderward-test-broken.php') : '';
+const recoveryUrl = base + '/wp-content/plugins/facheiro/recovery.php';
+const broken = wpRoot ? path.join(wpRoot, 'wp-content/mu-plugins/zz-facheiro-test-broken.php') : '';
 
 function fail(msg) {
 	console.error('FAIL: ' + msg);
@@ -44,7 +44,7 @@ async function adminLogin(page) {
 
 	console.log('== no key: 404');
 	await adminLogin(page);
-	await page.goto(base + '/wp-admin/admin.php?page=elderward&tab=recovery');
+	await page.goto(base + '/wp-admin/admin.php?page=facheiro&tab=recovery');
 	if (await page.$('button[value="revoke"]:not([hidden])')) {
 		await Promise.all([page.waitForURL(/tab=recovery/), page.click('button[value="revoke"]')]);
 	}
@@ -53,19 +53,19 @@ async function adminLogin(page) {
 	if (res.status() !== 404) { fail('recovery page answers without a key'); }
 
 	console.log('== create a key on the Recovery tab');
-	await page.click('#elderward-recovery-create');
-	await page.waitForSelector('#elderward-key-reveal:not([hidden])');
-	const key = await page.inputValue('#elderward-recovery-key');
+	await page.click('#facheiro-recovery-create');
+	await page.waitForSelector('#facheiro-key-reveal:not([hidden])');
+	const key = await page.inputValue('#facheiro-recovery-key');
 	const stored = await context.request.get(base + '/wp-admin/options.php');
 	if ((await stored.text()).includes(key)) { fail('the key is stored in an option'); }
-	console.log('key length', key.length, '| status:', (await page.textContent('.elderward-card-head .elderward-check')).trim());
+	console.log('key length', key.length, '| status:', (await page.textContent('.facheiro-card-head .facheiro-check')).trim());
 	if (key.length !== 32) { fail('no 32-character key shown'); }
 	await page.reload();
-	if (await page.inputValue('#elderward-recovery-key') !== '') { fail('key shown a second time'); }
+	if (await page.inputValue('#facheiro-recovery-key') !== '') { fail('key shown a second time'); }
 
 	if (broken) {
 		fs.mkdirSync(path.dirname(broken), { recursive: true });
-		fs.writeFileSync(broken, '<?php\nfunction elderward_test_broken( {\n');
+		fs.writeFileSync(broken, '<?php\nfunction facheiro_test_broken( {\n');
 		res = await context.request.get(base + '/');
 		console.log('site with the broken mu-plugin ->', res.status());
 	}
@@ -78,8 +78,8 @@ async function adminLogin(page) {
 	await rec.waitForSelector('#scan');
 	if (broken) {
 		const broke = await rec.textContent('section.card:has(h2:has-text("What broke"))');
-		console.log('names the broken file:', /zz-elderward-test-broken\.php/.test(broke));
-		if (!/zz-elderward-test-broken\.php/.test(broke)) { fail('"What broke the site" does not name the broken file'); }
+		console.log('names the broken file:', /zz-facheiro-test-broken\.php/.test(broke));
+		if (!/zz-facheiro-test-broken\.php/.test(broke)) { fail('"What broke the site" does not name the broken file'); }
 	}
 	// Results of an earlier scan may already be on the page: wait for the
 	// reload that ends this one.
@@ -109,7 +109,7 @@ async function adminLogin(page) {
 	if (broken) {
 		fs.unlinkSync(broken);
 	}
-	await page.goto(base + '/wp-admin/admin.php?page=elderward&tab=recovery');
+	await page.goto(base + '/wp-admin/admin.php?page=facheiro&tab=recovery');
 	await Promise.all([page.waitForURL(/tab=recovery/), page.click('button[value="revoke"]')]);
 	res = await context.request.get(recoveryUrl);
 	console.log('recovery.php after revoke ->', res.status());
