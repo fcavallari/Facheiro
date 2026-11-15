@@ -5,12 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="text-scale" content="scale">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>Facheiro</title>
-<meta name="description" content="Facheiro é um plugin gratuito de varredura de malware e resposta a incidentes para WordPress. Uma varredura pelo painel, só de leitura, examina arquivos, core, plugins, temas, banco de dados e logs de acesso, com blindagem do servidor, modo de recuperação e ferramentas para assistentes de IA.">
+<title>Facheiro: resposta a incidentes para WordPress</title>
+<meta name="description" content="Facheiro é um kit de código aberto para investigar WordPress invadido e responder ao incidente: varredura só de leitura de arquivos, integridade do core, plugins e temas, banco de dados, logs e crontab, remediação controlada pelo WP-CLI, blindagem do servidor, modo de recuperação e assistentes de IA sem poder de alterar o site.">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#eceee6">
-<meta property="og:title" content="Facheiro">
-<meta property="og:description" content="Varredura de malware e resposta a incidentes para WordPress: descubra o que entrou no site e por onde.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Facheiro: ache a infecção, entenda a invasão, retome o controle">
+<meta property="og:description" content="Kit de código aberto para investigar WordPress invadido e responder ao incidente, sem tornar o incidente pior.">
+<meta property="og:url" content="https://facheiro.space.fast/">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:locale:alternate" content="en_US">
 <link rel="canonical" href="https://facheiro.space.fast/">
 <link rel="alternate" hreflang="pt-BR" href="https://facheiro.space.fast/">
 <link rel="alternate" hreflang="en" href="https://facheiro.space.fast/en/">
@@ -18,672 +22,67 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%2314302d'/%3E%3Cg fill='none' stroke='%23b9d3cd' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 26V6.5' stroke-width='5'/%3E%3Cpath d='M8.5 12.5v5.5q0 3 3 3H16' stroke-width='4'/%3E%3Cpath d='M23.5 9v5.5q0 3-3 3H16' stroke-width='4'/%3E%3C/g%3E%3Cpath d='M4.5 28h23' stroke='%23e2551d' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preload" href="/fonts/alfa-slab-one-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/ibm-plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-<style>
-/* Fonts served from this site (see /fonts/README.txt), so no request
-   goes to a third party. */
-@font-face { font-family: "Alfa Slab One"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/alfa-slab-one-400.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-sans-400.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Sans"; font-style: italic; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-sans-400-italic.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/ibm-plex-sans-600.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/ibm-plex-sans-700.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-mono-400.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/ibm-plex-mono-600.woff2") format("woff2"); }
-
-:root {
-  /* caatinga: "mata branca", the white forest of the dry season */
-  --branco: #eceee6;
-  --papel: #f7f8f3;
-  --tinta: #14302d;
-  --glauco: #4f8f88;
-  --glauco-claro: #b9d3cd;
-  --glauco-texto: #2b6a64;
-  --espinho: #c1911f;
-  --espinho-texto: #7d5b0c;
-  --brasa: #c2410c;
-  --cinza: #55605a;
-  --regua: #c3c9bd;
-  --carvao: #1b1917;
-  --carvao-regua: #3a3631;
-
-  --display: "Alfa Slab One", "Rockwell", "Roboto Slab", Georgia, serif;
-  --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-
-  --measure: 66ch;
-  --gutter: clamp(16px, 4vw, 56px);
-}
-
-*, *::before, *::after { box-sizing: border-box; }
-
-html { background: var(--branco); }
-
-body {
-  margin: 0;
-  background: var(--branco);
-  color: var(--tinta);
-  font-family: var(--sans);
-  font-size-adjust: .516;
-  font-size: 1.0625rem;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-
-a { color: var(--glauco-texto); text-underline-offset: .2em; text-decoration-thickness: 1px; }
-a:hover { color: var(--brasa); }
-
-:focus-visible {
-  outline: 3px solid var(--brasa);
-  outline-offset: 3px;
-}
-
-pre {
-  scrollbar-width: thin;
-  scrollbar-color: var(--carvao-regua) transparent;
-}
-
-code {
-  font-family: var(--mono);
-  font-size: .92em;
-  color: var(--glauco-texto);
-}
-
-.wrap {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 var(--gutter);
-}
-
-/* ---------- language switch ---------- */
-
-.lang {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 20px;
-  font-size: .95rem;
-}
-
-/* ---------- hero ---------- */
-
-.hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
-  gap: clamp(24px, 4vw, 64px);
-  align-items: end;
-  padding-top: clamp(24px, 5vh, 64px);
-  border-bottom: 3px solid var(--tinta);
-}
-
-.hero-text { padding-bottom: clamp(32px, 6vh, 72px); }
-
-h1 {
-  font-family: var(--display); font-size-adjust: .556;
-  font-weight: 400;
-  font-size: clamp(3.4rem, 1.6rem + 7vw, 8.4rem);
-  line-height: .9;
-  letter-spacing: -.01em;
-  margin: 0 0 .3em;
-  color: var(--tinta);
-}
-
-.lede {
-  font-size: clamp(1.15rem, 1rem + .4vw, 1.35rem);
-  line-height: 1.5;
-  max-width: 36ch;
-  margin: 0 0 1.6em;
-}
-
-.cacto { position: relative; align-self: end; }
-
-.cacto canvas {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1 / 1.18;
-}
-
-.cacto button {
-  position: absolute;
-  right: 0;
-  bottom: 12px;
-  font: inherit;
-  font-size: .9rem;
-  color: var(--glauco-texto);
-  background: var(--branco);
-  border: 0;
-  padding: .1em .4em;
-  min-block-size: 24px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: .2em;
-}
-.cacto button:hover { color: var(--brasa); }
-
-/* ---------- command block ---------- */
-
-.cmd {
-  display: flex;
-  align-items: stretch;
-  background: var(--carvao);
-  max-width: 100%;
-}
-
-.cmd pre {
-  margin: 0;
-  padding: .85em 1em;
-  flex: 1;
-  min-width: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-family: var(--mono);
-  font-size: .92rem;
-  line-height: 1.6;
-  color: #ecebe4;
-}
-
-.cmd pre .p { color: #8f8a80; user-select: none; }
-
-.copy {
-  flex: none;
-  font: inherit;
-  font-size: .9rem;
-  color: var(--glauco-claro);
-  background: transparent;
-  border: 0;
-  border-left: 1px solid var(--carvao-regua);
-  padding: 0 1em;
-  cursor: pointer;
-}
-.copy:hover { background: var(--carvao-regua); color: #fff; }
-
-/* The confirmation bubble is also the live region: shown with opacity,
-   so its text stays in the accessibility tree and is announced. */
-.cmd { position: relative; }
-.tip {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 6px);
-  padding: .2em .6em;
-  background: var(--tinta);
-  color: var(--branco);
-  font-size: .85rem;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .15s;
-}
-.copy[data-copied] + .tip,
-.copy[data-failed] + .tip { opacity: 1; }
-.copy[data-failed] + .tip { background: var(--brasa); }
-
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .6em 1.6em;
-  margin-top: 1.4em;
-}
-
-.links a { font-weight: 600; }
-
-/* ---------- sections ---------- */
-
-section { padding: clamp(56px, 9vw, 112px) 0 0; }
-
-h2 {
-  font-family: var(--display); font-size-adjust: .556;
-  font-weight: 400;
-  font-size: clamp(1.9rem, 1.4rem + 2vw, 3rem);
-  line-height: 1.08;
-  margin: 0 0 .35em;
-  max-width: 22ch;
-}
-
-.sub {
-  color: var(--cinza);
-  max-width: var(--measure);
-  margin: 0 0 2.2em;
-}
-
-h3 {
-  font-family: var(--sans);
-  font-weight: 700;
-  font-size: 1.25rem;
-  line-height: 1.25;
-  margin: 0 0 .6em;
-}
-
-/* ---------- terminal ---------- */
-
-.term { margin: 0; background: var(--carvao); }
-
-.term-bar {
-  display: flex;
-  justify-content: space-between;
-  gap: 1em;
-  padding: .5em 1em;
-  border-bottom: 1px solid var(--carvao-regua);
-  color: #8f8a80;
-  font-family: var(--mono);
-  font-size: .85rem;
-}
-
-.term-bar button {
-  font: inherit;
-  color: var(--glauco-claro);
-  background: none;
-  border: 0;
-  padding: 0;
-  min-block-size: 24px;
-  cursor: pointer;
-  white-space: nowrap;
-  text-decoration: underline;
-  text-underline-offset: .2em;
-}
-
-.term pre {
-  margin: 0;
-  padding: 1.1em 1.2em 1.3em;
-  min-height: 29em;
-  font-family: var(--mono);
-  font-size: .88rem;
-  line-height: 1.6;
-  color: #b3afa4;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.term .c { color: #ecebe4; }
-.term .ctx { color: #8f8a80; }
-.term .HIGH { color: #ff8552; font-weight: 600; }
-.term .MEDIUM { color: #e6b84a; font-weight: 600; }
-.term .LOW { color: #8fc9c0; font-weight: 600; }
-.term .INFO { color: #b3afa4; font-weight: 600; }
-.term .ERROR { color: #cfa6e0; font-weight: 600; }
-.term .cursor {
-  display: inline-block;
-  width: .6em;
-  height: 1.1em;
-  vertical-align: -.2em;
-  background: var(--glauco-claro);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .term .cursor { animation: blink 1.1s steps(1) 4; }
-}
-@keyframes blink { 50% { opacity: 0; } }
-
-/* ---------- checks and tools ---------- */
-
-.modes {
-  margin: 0;
-  border-top: 1px solid var(--regua);
-}
-
-.mode {
-  display: grid;
-  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
-  gap: .4em 2.4em;
-  padding: 1.3em 0;
-  border-bottom: 1px solid var(--regua);
-}
-
-.mode dt {
-  font-family: var(--mono);
-  font-size: .82rem;
-  color: var(--cinza);
-  overflow-wrap: anywhere;
-}
-
-.mode dt .name {
-  display: block;
-  font-family: var(--sans);
-  font-weight: 700;
-  font-size: 1.2rem;
-  color: var(--tinta);
-  line-height: 1.25;
-  margin-bottom: .2em;
-}
-
-.mode dd {
-  margin: 0;
-  max-width: var(--measure);
-}
-
-/* ---------- guarantees ---------- */
-
-.garantias {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 30ch), 1fr));
-  gap: 2em 3em;
-}
-
-.garantias li {
-  position: relative;
-  padding-left: 1.5em;
-}
-
-/* a stem with its thorns already burnt off */
-.garantias li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: .2em;
-  width: .5em;
-  height: 1.2em;
-  border-radius: .25em .25em 0 0;
-  background: var(--glauco);
-  box-shadow: inset 0 -3px 0 var(--brasa);
-}
-
-.garantias strong {
-  display: block;
-  font-size: 1.15rem;
-  line-height: 1.25;
-  margin-bottom: .3em;
-}
-
-.garantias p { margin: 0; color: var(--cinza); }
-
-/* ---------- output + exit codes ---------- */
-
-.formats {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 2em 3em;
-  margin-bottom: 3.2em;
-}
-
-.formats p { margin: 0 0 1em; max-width: var(--measure); }
-
-.formats pre {
-  margin: 0;
-  padding: 1em 1.1em;
-  background: var(--carvao);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-family: var(--mono);
-  font-size: .88rem;
-  line-height: 1.6;
-  color: #ecebe4;
-}
-
-.track {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 2px solid var(--tinta);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  background: var(--papel);
-}
-
-.track li {
-  padding: 1em 1.1em 1.2em;
-  border-left: 2px solid var(--tinta);
-}
-.track li:first-child { border-left: 0; }
-
-.track .n {
-  display: block;
-  font-family: var(--display); font-size-adjust: .556;
-  font-size: 3.2rem;
-  line-height: 1;
-  margin-bottom: .2em;
-}
-
-.track li:nth-child(1) .n { color: var(--glauco); }
-.track li:nth-child(2) .n { color: var(--cinza); }
-.track li:nth-child(3) .n { color: var(--espinho); }
-.track li:nth-child(4) .n { color: var(--brasa); }
-
-.track p { margin: 0; color: var(--cinza); font-size: 1rem; }
-.track p b { color: var(--tinta); }
-
-/* ---------- install ---------- */
-
-.get {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 2.4em 3em;
-}
-
-.get ul {
-  margin: 0;
-  padding-left: 1.2em;
-}
-.get li { margin-bottom: .7em; max-width: var(--measure); }
-.get li::marker { color: var(--glauco); }
-
-.get .cmd + .cmd { margin-top: .8em; }
-.get h3:not(:first-child) { margin-top: 1.6em; }
-
-.warning {
-  margin-top: 1.6em;
-  padding: 1em 1.1em;
-  border-left: 4px solid var(--brasa);
-  background: var(--papel);
-  max-width: var(--measure);
-}
-.warning p { margin: 0; font-weight: 600; }
-.warning p + p { margin-top: .6em; color: var(--cinza); font-weight: 400; }
-
-.note {
-  margin: .9em 0 0;
-  color: var(--cinza);
-  font-size: .95rem;
-}
-
-.hint {
-  color: var(--cinza);
-  max-width: var(--measure);
-  margin: .8em 0 1em;
-}
-
-.cli-cols { margin: 2.6em 0 3.2em; }
-
-.steps {
-  margin: 0;
-  padding-left: 1.5em;
-}
-.steps li { margin-bottom: .7em; max-width: var(--measure); }
-.steps li::marker { color: var(--brasa); font-weight: 700; }
-
-/* ---------- footer ---------- */
-
-footer {
-  margin-top: clamp(72px, 11vw, 140px);
-  padding: 3.2em 0 4em;
-  background: var(--tinta);
-  color: #e3e8df;
-}
-
-footer a { color: var(--glauco-claro); }
-footer a:hover { color: #fff; }
-
-.epigraph {
-  font-family: var(--display); font-size-adjust: .556;
-  font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.4rem);
-  line-height: 1.2;
-  margin: 0 0 .5em;
-  max-width: 24ch;
-}
-
-.epigraph-note {
-  color: var(--glauco-claro);
-  margin: 0 0 2.4em;
-  max-width: var(--measure);
-}
-
-.foot {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 1em 2em;
-  font-size: .95rem;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px; height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-/* ---------- a still of the plugin's admin page ---------- */
-
-.shot {
-  margin: 0;
-  border: 2px solid var(--tinta);
-  background: var(--papel);
-}
-
-.shot-bar {
-  padding: .5em 1em;
-  border-bottom: 2px solid var(--tinta);
-  color: var(--cinza);
-  font-family: var(--mono);
-  font-size: .85rem;
-}
-
-.shot figcaption {
-  padding: .8em 1em;
-  border-top: 2px solid var(--tinta);
-  color: var(--cinza);
-  font-size: .95rem;
-}
-
-.wp {
-  background: #f0f0f1;
-  color: #1d2327;
-  padding: clamp(12px, 2.4vw, 24px);
-  font-size-adjust: none; /* the admin's own system font, as WordPress shows it */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-  font-size: .875rem;
-  line-height: 1.5;
-}
-
-.wp code {
-  font-family: Menlo, Consolas, Monaco, monospace;
-  font-size: .75rem;
-  color: #1d2327;
-  background: #f0f0f1;
-  padding: 1px 4px;
-  overflow-wrap: anywhere;
-}
-
-.wp-brand {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  color: #eceee6;
-  background: var(--tinta);
-  border-radius: 6px;
-}
-.wp-brand svg { flex: none; width: 48px; height: 48px; }
-.wp-brand b { display: block; font-family: var(--display); font-size-adjust: .556; font-weight: 400; font-size: 1.7rem; line-height: 1; }
-.wp-brand div span { display: block; margin-top: 6px; color: var(--glauco-claro); font-size: .8125rem; }
-
-.wp-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 16px 0 0;
-  border-bottom: 1px solid #c3c4c7;
-}
-.wp-tabs span { padding: 8px 14px; color: #50575e; font-weight: 600; }
-.wp-tabs .on { color: #1d2327; box-shadow: inset 0 -3px 0 var(--brasa); }
-
-.wp-card {
-  margin-top: 16px;
-  padding: 16px 20px;
-  background: #fff;
-  border: 1px solid #c3c4c7;
-}
-.wp-card h3 { margin: 0 0 8px; font-family: inherit; line-height: 1.4; font-size: .9375rem; font-weight: 600; }
-
-.wp-checks { list-style: none; margin: 0 0 14px; padding: 0; }
-.wp-checks li { padding-left: 1.4em; position: relative; margin-bottom: 2px; }
-.wp-checks li::before { content: "\2713"; position: absolute; left: 0; color: #00a32a; font-weight: 700; }
-
-.wp-btn, .wp-btn2 {
-  display: inline-block;
-  border-radius: 3px;
-  padding: 4px 12px;
-  font-size: .8125rem;
-  line-height: 2;
-  white-space: nowrap;
-}
-.wp-btn { background: #2271b1; color: #fff; border: 1px solid #2271b1; }
-.wp-btn2 { background: #f6f7f7; color: #2271b1; border: 1px solid #2271b1; }
-
-.wp-desc { margin: 10px 0 0; color: #50575e; font-size: .8125rem; }
-
-.wp-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-.wp-head h3 { margin: 0; }
-
-.wp-filters { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 10px 0; font-size: .8125rem; color: #2271b1; }
-.wp-filters .on { color: #1d2327; font-weight: 600; }
-
-.wp-table { overflow-x: auto; scrollbar-width: thin; }
-.wp-table:focus-visible { outline-offset: 0; }
-.wp table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: .8125rem; }
-.wp td:nth-child(3) { width: 26%; }
-.wp td:nth-child(3) code { overflow-wrap: normal; word-break: normal; }
-.wp th { text-align: left; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #c3c4c7; }
-.wp td { vertical-align: top; padding: 9px 10px; border-top: 1px solid #f0f0f1; }
-.wp tbody tr:nth-child(odd) td { background: #f6f7f7; }
-.wp .act { color: #2271b1; white-space: nowrap; }
-
-.sev { display: inline-block; padding: 0 6px; border-radius: 2px; font-size: .75rem; font-weight: 600; }
-.s-high { background: #d63638; color: #fff; }
-.s-medium { background: #dba617; color: #1d2327; }
-.s-low { background: #dcdcde; color: #1d2327; }
-
-/* ---------- responsive ---------- */
-
-@media (max-width: 56.25em) {
-  .hero { grid-template-columns: minmax(0, 1fr); }
-  .hero-text { padding-bottom: 0; }
-  .cacto { max-width: 420px; margin: 0 auto; width: 100%; }
-  .formats, .get { grid-template-columns: minmax(0, 1fr); }
-  .mode { grid-template-columns: minmax(0, 1fr); }
-}
-
-@media (max-width: 40em) {
-  body { font-size: 1rem; }
-  .track { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .track li:nth-child(3) { border-left: 0; }
-  .track li:nth-child(n+3) { border-top: 2px solid var(--tinta); }
-  .term pre { font-size: .78rem; min-height: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cacto button { display: none; }
-}
-</style>
+<link rel="stylesheet" href="/site.css">
+<script>document.documentElement.classList.add("js");</script>
+<script src="/site.js" defer></script>
 </head>
 <body>
 
-<div class="wrap">
-    <nav class="lang" aria-label="Idioma">
-      <a href="en/" hreflang="en" lang="en">Read in English</a>
-    </nav>
-</div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-mark" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M16 26V6.5" stroke-width="5"/><path d="M8.5 12.5v5.5q0 3 3 3H16" stroke-width="4"/><path d="M23.5 9v5.5q0 3-3 3H16" stroke-width="4"/></g><path d="M4.5 28h23" fill="none" stroke="#c2410c" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-lupa" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><circle cx="17" cy="17" r="10"/><path d="M25 25l9 9"/></g><path d="M13 17h8" stroke="#c2410c" stroke-width="3.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-pacote" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><path d="M9 5h15l7 7v23H9z"/><path d="M24 5v7h7"/></g><path d="M14 23l4 4 8-9" fill="none" stroke="#c2410c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-banco" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="3.2"><ellipse cx="20" cy="9" rx="12" ry="4.5"/><path d="M8 9v22c0 2.5 5.4 4.5 12 4.5s12-2 12-4.5V9"/></g><path d="M8 20c0 2.5 5.4 4.5 12 4.5s12-2 12-4.5" fill="none" stroke="#c2410c" stroke-width="3.2"/></symbol>
+    <symbol id="i-log" viewBox="0 0 40 40"><g stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M6 8h28M6 32h20M6 14h22"/></g><path d="M6 23h28" stroke="#c2410c" stroke-width="5" stroke-linecap="round"/></symbol>
+    <symbol id="i-assinatura" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10l-9 10 9 10M26 10l9 10-9 10"/></g><path d="M23 7l-6 26" stroke="#c2410c" stroke-width="3.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-relogio" viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-width="3.2"/><path d="M20 11v9l-6 4" fill="none" stroke="#c2410c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-cron" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M33 20a13 13 0 1 1-4-9.4"/><path d="M30 4v7h-7"/></g><circle cx="20" cy="20" r="3.4" fill="#c2410c"/></symbol>
+    <symbol id="i-olho" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+    <symbol id="i-grava" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></g></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l5 5-5 5"/><path d="M12 18h8"/></g></symbol>
+    <symbol id="i-ia" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M12 3v4M9 12v2M15 12v2"/></g></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></symbol>
+  </defs>
+</svg>
 
-<main>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+<header class="site-head">
+  <div class="wrap head-row">
+    <a class="brand" href="./" aria-label="Facheiro, início"><svg aria-hidden="true"><use href="#i-mark"/></svg>Facheiro</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links">Menu</button>
+    <nav aria-label="Seções">
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#fluxo">Fluxo</a></li>
+        <li><a href="#recursos">Recursos</a></li>
+        <li><a href="#seguranca">Segurança</a></li>
+        <li><a href="#docs">Documentação</a></li>
+        <li><a href="https://github.com/fcavallari/Facheiro">GitHub</a></li>
+        <li class="nav-lang"><a href="en/" hreflang="en" lang="en">English</a></li>
+      </ul>
+    </nav>
+    <div class="head-actions">
+      <a class="lang-link" href="en/" hreflang="en" lang="en">English</a>
+      <a class="btn btn-primary" href="#install">Instalar</a>
+    </div>
+  </div>
+</header>
+
+<main id="conteudo">
   <div class="wrap">
-    <header class="hero">
+    <div class="hero">
+      <div class="hero-title">
+        <h1><span>Ache a infecção.</span> <span>Entenda a invasão.</span> <span>Retome o controle.</span></h1>
+      </div>
       <div class="hero-text">
-        <h1>Facheiro</h1>
-        <p class="lede">Varredura de malware e resposta a incidentes para WordPress. Instale o plugin, rode uma varredura pelo painel e descubra o que entrou no site e por onde, sem alterar nada.</p>
+        <p class="lede">Um kit de código aberto para investigar WordPress invadido e responder ao incidente: ache malware e persistência, confira a integridade do core, dos plugins e dos temas e faça uma remediação controlada. Para quem precisa saber o que aconteceu, não só ver um selo verde.</p>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#install">Instalar o Facheiro</a>
+          <a class="btn" href="#docs">Ler a documentação</a>
+          <a class="text-link" href="https://github.com/fcavallari/Facheiro">Código no GitHub</a>
+        </div>
 
         <div class="cmd">
           <pre id="cmd-hero"><span class="p">$ </span>cd wp-content/plugins
@@ -691,232 +90,372 @@ footer a:hover { color: #fff; }
 <span class="p">$ </span>wp plugin activate facheiro</pre>
           <button class="copy" type="button" command="--copy" commandfor="cmd-hero">Copiar<span class="sr-only"> os comandos de instalação</span></button><span class="tip" role="status"></span>
         </div>
-        <p class="note">Gratuito e GPL. Ainda não está no WordPress.org.</p>
-
-        <p class="links">
-          <a href="#install">Como instalar</a>
-          <a href="https://github.com/fcavallari/Facheiro/wiki">Guias na wiki</a>
-          <a href="referencia/">Referência</a>
-          <a href="https://github.com/fcavallari/Facheiro">Ver o código no GitHub</a>
-        </p>
+        <p class="hero-note">Código aberto, GPLv2 ou posterior. Sem conta e sem telemetria. Ainda não está no WordPress.org, então a instalação é pelo GitHub.</p>
       </div>
 
       <div class="cacto">
         <canvas id="cacto" aria-hidden="true"></canvas>
         <button type="button" id="reburn">Queimar de novo</button>
       </div>
-    </header>
+    </div>
+  </div>
+  <div class="wrap"><div class="horizon"></div></div>
 
-    <section>
-      <h2 id="h-admin">Uma varredura, direto do painel</h2>
-      <p class="sub">Abra o Facheiro no menu do painel e clique em Iniciar varredura. A varredura roda em segundo plano pelo WP-Cron, então você pode fechar a aba, e ela não altera nada no site.</p>
+  <section id="fluxo">
+    <div class="wrap">
+      <div data-reveal>
+        <h2 id="h-fluxo">Da infecção à recuperação</h2>
+        <p class="sub">Quatro etapas, e cada uma diz o que toca no seu site. Varrer e investigar nunca alteram nada. Remediar e blindar só gravam quando você manda, e mostram antes o que vão fazer.</p>
+      </div>
 
-      <figure class="shot">
-        <div class="shot-bar"><span>wp-admin › Facheiro</span></div>
-        <div class="wp">
-          <div class="wp-brand">
-            <svg viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#b9d3cd" stroke-linecap="round" stroke-linejoin="round"><path d="M16 26V6.5" stroke-width="5"/><path d="M8.5 12.5v5.5q0 3 3 3H16" stroke-width="4"/><path d="M23.5 9v5.5q0 3-3 3H16" stroke-width="4"/></g><path d="M4.5 28h23" stroke="#e2551d" stroke-width="2.4" stroke-linecap="round"/></svg>
-            <div><b>Facheiro</b><span>Varredura de malware e resposta a incidentes para WordPress</span></div>
+      <ol class="flow">
+        <li class="stage" data-reveal>
+          <div>
+            <h3>Varrer</h3>
+            <p class="touch touch-read"><svg aria-hidden="true"><use href="#i-olho"/></svg>Só leitura: painel, <code>wp facheiro scanall</code> ou CLI sem WordPress</p>
+            <p>Sete verificações num relatório só: os esconderijos de sempre, a integridade do core, dos plugins e dos temas, o banco de dados, os logs de acesso, as assinaturas de malware, as datas de modificação e o crontab.</p>
+            <p>Pelo painel a varredura roda em segundo plano, pelo WP-Cron, e você pode fechar a aba. Tudo o que impede uma verificação vira um achado ERROR em vez de ser pulado.</p>
           </div>
-          <div class="wp-tabs"><span class="on">Varredura</span><span>Assinaturas</span><span>Blindagem</span><span>Recuperação</span><span>Assistentes de IA</span></div>
+          <figure class="term" lang="en">
+            <div class="term-bar"><span>admin@host: /var/www/html</span><button type="button" id="replay" hidden>Rodar de novo</button></div>
+            <pre id="term"><span class="ctx">$ </span><span class="c">wp facheiro scanall --log=/var/log/apache2</span>
+<span class="HIGH">HIGH</span>,UPLOADS_PHP,/var/www/html/wp-content/uploads/2024/03/cache.php,executable PHP inside wp-content/uploads - usually a webshell dropped through an upload form
+<span class="HIGH">HIGH</span>,INTEGRITY_EXTRA,/var/www/html/wp-includes/class-wp-locale-switch.php,core 6.6.2: file is not part of the official package
+<span class="HIGH">HIGH</span>,INTEGRITY_MODIFIED,/var/www/html/wp-content/plugins/akismet/akismet.php,plugin akismet 5.3.3: checksum does not match the official package
+<span class="HIGH">HIGH</span>,MALWARE_FOUND,/var/www/html/wp-includes/js/jquery/jquery-migrate.min.js,javascript_ndsw (dry run: file not modified)
+<span class="HIGH">HIGH</span>,CRONTAB_IOC,crontab,crontab.tmp.006: * * * * * echo ... | base64 --decode &gt; /tmp/x
+<span class="HIGH">HIGH</span>,LOG_IOC,/var/log/apache2/access.log,access.uploads.php: 37 hit(s) - PHP file requested inside wp-content/uploads.
+<span class="ctx">    e.g. 203.0.113.66 - - [12/Mar/2024:03:14:07 +0000] "POST /wp-content/uploads/2024/03/cache.php HTTP/1.1" 200</span>
+<span class="HIGH">HIGH</span>,DB_OPTION_IOC,db:wp_options:widget_text,db.option.hidden-iframe: Hidden iframe inside an option value - a classic drive-by injection
+<span class="MEDIUM">MEDIUM</span>,DB_NEW_ADMIN,db:wp_users:ID=7,administrator "wp-sync" &lt;wp-sync@example.com&gt; registered 2024-03-12 03:16:40 - created within the last 30 days, the classic takeover artifact; verify who created it
+<span class="MEDIUM">MEDIUM</span>,TIMESTAMP_OUTLIER,/var/www/html/wp-content/themes/astra/functions.php,theme astra: modified 2024-03-12 03:15 but 412 of 418 files cluster around 2024-01-08 10:02
+<span class="LOW">LOW</span>,INTEGRITY_MISSING,/var/www/html/wp-admin/css/about.min.css,core 6.6.2: file from the official package is missing
+<span class="INFO">INFO</span>,MU_PLUGIN,/var/www/html/wp-content/mu-plugins/loader.php,must-use plugin: loads on every request with no activation step - confirm it is intentional
+<span class="ctx">$ </span><span class="c">echo $?</span>
+<span class="c">3</span>
+<span class="ctx">$ </span></pre>
+            <figcaption lang="pt-BR">Saída ilustrativa, de um site de teste comprometido. O formato e as mensagens são os reais.</figcaption>
+          </figure>
+        </li>
 
-          <div class="wp-card">
-            <h3>Fazer a varredura deste site</h3>
-            <ul class="wp-checks">
-              <li>Arquivos do WordPress, dos plugins e dos temas comparados com as cópias oficiais</li>
-              <li>Malware conhecido nos seus arquivos</li>
-              <li>Entradas suspeitas no banco de dados e contas de administrador</li>
-              <li>Arquivos com datas falsificadas e o crontab do servidor</li>
-              <li>Logs de acesso em /var/log/apache2</li>
+        <li class="stage" data-reveal>
+          <div>
+            <h3>Investigar</h3>
+            <p class="touch touch-read"><svg aria-hidden="true"><use href="#i-olho"/></svg>Só leitura: o julgamento é seu</p>
+            <p>Leia os achados do mais grave ao mais leve e siga as pistas: arquivos modificados minutos depois de um tráfego suspeito, PHP com a data recuada, administradores criados há pouco.</p>
+            <ul>
+              <li>Marque um falso positivo com uma nota. A marca vale só enquanto o arquivo for o mesmo, byte a byte.</li>
+              <li>Baixe a amostra num zip criptografado ou consulte o hash no VirusTotal.</li>
+              <li>Exporte o relatório em texto ou NDJSON, ou peça a um assistente de IA que explique um achado.</li>
             </ul>
-            <span class="wp-btn">Iniciar varredura</span>
-            <p class="wp-desc">Última varredura: concluída. Iniciada em 2 de nov. de 2026 14:02, terminada às 14:09.</p>
           </div>
+          <figure class="term" lang="en" data-ui>
+            <pre><span class="ctx">$ </span><span class="c">wp facheiro log /var/log/apache2 --correlate</span>
+<span class="HIGH">HIGH</span>,LOG_FILE_CORRELATION,/var/www/html/wp-content/uploads/2024/03/cache.php,modified 2024-03-12 03:14:52 within 300s of flagged traffic: access.uploads.php (37 flagged requests in window)
+<span class="ctx">    e.g. 203.0.113.66 - - [12/Mar/2024:03:14:07 +0000] "POST /wp-content/uploads/2024/03/cache.php HTTP/1.1" 200</span>
+<span class="ctx">$ </span><span class="c">wp facheiro times</span>
+<span class="MEDIUM">MEDIUM</span>,TIMESTAMP_OUTLIER,/var/www/html/wp-content/themes/astra/functions.php,theme astra: modified 2024-03-12 03:15 but 412 of 418 files cluster around 2024-01-08 10:02</pre>
+            <figcaption lang="pt-BR">Trecho ilustrativo. Datas e logs são pistas, não provas.</figcaption>
+          </figure>
+        </li>
 
-          <div class="wp-card">
-            <div class="wp-head">
-              <h3 id="wp-achados">Achados</h3>
-              <span><span class="wp-btn2">Exportar como texto</span> <span class="wp-btn2">Exportar como JSON</span></span>
+        <li class="stage" data-reveal data-writes>
+          <div>
+            <h3>Remediar</h3>
+            <p class="touch touch-write"><svg aria-hidden="true"><use href="#i-grava"/></svg>Grava arquivos: só pelo WP-CLI, depois de simular</p>
+            <p>Limpar e restaurar gravam no disco, então ficam fora do painel. Faça backup, simule com <code>--dryrun</code> e só então rode de verdade.</p>
+            <ul>
+              <li>Arquivos limpos vão para um arquivo temporário e são renomeados no lugar, então uma gravação que falha não trunca o original.</li>
+              <li>Cada arquivo do zip oficial é conferido byte a byte com os checksums antes de ser gravado. Um pacote adulterado é recusado.</li>
+              <li><code>--quarantine-dir</code> guarda cada original como evidência. Arquivos sobrando nunca são apagados.</li>
+            </ul>
+            <div class="cmd">
+              <pre id="cmd-dry"><span class="p">$ </span>wp facheiro scan --dryrun</pre>
+              <button class="copy" type="button" command="--copy" commandfor="cmd-dry">Copiar<span class="sr-only"> o comando que simula a limpeza</span></button><span class="tip" role="status"></span>
             </div>
-            <div class="wp-filters"><span class="on">Todos</span><span>HIGH</span><span>MEDIUM</span><span>LOW</span><span>INFO</span><span>Falsos positivos</span></div>
-            <div class="wp-table" tabindex="0" role="region" aria-labelledby="wp-achados">
-              <table>
-                <thead><tr><th scope="col">Gravidade</th><th scope="col">Tipo</th><th scope="col">Onde</th><th scope="col">Detalhes</th><th scope="col">Ações</th></tr></thead>
-                <tbody>
-                  <tr><td><span class="sev s-high">HIGH</span></td><td>UPLOADS_PHP</td><td><code>wp-content/uploads/2024/03/cache.php</code></td><td lang="en">executable PHP inside wp-content/uploads - usually a webshell dropped through an upload form</td><td class="act">Marcar como falso positivo<br>Baixar amostra<br>Consultar no VirusTotal</td></tr>
-                  <tr><td><span class="sev s-high">HIGH</span></td><td>DB_OPTION_IOC</td><td><code>db:wp_options:widget_text</code></td><td lang="en">db.option.hidden-iframe: Hidden iframe inside an option value - a classic drive-by injection</td><td class="act">Marcar como falso positivo</td></tr>
-                  <tr><td><span class="sev s-medium">MEDIUM</span></td><td>DB_NEW_ADMIN</td><td><code>db:wp_users:ID=7</code></td><td lang="en">administrator "wp-sync" &lt;wp-sync@example.com&gt; registered 2024-03-12 03:16:40 - created within the last 30 days, the classic takeover artifact; verify who created it</td><td class="act">Marcar como falso positivo</td></tr>
-                  <tr><td><span class="sev s-low">LOW</span></td><td>INTEGRITY_MISSING</td><td><code>wp-admin/css/about.min.css</code></td><td lang="en">core 6.6.2: file from the official package is missing</td><td class="act">Marcar como falso positivo</td></tr>
-                </tbody>
-              </table>
+            <div class="cmd">
+              <pre id="cmd-clean"><span class="p">$ </span>wp facheiro scan</pre>
+              <button class="copy" type="button" command="--copy" commandfor="cmd-clean">Copiar<span class="sr-only"> o comando de limpeza</span></button><span class="tip" role="status"></span>
+            </div>
+            <div class="cmd">
+              <pre id="cmd-restore-dry"><span class="p">$ </span>wp facheiro integrity --restore --dryrun</pre>
+              <button class="copy" type="button" command="--copy" commandfor="cmd-restore-dry">Copiar<span class="sr-only"> o comando que simula a restauração</span></button><span class="tip" role="status"></span>
+            </div>
+            <div class="cmd">
+              <pre id="cmd-restore"><span class="p">$ </span>wp facheiro integrity --restore --quarantine-dir=/path/outside/webroot</pre>
+              <button class="copy" type="button" command="--copy" commandfor="cmd-restore">Copiar<span class="sr-only"> o comando de restauração</span></button><span class="tip" role="status"></span>
             </div>
           </div>
-        </div>
-        <figcaption>A página do Facheiro no wp-admin: rode a varredura e leia os achados do mais grave ao mais leve. Os detalhes de cada achado ficam em inglês, iguais aos da linha de comando e das exportações.</figcaption>
-      </figure>
-    </section>
+          <figure class="term" lang="en" data-ui>
+            <pre><span class="ctx">$ </span><span class="c">wp facheiro scan --dryrun</span>
+<span class="HIGH">HIGH</span>,MALWARE_FOUND,/var/www/html/wp-includes/js/jquery/jquery-migrate.min.js,javascript_ndsw (dry run: file not modified)
+<span class="ctx">$ </span><span class="c">wp facheiro integrity --restore --dryrun</span>
+<span class="INFO">INFO</span>,INTEGRITY_RESTORABLE,/var/www/html/wp-content/plugins/akismet/akismet.php,plugin akismet 5.3.3 (dry run: not restored)
+<span class="ctx">$ </span><span class="c">wp facheiro integrity --restore --quarantine-dir=/root/evidencia</span>
+<span class="INFO">INFO</span>,INTEGRITY_RESTORED,/var/www/html/wp-content/plugins/akismet/akismet.php,plugin akismet 5.3.3: pristine copy restored from the official package</pre>
+            <figcaption lang="pt-BR">Trecho ilustrativo da simulação e da restauração.</figcaption>
+          </figure>
+        </li>
 
-    <section>
-      <h2 id="h-checks">O que uma varredura examina</h2>
-      <p class="sub">Sete verificações num relatório só. Tudo o que impede uma verificação, como um arquivo ilegível ou uma extensão PHP ausente, aparece como erro em vez de ser pulado.</p>
+        <li class="stage" data-reveal data-writes>
+          <div>
+            <h3>Blindar</h3>
+            <p class="touch touch-write"><svg aria-hidden="true"><use href="#i-grava"/></svg>Grava só os próprios blocos, e desfaz se o site quebrar</p>
+            <p>Regras de servidor contra PHP em uploads, cópias do <code>wp-config.php</code>, arquivos ocultos, backups e logs, arquivos internos do WordPress e listagem de pastas.</p>
+            <p>No Apache e no LiteSpeed o Facheiro grava só entre <code># BEGIN Facheiro</code> e <code># END Facheiro</code>, testa a página inicial, o login e o admin-ajax, e devolve cada arquivo como estava se algum deles parar de responder. No Nginx, você baixa o arquivo e inclui na configuração.</p>
+          </div>
+          <figure class="term" data-ui>
+            <pre><span class="ctx">$ </span><span class="c">wp facheiro harden --preset=recommended --apply</span>
+<span class="ok" lang="en">Success: Protections applied; the site still answers normally.</span>
+<span class="ctx">$ </span><span class="c">wp facheiro harden --check</span>
+<span class="ok">PROTECTED</span> uploads_php    Requisições de PHP nos uploads são recusadas.
+<span class="ok">PROTECTED</span> core_includes  wp-includes e wp-admin/includes recusam requisições diretas de PHP.
+<span class="ok">PROTECTED</span> config         Arquivos wp-config e suas cópias são recusados.
+<span class="ok">PROTECTED</span> sensitive      Arquivos de backup, dumps e logs são recusados.
+<span class="ok">PROTECTED</span> dotfiles       Arquivos e pastas ocultos são recusados.
+<span class="ok">PROTECTED</span> indexes        A pasta de uploads não é listada.</pre>
+            <figcaption>Trecho ilustrativo, num site em português: a verificação fala o idioma do site.</figcaption>
+          </figure>
+        </li>
+      </ol>
+    </div>
+  </section>
 
-      <dl class="modes">
-        <div class="mode">
-          <dt><span class="name">Verificações rápidas</span>UPLOADS_PHP, PHP_PREPEND, MU_PLUGIN, HIDDEN_PHP</dt>
-          <dd>Os esconderijos baratos dos invasores: PHP executável em <code>wp-content/uploads</code>, ganchos <code>auto_prepend_file</code> em <code>.user.ini</code>, <code>php.ini</code> e <code>.htaccess</code>, mu-plugins que carregam sem precisar de ativação e arquivos PHP ocultos (começando com ponto).</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Integridade</span>INTEGRITY_MODIFIED, INTEGRITY_MISSING, INTEGRITY_EXTRA</dt>
-          <dd>O core, cada plugin e cada tema comparados com o pacote oficial do wordpress.org da versão instalada. PHP sobrando dentro do core ou de um plugin é o clássico webshell plantado. Plugins premium e temas filhos que não podem ser verificados aparecem como tal, então um relatório limpo nunca significa, em silêncio, "não verificado".</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Banco de dados</span>DB_NEW_ADMIN, DB_ROLE_CAPS, DB_OPTION_IOC, DB_POST_IOC</dt>
-          <dd>Só leitura. Lista todos os administradores e destaca os recentes, aponta papéis que não são de admin mas ganharam poderes de tomada de controle, PHP, iframes ocultos ou JavaScript ofuscado em opções e posts, <code>siteurl</code> ou <code>home</code> sequestrados e <code>active_plugins</code> adulterado.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Logs de acesso</span>LOG_IOC, LOG_FILE_CORRELATION</dt>
-          <dd>Opcional: informe um arquivo ou pasta de logs nas configurações, incluindo arquivos rotacionados e <code>.gz</code>. Acessos a webshells, tentativas de exploit em plugins vulneráveis conhecidos, sondagens de <code>.env</code>, injeção de código e enxurradas de força bruta, além dos arquivos modificados minutos depois desse tráfego.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Assinaturas de malware</span>MALWARE_FOUND, SIGNATURE_MATCH</dt>
-          <dd>Injeções conhecidas, como as campanhas JavaScript <code>ndsw</code>/<code>ndsx</code> e <code>wqpq</code>, mais as assinaturas que você escrever. Pelo painel isso roda em modo de simulação. A limpeza é feita pela linha de comando.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Datas de modificação</span>TIMESTAMP_OUTLIER, TIMESTAMP_TIMESTOMP</dt>
-          <dd>Arquivos alterados depois do resto do pacote, e PHP cuja data de modificação foi recuada com <code>touch</code>. São pistas, não provas.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Crontab</span>CRONTAB_IOC</dt>
-          <dd>O crontab do usuário que roda o PHP, verificado em busca de decodificadores base64 encadeados por pipe, downloads do pastebin e droppers em diretórios tmp.</dd>
-        </div>
-      </dl>
-    </section>
+  <section>
+    <div class="wrap">
+      <div data-reveal>
+        <h2 id="h-admin">Uma varredura, direto do painel</h2>
+        <p class="sub">Abra o Facheiro no menu do painel e clique em Iniciar varredura. Os filtros abaixo funcionam como no plugin: experimente.</p>
+      </div>
 
-    <section>
-      <h2 id="h-tools">Além da varredura</h2>
-      <p class="sub">O resto da página do Facheiro, aba por aba.</p>
+      <div class="panel-demo">
+        <figure class="shot" data-reveal>
+          <div class="wp" data-ui>
+            <div class="wp-brand">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#b9d3cd" stroke-linecap="round" stroke-linejoin="round"><path d="M16 26V6.5" stroke-width="5"/><path d="M8.5 12.5v5.5q0 3 3 3H16" stroke-width="4"/><path d="M23.5 9v5.5q0 3-3 3H16" stroke-width="4"/></g><path d="M4.5 28h23" stroke="#e2551d" stroke-width="2.4" stroke-linecap="round"/></svg>
+              <div><b>Facheiro</b><span>Varredura de malware e resposta a incidentes para WordPress</span></div>
+            </div>
+            <div class="wp-tabs"><span class="on">Varredura</span><span>Assinaturas</span><span>Blindagem</span><span>Recuperação</span><span>Assistentes de IA</span></div>
 
-      <dl class="modes">
-        <div class="mode">
-          <dt><span class="name">Revisar achados</span>Aba Varredura</dt>
-          <dd>Marque um achado como falso positivo, com uma nota. Num arquivo, a marca só vale enquanto ele for byte a byte o mesmo que você revisou. Baixar amostra empacota o arquivo suspeito num zip criptografado com a senha <code>infected</code>, e achados de arquivo têm um link para consultar o hash no VirusTotal. Exporte o relatório em texto ou NDJSON.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Varreduras agendadas</span>Aba Varredura, Configurações</dt>
-          <dd>Diárias, duas vezes por dia ou semanais, no fuso horário do site. Se o WP-Cron não for confiável no seu servidor, rode as varreduras só enquanto a página estiver aberta.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Assinaturas próprias</span>Aba Assinaturas</dt>
-          <dd>Texto exato ou expressões regulares para arquivos, valores de opções ou conteúdo de posts. Teste contra uma amostra colada ou um arquivo do site e depois compartilhe em JSON com outros sites e com a linha de comando. Assinaturas próprias só detectam.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Blindagem do servidor</span>Aba Blindagem</dt>
-          <dd>Regras de servidor que bloqueiam PHP em uploads, cópias do <code>wp-config.php</code>, arquivos ocultos, backups e logs, arquivos internos do WordPress e listagem de pastas. Comece pelo modelo Recomendado ou Rigoroso, ou escolha cada proteção. No Apache e no LiteSpeed ele grava no <code>.htaccess</code> e desfaz tudo se o site parar de responder. No Nginx você baixa um arquivo para incluir na configuração. Verificar agora testa o que o servidor de fato bloqueia.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Modo de recuperação</span>Aba Recuperação</dt>
-          <dd>Uma página protegida por chave que funciona quando o WordPress não carrega, depois de uma tela branca ou um erro crítico. Mostra os erros de PHP que derrubaram o site e o plugin ou tema responsável, e roda a varredura completa. Sem chave, responde 404.</dd>
-        </div>
-        <div class="mode">
-          <dt><span class="name">Assistentes de IA</span>Aba Assistentes de IA</dt>
-          <dd>No WordPress 6.9 ou mais novo, com o plugin MCP Adapter, Claude, ChatGPT, Antigravity ou Cursor podem rodar varreduras, explicar achados, ler arquivos suspeitos e escrever assinaturas com você. Eles não limpam nem alteram arquivos. Sem MCP? Copie um resumo para qualquer chat.</dd>
-        </div>
-      </dl>
-    </section>
+            <div class="wp-card wp-card-scan">
+              <p class="wp-h">Fazer a varredura deste site</p>
+              <ul class="wp-checks">
+                <li>Arquivos do WordPress, dos plugins e dos temas comparados com as cópias oficiais</li>
+                <li>Malware conhecido nos seus arquivos</li>
+                <li>Entradas suspeitas no banco de dados e contas de administrador</li>
+                <li>Arquivos com datas falsificadas e o crontab do servidor</li>
+                <li>Logs de acesso em /var/log/apache2</li>
+              </ul>
+              <span class="wp-btn">Iniciar varredura</span>
+              <p class="wp-desc">Última varredura: concluída. Iniciada em 2 de nov. de 2026 14:02, terminada às 14:09.</p>
+            </div>
 
-    <section>
-      <h2 id="h-wards">Proteções que ele nunca quebra</h2>
-      <p class="sub">Ele roda em sites já comprometidos, então trata todo nome de arquivo, linha de log e resposta de API como hostil.</p>
+            <div class="wp-card">
+              <div class="wp-head">
+                <p class="wp-h" id="wp-achados">Achados</p>
+                <span><span class="wp-btn2">Exportar como texto</span> <span class="wp-btn2">Exportar como JSON</span></span>
+              </div>
+              <ul class="wp-filters" data-filters="wp-table" aria-label="Filtrar achados por gravidade">
+                <li><button type="button" data-sev="all" aria-pressed="true">Todos (5)</button></li>
+                <li><button type="button" data-sev="HIGH" aria-pressed="false">HIGH (2)</button></li>
+                <li><button type="button" data-sev="MEDIUM" aria-pressed="false">MEDIUM (1)</button></li>
+                <li><button type="button" data-sev="LOW" aria-pressed="false">LOW (1)</button></li>
+                <li><button type="button" data-sev="INFO" aria-pressed="false">INFO (1)</button></li>
+                <li><button type="button" data-sev="fp" aria-pressed="false">Falsos positivos (0)</button></li>
+              </ul>
+              <div class="wp-table" tabindex="0" role="region" aria-labelledby="wp-achados">
+                <table id="wp-table">
+                  <thead><tr><th scope="col">Gravidade</th><th scope="col">Tipo</th><th scope="col">Onde</th><th scope="col">Detalhes</th><th scope="col">Ações</th></tr></thead>
+                  <tbody>
+                    <tr data-sev="HIGH"><td><span class="sev s-high">HIGH</span></td><td>UPLOADS_PHP</td><td><code>wp-content/uploads/2024/03/cache.php</code></td><td lang="en">executable PHP inside wp-content/uploads - usually a webshell dropped through an upload form</td><td class="act">Marcar como falso positivo<br>Baixar amostra<br>Consultar no VirusTotal</td></tr>
+                    <tr data-sev="HIGH"><td><span class="sev s-high">HIGH</span></td><td>DB_OPTION_IOC</td><td><code>db:wp_options:widget_text</code></td><td lang="en">db.option.hidden-iframe: Hidden iframe inside an option value - a classic drive-by injection</td><td class="act">Marcar como falso positivo</td></tr>
+                    <tr data-sev="MEDIUM"><td><span class="sev s-medium">MEDIUM</span></td><td>DB_NEW_ADMIN</td><td><code>db:wp_users:ID=7</code></td><td lang="en">administrator "wp-sync" &lt;wp-sync@example.com&gt; registered 2024-03-12 03:16:40 - created within the last 30 days, the classic takeover artifact; verify who created it</td><td class="act">Marcar como falso positivo</td></tr>
+                    <tr data-sev="LOW"><td><span class="sev s-low">LOW</span></td><td>INTEGRITY_MISSING</td><td><code>wp-admin/css/about.min.css</code></td><td lang="en">core 6.6.2: file from the official package is missing</td><td class="act">Marcar como falso positivo</td></tr>
+                    <tr data-sev="INFO"><td><span class="sev s-info">INFO</span></td><td>MU_PLUGIN</td><td><code>wp-content/mu-plugins/loader.php</code></td><td lang="en">must-use plugin: loads on every request with no activation step - confirm it is intentional</td><td class="act">Marcar como falso positivo<br>Baixar amostra</td></tr>
+                    <tr class="wp-empty-row" hidden><td colspan="5" class="wp-empty">Nenhum achado com esta gravidade.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <figcaption>Reconstrução da página do Facheiro no wp-admin, com dados de exemplo. Os detalhes de cada achado ficam em inglês, iguais aos da linha de comando e das exportações.</figcaption>
+        </figure>
 
-      <ul class="garantias">
-        <li>
-          <strong>A varredura não altera nada</strong>
-          <p>As varreduras do painel só geram relatório. Os únicos arquivos que o painel grava são as regras de <code>.htaccess</code> que você aplicar e a chave de recuperação que você criar.</p>
+        <ul class="notes" data-reveal>
+          <li><b>Em segundo plano</b><p>A varredura segue pelo WP-Cron com a aba fechada. Se o WP-Cron não for confiável no servidor, ela roda só enquanto a página estiver aberta.</p></li>
+          <li><b>Do mais grave ao mais leve</b><p>HIGH, MEDIUM, LOW, INFO e ERROR, com filtros por gravidade.</p></li>
+          <li><b>Falso positivo com prova</b><p>A marca guarda o SHA-256 do arquivo ou do valor revisado. Se ele mudar, o achado volta.</p></li>
+          <li><b>Amostra e VirusTotal</b><p>Baixar amostra gera um zip com a senha <code>infected</code>. O link do VirusTotal leva só o hash, aberto pelo seu navegador.</p></li>
+          <li><b>Agendada</b><p>Diária, duas vezes por dia ou semanal, no fuso horário do site.</p></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="recursos">
+    <div class="wrap">
+      <ul class="board" data-reveal>
+        <li class="tile tile-head">
+          <h2 id="h-checks">O que uma varredura examina</h2>
+          <p>Sete verificações num relatório só. Tudo o que impede uma delas, como um arquivo ilegível ou uma extensão PHP ausente, aparece como erro em vez de ser pulado.</p>
         </li>
-        <li>
-          <strong>Nada sai do servidor</strong>
-          <p>Sem conta e sem telemetria. As únicas requisições externas vão para o wordpress.org, atrás de checksums e pacotes oficiais.</p>
+        <li class="tile">
+          <svg aria-hidden="true"><use href="#i-lupa"/></svg>
+          <h3>Esconderijos de sempre</h3>
+          <p>PHP executável em <code>uploads</code>, <code>auto_prepend_file</code> em <code>.user.ini</code>, <code>php.ini</code> e <code>.htaccess</code>, mu-plugins e PHP oculto.</p>
+          <p class="types"><code>UPLOADS_PHP</code> <code>PHP_PREPEND</code> <code>MU_PLUGIN</code> <code>HIDDEN_PHP</code></p>
         </li>
-        <li>
-          <strong>A verificação TLS fica ligada</strong>
-          <p>Um "tudo limpo" jamais pode vir de um invasor posicionado entre o site e o wordpress.org.</p>
+        <li class="tile">
+          <svg aria-hidden="true"><use href="#i-pacote"/></svg>
+          <h3>Integridade</h3>
+          <p>O core, cada plugin e cada tema contra o pacote oficial do wordpress.org da versão instalada. O que não pode ser verificado aparece como tal.</p>
+          <p class="types"><code>INTEGRITY_MODIFIED</code> <code>INTEGRITY_MISSING</code> <code>INTEGRITY_EXTRA</code></p>
         </li>
-        <li>
-          <strong>O banco de dados só é lido</strong>
-          <p>Apenas consultas SELECT, o <code>wp-config.php</code> é lido sem ser executado e os valores guardados nunca passam por unserialize, o que poderia disparar uma injeção de objeto PHP.</p>
+        <li class="tile">
+          <svg aria-hidden="true"><use href="#i-banco"/></svg>
+          <h3>Banco de dados</h3>
+          <p>Só leitura. Administradores recentes, papéis com poderes de admin, PHP, iframes e JavaScript ofuscado em opções e posts, <code>siteurl</code> e <code>active_plugins</code> adulterados.</p>
+          <p class="types"><code>DB_NEW_ADMIN</code> <code>DB_ROLE_CAPS</code> <code>DB_OPTION_IOC</code> <code>DB_POST_IOC</code></p>
         </li>
-        <li>
-          <strong>Verificação bloqueada não passa em silêncio</strong>
-          <p>Uma extensão ausente, um banco inacessível ou um log ilegível vira um achado ERROR, nunca é pulado em silêncio. Um relatório limpo significa que todos os scanners de fato olharam.</p>
+        <li class="tile">
+          <svg aria-hidden="true"><use href="#i-log"/></svg>
+          <h3>Logs de acesso</h3>
+          <p>Webshells acessados, exploits de plugins conhecidos, sondagens de <code>.env</code>, força bruta, e os arquivos alterados minutos depois. Lê <code>.gz</code> e logs rotacionados.</p>
+          <p class="types"><code>LOG_IOC</code> <code>LOG_FILE_CORRELATION</code></p>
         </li>
-        <li>
-          <strong>Falso positivo não esconde arquivo alterado</strong>
-          <p>A marca num arquivo guarda o SHA-256 dele. Se o arquivo mudar, o achado volta.</p>
+        <li class="tile">
+          <svg aria-hidden="true"><use href="#i-assinatura"/></svg>
+          <h3>Assinaturas de malware</h3>
+          <p>Injeções conhecidas, como as campanhas <code>ndsw</code>/<code>ndsx</code> e <code>wqpq</code>, webshells genéricos e as assinaturas que você escrever. Pelo painel, só simula.</p>
+          <p class="types"><code>MALWARE_FOUND</code> <code>SIGNATURE_MATCH</code></p>
         </li>
-        <li>
-          <strong>Assistentes olham, nunca mexem</strong>
-          <p>Nenhuma ferramenta de IA limpa, restaura ou grava arquivos. Tudo o que é escaneado vai marcado como dado não confiável, então um arquivo plantado não consegue dar ordens ao assistente.</p>
+        <li class="tile">
+          <svg aria-hidden="true"><use href="#i-relogio"/></svg>
+          <h3>Datas de modificação</h3>
+          <p>Arquivos alterados depois do resto do pacote e PHP com a data recuada por <code>touch</code>. São pistas, não provas.</p>
+          <p class="types"><code>TIMESTAMP_OUTLIER</code> <code>TIMESTAMP_TIMESTOMP</code></p>
         </li>
-        <li>
-          <strong>Restaurações são verificadas antes</strong>
-          <p>Cada arquivo do zip oficial é conferido byte a byte com os checksums de referência antes de ser gravado. Um pacote adulterado é recusado, e arquivos sobrando nunca são apagados.</p>
-        </li>
-        <li>
-          <strong>A blindagem se desfaz sozinha</strong>
-          <p>Depois de gravar as regras, o Facheiro carrega a página inicial, o login e uma requisição do painel. Se algum deles quebrar, todos os arquivos voltam exatamente como estavam.</p>
+        <li class="tile tile-wide">
+          <svg aria-hidden="true"><use href="#i-cron"/></svg>
+          <h3>Crontab</h3>
+          <p>O crontab do usuário que roda o PHP, em busca de decodificadores base64 encadeados, downloads do pastebin e droppers em pastas tmp. A persistência que sobrevive a uma limpeza de arquivos.</p>
+          <p class="types"><code>CRONTAB_IOC</code></p>
         </li>
       </ul>
-    </section>
+    </div>
+  </section>
 
-    <section>
-      <h2 id="h-cli">A limpeza acontece no terminal</h2>
-      <p class="sub">Limpar e restaurar gravam arquivos, então rodam pelo WP-CLI, onde você faz backup e simula antes. Cada scanner também é um comando <code>wp facheiro</code>, com saída pronta para pipe.</p>
-
-      <figure class="term">
-        <div class="term-bar">
-          <span>admin@host: /var/www/html</span>
-          <button type="button" id="replay">Rodar de novo</button>
-        </div>
-        <pre id="term" lang="en"></pre>
-        <figcaption class="sr-only">Exemplo de saída de um scanall no terminal</figcaption>
-      </figure>
-
-      <div class="get cli-cols">
+  <div class="field" id="seguranca">
+    <div class="wrap">
+      <div class="safety-top" data-reveal>
         <div>
-          <h3>Limpar e restaurar</h3>
-          <div class="cmd">
-            <pre id="cmd-dry"><span class="p">$ </span>wp facheiro scan --dryrun</pre>
-            <button class="copy" type="button" command="--copy" commandfor="cmd-dry">Copiar<span class="sr-only"> o comando que simula a limpeza</span></button><span class="tip" role="status"></span>
-          </div>
-          <div class="cmd">
-            <pre id="cmd-clean"><span class="p">$ </span>wp facheiro scan</pre>
-            <button class="copy" type="button" command="--copy" commandfor="cmd-clean">Copiar<span class="sr-only"> o comando de limpeza</span></button><span class="tip" role="status"></span>
-          </div>
-          <div class="cmd">
-            <pre id="cmd-restore-dry"><span class="p">$ </span>wp facheiro integrity --restore --dryrun</pre>
-            <button class="copy" type="button" command="--copy" commandfor="cmd-restore-dry">Copiar<span class="sr-only"> o comando que simula a restauração</span></button><span class="tip" role="status"></span>
-          </div>
-          <div class="cmd">
-            <pre id="cmd-restore"><span class="p">$ </span>wp facheiro integrity --restore --quarantine-dir=/path/outside/webroot</pre>
-            <button class="copy" type="button" command="--copy" commandfor="cmd-restore">Copiar<span class="sr-only"> o comando de restauração</span></button><span class="tip" role="status"></span>
-          </div>
-          <p class="hint">Arquivos limpos são gravados num arquivo temporário e renomeados no lugar, então uma gravação que falha não trunca o original. <code>--quarantine-dir</code> guarda cada original como evidência.</p>
+          <h2 id="h-wards">Feito para ambientes comprometidos</h2>
+          <p class="creed">Uma ferramenta de segurança nunca deve piorar um incidente.</p>
+          <p>O Facheiro roda num servidor que pode estar nas mãos de outra pessoa. Por isso trata todo nome de arquivo, linha de log, valor do banco e resposta de API como hostil, e separa com clareza o que só lê do que grava.</p>
+        </div>
+        <figure class="photo">
+          <img src="/img/caule.webp" width="900" height="1200" loading="lazy" decoding="async" alt="Caule de facheiro à noite, verde-azulado, com tufos de espinhos e botões de flor.">
+          <figcaption>Facheiro (<i>Pilosocereus pachycladus</i>) em flor.</figcaption>
+        </figure>
+      </div>
+
+      <div class="split" data-reveal>
+        <div>
+          <h3><svg aria-hidden="true"><use href="#i-olho"/></svg>O que só lê</h3>
+          <ul class="guarantees">
+            <li><strong>A varredura não altera nada</strong><p>As varreduras do painel, do modo de recuperação e dos assistentes de IA só geram relatório.</p></li>
+            <li><strong>O banco de dados só é lido</strong><p>Apenas consultas SELECT, o <code>wp-config.php</code> é lido sem ser executado e os valores guardados nunca passam por unserialize, o que poderia disparar uma injeção de objeto PHP.</p></li>
+            <li><strong>Nada sai do servidor</strong><p>Sem conta e sem telemetria. As únicas requisições externas vão para o wordpress.org, atrás de checksums e pacotes oficiais.</p></li>
+            <li><strong>A verificação TLS fica ligada</strong><p>Um "tudo limpo" jamais pode vir de um invasor posicionado entre o site e o wordpress.org.</p></li>
+            <li><strong>Verificação bloqueada não passa em silêncio</strong><p>Uma extensão ausente, um banco inacessível ou um log ilegível vira um achado ERROR. Um relatório limpo significa que todos os scanners de fato olharam.</p></li>
+            <li><strong>O próprio Facheiro é conferido</strong><p>Cada varredura começa verificando os arquivos do plugin contra os checksums oficiais, ou a lista que vem com ele.</p></li>
+            <li><strong>Assistentes olham, nunca mexem</strong><p>Nenhuma ferramenta de IA limpa, restaura ou grava arquivos. Tudo o que é escaneado vai marcado como dado não confiável, então um arquivo plantado não consegue dar ordens ao assistente.</p></li>
+          </ul>
         </div>
         <div>
-          <h3>Quando o WordPress não carrega</h3>
-          <p class="hint">Abra o modo de recuperação, ou rode os mesmos scanners a partir da pasta do plugin com a CLI independente. Ela precisa de PHP 5.6 e de nenhum WordPress funcionando.</p>
-          <div class="cmd">
-            <pre id="cmd-standalone"><span class="p">$ </span>php bin/facheiro.php scanall=1 scandirectory=/path/to/wp-root</pre>
-            <button class="copy" type="button" command="--copy" commandfor="cmd-standalone">Copiar<span class="sr-only"> o comando da CLI independente</span></button><span class="tip" role="status"></span>
-          </div>
-          <div class="cmd">
-            <pre id="cmd-help"><span class="p">$ </span>php bin/facheiro.php help=1</pre>
-            <button class="copy" type="button" command="--copy" commandfor="cmd-help">Copiar<span class="sr-only"> o comando de ajuda da CLI</span></button><span class="tip" role="status"></span>
-          </div>
+          <h3><svg aria-hidden="true"><use href="#i-grava"/></svg>O que grava, e como se protege</h3>
+          <ul class="guarantees">
+            <li><strong>Limpeza e restauração só pelo WP-CLI</strong><p>Nunca pelo painel. Com <code>--dryrun</code> para simular antes, e gravações em arquivo temporário renomeado no lugar.</p></li>
+            <li><strong>Restaurações são verificadas antes</strong><p>Cada arquivo do zip oficial é conferido byte a byte com os checksums de referência antes de ser gravado. Um pacote adulterado é recusado, e arquivos sobrando nunca são apagados.</p></li>
+            <li><strong>A blindagem se desfaz sozinha</strong><p>Depois de gravar as regras, o Facheiro carrega a página inicial, o login e uma requisição do painel. Se algum deles quebrar, todos os arquivos voltam exatamente como estavam.</p></li>
+            <li><strong>Falso positivo não esconde arquivo alterado</strong><p>A marca num arquivo guarda o SHA-256 dele. Se o arquivo mudar, o achado volta.</p></li>
+            <li><strong>Configurações seladas</strong><p>Falsos positivos, assinaturas e configurações são selados. Uma mudança feita direto no banco, como um invasor faria para esconder um backdoor, aparece na próxima varredura.</p></li>
+            <li><strong>O painel grava só o que você pede</strong><p>Os únicos arquivos que ele grava são as regras de <code>.htaccess</code> que você aplicar e a chave de recuperação que você criar.</p></li>
+          </ul>
         </div>
       </div>
 
-      <div class="formats">
+      <p class="honest"><strong>Uma varredura limpa não prova que o site está limpo.</strong> As assinaturas acham malware conhecido, a integridade só cobre pacotes que existem no wordpress.org, e datas e logs são pistas, não provas. E um invasor que grava arquivos pode reescrever o selo: isso é detecção, não prevenção. Trate o relatório como o começo da investigação.</p>
+    </div>
+  </div>
+
+  <section id="avancado">
+    <div class="wrap">
+      <div data-reveal>
+        <h2 id="h-cli">Para quem investiga a fundo</h2>
+        <p class="sub">Cada scanner é um comando <code>wp facheiro</code>, com saída em texto ou NDJSON pronta para pipe. O mesmo motor roda sem WordPress, numa página de recuperação e para assistentes de IA.</p>
+      </div>
+
+      <div class="adv">
+        <div class="cmds" data-reveal>
+          <h3 class="group">Investigar</h3>
+          <dl>
+          <div><dt><code>wp facheiro scanall</code></dt><dd>Todas as verificações, do achado mais grave ao mais leve.</dd></div>
+          <div><dt><code>wp facheiro quick</code></dt><dd>Uploads, prepend, mu-plugins e PHP oculto.</dd></div>
+          <div><dt><code>wp facheiro integrity</code></dt><dd>Core, plugins e temas contra o wordpress.org.</dd></div>
+          <div><dt><code>wp facheiro db</code></dt><dd>Administradores, opções, <code>siteurl</code>/<code>home</code>, <code>active_plugins</code> e posts. Só leitura.</dd></div>
+          <div><dt><code>wp facheiro log &lt;caminho&gt; --correlate</code></dt><dd>O log de acesso e os arquivos alterados perto do ataque.</dd></div>
+          <div><dt><code>wp facheiro times</code></dt><dd>Datas fora do padrão do pacote. Só pistas.</dd></div>
+          <div><dt><code>wp facheiro cron</code></dt><dd>O crontab do usuário que roda o PHP.</dd></div>
+          </dl>
+          <h3 class="group">Remediar</h3>
+          <dl>
+          <div><dt><code>wp facheiro scan --dryrun</code></dt><dd>Simula a limpeza por assinaturas. Sem <code>--dryrun</code>, limpa.</dd></div>
+          <div><dt><code>wp facheiro integrity --restore --dryrun</code></dt><dd>Simula a restauração a partir dos pacotes oficiais.</dd></div>
+          </dl>
+          <h3 class="group">Blindar e manter</h3>
+          <dl>
+          <div><dt><code>wp facheiro harden --check</code></dt><dd>Testa o que o servidor de fato bloqueia, sem criar nada no site.</dd></div>
+          <div><dt><code>wp facheiro recovery-key create --expires=7</code></dt><dd>Cria a chave do modo de recuperação.</dd></div>
+          <div><dt><code>wp facheiro selfcheck</code></dt><dd>Confere os arquivos do próprio Facheiro e o selo das configurações.</dd></div>
+          <div><dt><code>wp facheiro seal status</code></dt><dd>Mostra o que mudou por fora do Facheiro.</dd></div>
+          </dl>
+        </div>
+
+        <div class="more" id="h-tools">
+          <article data-reveal>
+            <h3>Quando o WordPress não carrega</h3>
+            <p>O modo de recuperação é uma página protegida por chave que funciona depois de uma tela branca ou de um erro crítico. Mostra os erros de PHP que derrubaram o site e o plugin ou tema responsável, e roda a varredura completa. Sem chave, responde 404.</p>
+            <p>Ou rode os mesmos scanners com a CLI independente, a partir da pasta do plugin. Ela precisa de PHP 5.6 e de nenhum WordPress funcionando.</p>
+            <div class="cmd">
+              <pre id="cmd-standalone"><span class="p">$ </span>php bin/facheiro.php scanall=1 scandirectory=/path/to/wp-root</pre>
+              <button class="copy" type="button" command="--copy" commandfor="cmd-standalone">Copiar<span class="sr-only"> o comando da CLI independente</span></button><span class="tip" role="status"></span>
+            </div>
+            <div class="cmd">
+              <pre id="cmd-help"><span class="p">$ </span>php bin/facheiro.php help=1</pre>
+              <button class="copy" type="button" command="--copy" commandfor="cmd-help">Copiar<span class="sr-only"> o comando de ajuda da CLI</span></button><span class="tip" role="status"></span>
+            </div>
+          </article>
+          <article data-reveal>
+            <h3>Assistentes de IA por MCP</h3>
+            <p>No WordPress 6.9 ou mais novo, com o plugin MCP Adapter, Claude, ChatGPT, Antigravity ou Cursor usam estas habilidades, só para administradores:</p>
+            <ul class="abilities" lang="en">
+              <li><code>start-scan</code></li><li><code>advance-scan</code></li><li><code>cancel-scan</code></li><li><code>get-status</code></li><li><code>list-findings</code></li><li><code>get-finding</code></li><li><code>read-flagged-file</code></li><li><code>mark-false-positive</code></li><li><code>unmark-false-positive</code></li><li><code>list-false-positives</code></li><li><code>list-signatures</code></li><li><code>test-signature</code></li><li><code>save-signature</code></li><li><code>delete-signature</code></li>
+            </ul>
+            <p>Nenhuma delas limpa, restaura ou grava arquivos do site, e tudo o que vem do site vai marcado como dado não confiável. Sem MCP, copie um resumo pronto para qualquer chat.</p>
+          </article>
+          <article data-reveal>
+            <h3>Assinaturas próprias</h3>
+            <p>Texto exato ou expressões regulares para arquivos, opções ou posts. Teste numa amostra, exporte em JSON e use a mesma lista no painel, com os assistentes e na CLI.</p>
+            <pre lang="en">{"id": "acme-loader", "target": "file", "severity": "HIGH",
+ "match": [{"string": "acme_loader"},
+           {"regex": "/file_put_contents\\s*\\([^;]{0,100}\\.php['\"]\\s*,/i"}]}</pre>
+            <p>Assinaturas próprias só detectam: nenhuma regra escrita por alguém pode alterar ou apagar um arquivo. <a href="https://github.com/fcavallari/Facheiro/blob/main/docs/writing-signatures.md">Como escrever assinaturas</a></p>
+          </article>
+        </div>
+      </div>
+
+      <div class="formats" data-reveal>
         <div>
           <h3>Texto</h3>
           <p>Uma linha por achado, no mesmo formato em todos os scanners. Caminhos e conteúdo de logs vêm do servidor comprometido, então caracteres de controle e vírgulas em caminhos são codificados com %. Um nome de arquivo malicioso não consegue forjar uma linha de achado.</p>
@@ -930,21 +469,74 @@ footer a:hover { color: #fff; }
         </div>
       </div>
 
-      <h3>O que o código de saída diz</h3>
-      <ol class="track">
+      <h3 data-reveal>O que o código de saída diz</h3>
+      <ol class="exit" data-reveal>
         <li><span class="n">0</span><p><b>Limpo</b>, ou só achados informativos.</p></li>
         <li><span class="n">1</span><p><b>Erro de uso ou fatal.</b> Confira os argumentos.</p></li>
         <li><span class="n">2</span><p>Achados <b>LOW, MEDIUM ou ERROR</b> para revisar.</p></li>
         <li><span class="n">3</span><p><b>Achados HIGH.</b> Uma limpeza bem-sucedida também sai com 3: havia malware.</p></li>
       </ol>
-    </section>
+    </div>
+  </section>
 
-    <section id="install">
-      <h2 id="h-get">Como instalar</h2>
-      <p class="sub">O Facheiro ainda não está no WordPress.org, então instale pelo GitHub.</p>
+  <figure class="band">
+    <img src="/img/caatinga-seca.webp" width="1600" height="720" loading="lazy" decoding="async" alt="Encosta de caatinga na estiagem: arbustos sem folhas, rochas e cactos espalhados sob o céu azul.">
+    <figcaption class="wrap">Caatinga na estiagem, na Serra das Letras. É dela que vem o nome.</figcaption>
+  </figure>
+
+  <section id="docs">
+    <div class="wrap">
+      <div data-reveal>
+        <h2 id="h-docs">Documentação</h2>
+        <p class="sub">Da instalação à primeira varredura, e de lá para o detalhe de cada scanner.</p>
+      </div>
+      <div class="docs" data-reveal>
+        <div>
+          <h3>Começar</h3>
+          <ul>
+            <li><a href="#install">Como instalar</a><span>Pelo GitHub, com git ou zip.</span></li>
+            <li><a href="#primeira">Primeira varredura</a><span>O que fazer depois de ativar.</span></li>
+            <li><a href="#requisitos">Requisitos</a><span>WordPress, PHP e extensões.</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Referência</h3>
+          <ul>
+            <li><a href="referencia/#output">Formato da saída</a><span>Uma linha por achado, codificada.</span></li>
+            <li><a href="referencia/#json">Eventos JSON e códigos de saída</a><span>Para scripts e automação.</span></li>
+            <li><a href="referencia/#checks">O que cada scanner examina</a><span>Todos os tipos de achado.</span></li>
+            <li><a href="referencia/#php-extensions">Extensões do PHP</a><span>O que falta e o que acontece.</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Guias</h3>
+          <ul>
+            <li><a href="https://github.com/fcavallari/Facheiro/wiki">Guias de uso na wiki</a><span>Passo a passo, em português e inglês.</span></li>
+            <li><a href="https://github.com/fcavallari/Facheiro/blob/main/docs/writing-signatures.md">Escrever assinaturas</a><span>Condições, testes e JSON.</span></li>
+            <li><a href="https://github.com/fcavallari/Facheiro/blob/main/readme.txt">Perguntas frequentes</a><span>No readme do plugin, em inglês.</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Contribuir</h3>
+          <ul>
+            <li><a href="https://github.com/fcavallari/Facheiro/blob/main/docs/development.md">Guia de desenvolvimento</a><span>Arquitetura, testes e traduções.</span></li>
+            <li><a href="#samples">Enviar uma amostra</a><span>O que ele deixou passar.</span></li>
+            <li><a href="https://github.com/fcavallari/Facheiro/issues">Issues no GitHub</a><span>Bugs e falsos positivos.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <div data-reveal>
+        <h2 id="h-get">Como instalar</h2>
+        <p class="sub">O Facheiro ainda não está no WordPress.org, então instale pelo GitHub.</p>
+      </div>
 
       <div class="get">
-        <div>
+        <div data-reveal>
           <h3>Baixe o plugin</h3>
           <div class="cmd">
             <pre id="cmd-install"><span class="p">$ </span>cd wp-content/plugins
@@ -954,7 +546,7 @@ footer a:hover { color: #fff; }
           </div>
           <p class="hint">Ou baixe o repositório como zip e descompacte em <code>wp-content/plugins/facheiro/</code>. A pasta precisa se chamar <code>facheiro</code>.</p>
 
-          <h3>Depois de ativar</h3>
+          <h3 id="primeira">Primeira varredura</h3>
           <ol class="steps">
             <li>Abra o Facheiro no menu do painel, ou no Network Admin em multisite, e clique em Iniciar varredura.</li>
             <li>Em Configurações, informe onde ficam os logs de acesso e, se quiser, ative as varreduras automáticas.</li>
@@ -963,8 +555,8 @@ footer a:hover { color: #fff; }
             <li>Faça backup e depois limpe com os comandos WP-CLI mostrados abaixo dos resultados.</li>
           </ol>
         </div>
-        <div>
-          <h3>Requisitos</h3>
+        <div data-reveal>
+          <h3 id="requisitos">Requisitos</h3>
           <ul>
             <li>WordPress 6.0 ou mais novo e PHP 7.2 ou mais novo. A CLI independente e o modo de recuperação rodam em PHP 5.6.</li>
             <li>Acesso ao shell só para limpar ou restaurar arquivos. O painel não precisa disso.</li>
@@ -978,14 +570,18 @@ footer a:hover { color: #fff; }
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section>
-      <h2 id="h-samples">Envie o que ele deixou passar</h2>
-      <p class="sub">O Facheiro só conhece malware que alguém já pegou. Se você limpar um site e achar algo que ele não apontou, abra uma issue no GitHub com uma amostra para que a próxima varredura pegue.</p>
+  <section id="samples">
+    <div class="wrap">
+      <div data-reveal>
+        <h2 id="h-samples">Envie o que ele deixou passar</h2>
+        <p class="sub">O Facheiro só conhece malware que alguém já pegou. Se você limpar um site e achar algo que ele não apontou, abra uma issue no GitHub com uma amostra para que a próxima varredura pegue.</p>
+      </div>
 
       <div class="get">
-        <div>
+        <div data-reveal>
           <h3>O que colocar na issue</h3>
           <ul>
             <li>A amostra. O botão Baixar amostra do achado gera um zip criptografado com a senha <code>infected</code>, com um manifesto de onde e por que ele foi apontado. O GitHub não aceita um anexo <code>.php</code> solto.</li>
@@ -996,7 +592,7 @@ footer a:hover { color: #fff; }
             <li>Se você escreveu uma assinatura que pega o arquivo, exporte pela aba Assinaturas e anexe o JSON.</li>
           </ul>
         </div>
-        <div>
+        <div data-reveal>
           <h3>Prepare pelo terminal</h3>
           <div class="cmd">
             <pre id="cmd-hash"><span class="p">$ </span>shasum -a 256 suspicious.php</pre>
@@ -1016,472 +612,36 @@ footer a:hover { color: #fff; }
           </p>
         </div>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
 </main>
 
-<footer>
+<footer class="site-foot">
   <div class="wrap">
-    <p class="epigraph">Na seca, o sertanejo queima o facheiro para tirar os espinhos.</p>
-    <p class="epigraph-note">O facheiro é um cacto da caatinga. Sem os espinhos, ele vira água e alimento quando não há mais nada. O plugin faz o mesmo com um site invadido: tira o que fere e deixa o que serve.</p>
-    <div class="foot">
-      <span>O Facheiro é gratuito, GPLv2 ou posterior, e nasceu como uma variação do Jetpack Cleanup Util.</span>
-      <a href="https://github.com/fcavallari/Facheiro">github.com/fcavallari/Facheiro</a>
+    <div class="foot-grid">
+      <div>
+        <p class="epigraph">Na seca, o sertanejo queima o facheiro para tirar os espinhos.</p>
+        <p class="epigraph-note">O facheiro é um cacto da caatinga. Sem os espinhos, ele vira água e alimento quando não há mais nada. O plugin faz o mesmo com um site invadido: tira o que fere e deixa o que serve.</p>
+        <ul class="foot-nav">
+          <li><a href="#install">Instalar</a></li>
+          <li><a href="referencia/">Referência</a></li>
+          <li><a href="https://github.com/fcavallari/Facheiro/wiki">Wiki</a></li>
+          <li><a href="https://github.com/fcavallari/Facheiro">GitHub</a></li>
+          <li><a href="en/" hreflang="en" lang="en">English</a></li>
+        </ul>
+      </div>
+      <figure class="foot-photo">
+        <img src="/img/facheiro.webp" width="780" height="1040" loading="lazy" decoding="async" alt="Um facheiro adulto na caatinga: tronco escuro e dezenas de hastes verdes apontando para o céu, ao lado de uma trilha de terra.">
+        <figcaption>Facheiro na caatinga do Nordeste.</figcaption>
+      </figure>
+    </div>
+    <p class="wordmark" aria-hidden="true">Facheiro</p>
+    <div class="legal">
+      <p>O Facheiro é gratuito, GPLv2 ou posterior, e nasceu como uma variação do Jetpack Cleanup Util.</p>
+      <p class="credits">Fotos via Wikimedia Commons: facheiro na caatinga por <a href="https://commons.wikimedia.org/wiki/File:O_Cacto_Facheiro_ou_mandacaru-de-facho_%C3%A9_uma_esp%C3%A9cie_que_pode_alcan%C3%A7ar_at%C3%A9_10_metros_de_altura_e_muito_comum_na_caatinga_do_Nordeste_Brasileiro_(16397289914).jpg">Marinelson Almeida</a> (<a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>); Serra das Letras na estiagem por <a href="https://commons.wikimedia.org/wiki/File:Serra_das_letras,_estiagem!.jpg">Geziel Amaral</a> (<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>); flor de <i>Pilosocereus pachycladus</i> por <a href="https://commons.wikimedia.org/w/index.php?curid=35508479">PierreBraun</a> (<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>). Recortadas e comprimidas.</p>
     </div>
   </div>
 </footer>
 
-<script>
-(function () {
-  "use strict";
-
-  // UI strings the script writes; the page's lang picks the set
-  var L = document.documentElement.lang === "pt-BR"
-    ? { copied: "Copiado", failed: "Não foi possível copiar", skip: "Pular animação", replay: "Rodar de novo" }
-    : { copied: "Copied", failed: "Copy failed", skip: "Skip animation", replay: "Run again" };
-
-  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  //////////////
-  // Copy buttons: <button command="--copy" commandfor="<pre id>">. The
-  // bubble after each button is its live region; the button keeps its
-  // name and stays enabled, so a failed copy can be retried.
-  //////////////
-  var copyTimers = new WeakMap();
-  var lastMessage = "";
-
-  function report(button, ok) {
-    var tip = button.nextElementSibling;
-    clearTimeout(copyTimers.get(button));
-    button.removeAttribute("data-copied");
-    button.removeAttribute("data-failed");
-    var message = ok ? L.copied : L.failed;
-    // VoiceOver skips a message identical to the last one
-    if (message === lastMessage) message += "\u00A0";
-    lastMessage = message;
-    tip.textContent = "";
-    void button.offsetWidth;
-    button.setAttribute(ok ? "data-copied" : "data-failed", "");
-    requestAnimationFrame(function () { tip.textContent = message; });
-    copyTimers.set(button, setTimeout(function () {
-      button.removeAttribute("data-copied");
-      button.removeAttribute("data-failed");
-      tip.textContent = "";
-    }, 2000));
-  }
-
-  function copy(button, target) {
-    // innerText keeps the line breaks; the "$ " prompts are not part of the command
-    var text = target.innerText.replace(/^\$ /gm, "").trim();
-    if (!text) return;
-    try {
-      navigator.clipboard.writeText(text).then(function () { report(button, true); }, function () { report(button, false); });
-    } catch (e) {
-      report(button, false);
-    }
-  }
-
-  // command events do not bubble: listen in the capture phase
-  document.addEventListener("command", function (event) {
-    if (event.command === "--copy") copy(event.source, event.target);
-  }, true);
-
-  // Browsers without Invoker Commands: the same copy() from a click
-  if (!("CommandEvent" in window)) {
-    document.addEventListener("click", function (event) {
-      var button = event.target.closest ? event.target.closest('button[command="--copy"]') : null;
-      if (!button) return;
-      var target = document.getElementById(button.getAttribute("commandfor"));
-      if (target) copy(button, target);
-    });
-  }
-
-  //////////////
-  // The facheiro: a fire climbs the cactus and burns the thorns off,
-  // the way it is prepared in the dry season. What is left is clean.
-  //////////////
-  var canvas = document.getElementById("cacto");
-  var ctx = canvas.getContext("2d");
-  var INK = "#14302d", STEM = "#4f8f88", RIB = "#2b6a64", THORN = "#c1911f";
-  var EMBER = "#e2551d", SUN = "#ecdca8", GROUND_Y = 0.93;
-  var BURN_MS = 3400;
-  var W = 0, H = 0, stems = [], thorns = [], embers = [];
-  var startTime = 0, running = false, visible = true;
-
-  // trunk and arms in units of the canvas: x, top, bottom, width, and the
-  // height where an arm leaves the trunk
-  var PLAN = [
-    { x: 0.50, top: 0.10, bottom: GROUND_Y, w: 0.105 },
-    { x: 0.24, top: 0.34, bottom: 0.66, w: 0.085, joinX: 0.50 },
-    { x: 0.77, top: 0.22, bottom: 0.52, w: 0.085, joinX: 0.50 },
-    { x: 0.90, top: 0.50, bottom: 0.76, w: 0.07, joinX: 0.50 }
-  ];
-
-  // deterministic scatter, so the thorns sit in the same place on every run
-  var seed = 7;
-  function rnd() {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  }
-
-  function build() {
-    var rect = canvas.getBoundingClientRect();
-    W = Math.max(200, Math.round(rect.width));
-    H = Math.max(200, Math.round(rect.height));
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    seed = 7;
-    stems = PLAN.map(function (p) {
-      return {
-        x: p.x * W, top: p.top * H, bottom: p.bottom * H, w: p.w * W,
-        joinX: p.joinX === undefined ? null : p.joinX * W
-      };
-    });
-
-    thorns = [];
-    var step = Math.max(11, H / 34);
-    stems.forEach(function (s) {
-      var lanes = [-0.5, -0.17, 0.17, 0.5];
-      lanes.forEach(function (lane, li) {
-        var edge = Math.abs(lane) === 0.5;
-        for (var y = s.top + s.w * 0.35 + (li % 2) * step * 0.5; y < s.bottom - 4; y += step) {
-          thorns.push({
-            x: s.x + lane * s.w,
-            y: y + (rnd() - 0.5) * 3,
-            dir: lane < 0 ? -1 : 1,
-            edge: edge,
-            len: (edge ? 0.085 : 0.05) * s.w * 2 * (0.8 + rnd() * 0.5),
-            spark: false
-          });
-        }
-      });
-    });
-    embers = [];
-  }
-
-  function stemPath(s) {
-    ctx.beginPath();
-    if (null !== s.joinX) {
-      // the arm leaves the trunk sideways and turns up
-      var r = Math.min(Math.abs(s.x - s.joinX), s.w * 0.9);
-      var dir = s.x < s.joinX ? 1 : -1;
-      ctx.moveTo(s.joinX, s.bottom);
-      ctx.lineTo(s.x + dir * r, s.bottom);
-      ctx.quadraticCurveTo(s.x, s.bottom, s.x, s.bottom - r);
-    } else {
-      ctx.moveTo(s.x, s.bottom);
-    }
-    ctx.lineTo(s.x, s.top + s.w / 2);
-  }
-
-  function drawStems() {
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    // arms first, so the trunk overlaps their joints
-    [1, 2, 3, 0].forEach(function (i) {
-      var s = stems[i];
-      stemPath(s);
-      ctx.strokeStyle = INK;
-      ctx.lineWidth = s.w + 6;
-      ctx.stroke();
-      stemPath(s);
-      ctx.strokeStyle = STEM;
-      ctx.lineWidth = s.w;
-      ctx.stroke();
-      // ribs
-      ctx.strokeStyle = RIB;
-      ctx.lineWidth = Math.max(1.5, s.w * 0.045);
-      [-0.17, 0.17].forEach(function (lane) {
-        ctx.beginPath();
-        ctx.moveTo(s.x + lane * s.w, s.top + s.w * 0.3);
-        ctx.lineTo(s.x + lane * s.w, s.bottom - (null === s.joinX ? 0 : s.w * 0.7));
-        ctx.stroke();
-      });
-    });
-  }
-
-  function drawScene(fireY, now) {
-    ctx.clearRect(0, 0, W, H);
-
-    // sun
-    ctx.fillStyle = SUN;
-    ctx.beginPath();
-    ctx.arc(W * 0.74, H * 0.2, W * 0.2, 0, Math.PI * 2);
-    ctx.fill();
-
-    drawStems();
-
-    // ground, drawn over the trunk's foot
-    ctx.fillStyle = "#eceee6";
-    ctx.fillRect(0, GROUND_Y * H, W, H - GROUND_Y * H);
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = 3;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(W * 0.04, GROUND_Y * H);
-    ctx.lineTo(W * 0.96, GROUND_Y * H);
-    ctx.stroke();
-    ctx.lineWidth = 2;
-    [[0.14, 0.05], [0.33, 0.03], [0.66, 0.06], [0.83, 0.03]].forEach(function (p) {
-      ctx.beginPath();
-      ctx.moveTo(W * p[0], GROUND_Y * H + 12);
-      ctx.lineTo(W * (p[0] + p[1]), GROUND_Y * H + 12);
-      ctx.stroke();
-    });
-
-    // thorns the fire has not reached
-    ctx.strokeStyle = THORN;
-    ctx.lineWidth = Math.max(1.3, W / 320);
-    for (var i = 0; i < thorns.length; i++) {
-      var t = thorns[i];
-      if (t.y >= fireY) {
-        if (!t.spark) {
-          t.spark = true;
-          if (now && (t.edge || i % 3 === 0)) {
-            embers.push({ x: t.x, y: t.y, vx: (rnd() - 0.5) * 0.03, vy: -(0.03 + rnd() * 0.05), born: now, life: 700 + rnd() * 900 });
-          }
-        }
-        continue;
-      }
-      ctx.beginPath();
-      if (t.edge) {
-        ctx.moveTo(t.x, t.y);
-        ctx.lineTo(t.x + t.dir * t.len, t.y - t.len * 0.5);
-        ctx.moveTo(t.x, t.y);
-        ctx.lineTo(t.x + t.dir * t.len, t.y + t.len * 0.35);
-      } else {
-        ctx.moveTo(t.x - t.len, t.y - t.len * 0.6);
-        ctx.lineTo(t.x + t.len, t.y + t.len * 0.6);
-        ctx.moveTo(t.x + t.len, t.y - t.len * 0.6);
-        ctx.lineTo(t.x - t.len, t.y + t.len * 0.6);
-      }
-      ctx.stroke();
-    }
-
-    // the fire line: small flames where it meets each stem
-    if (fireY > 0 && fireY < GROUND_Y * H) {
-      ctx.fillStyle = EMBER;
-      stems.forEach(function (s) {
-        if (fireY < s.top || fireY > s.bottom) return;
-        for (var k = -1; k <= 1; k++) {
-          var fx = s.x + k * s.w * 0.36;
-          var fh = s.w * (0.34 + 0.14 * Math.sin((now || 0) / 90 + k * 2 + s.x));
-          ctx.beginPath();
-          ctx.moveTo(fx - s.w * 0.17, fireY + 2);
-          ctx.quadraticCurveTo(fx - s.w * 0.05, fireY - fh * 0.4, fx, fireY - fh);
-          ctx.quadraticCurveTo(fx + s.w * 0.05, fireY - fh * 0.4, fx + s.w * 0.17, fireY + 2);
-          ctx.closePath();
-          ctx.fill();
-        }
-      });
-    }
-
-    // embers
-    var live = [];
-    for (var j = 0; j < embers.length; j++) {
-      var e = embers[j], age = now - e.born;
-      if (age > e.life) continue;
-      live.push(e);
-      ctx.globalAlpha = 1 - age / e.life;
-      ctx.fillStyle = EMBER;
-      ctx.fillRect(e.x + e.vx * age, e.y + e.vy * age, 3, 3);
-    }
-    ctx.globalAlpha = 1;
-    embers = live;
-  }
-
-  function frame(now) {
-    if (!visible) { running = false; return; }
-    var p = Math.min(1, (now - startTime) / BURN_MS);
-    // from the ground to above the tallest stem
-    var fireY = GROUND_Y * H - p * (GROUND_Y * H - H * 0.04);
-    drawScene(p >= 1 ? -1 : fireY, now);
-    if (p < 1 || embers.length) {
-      requestAnimationFrame(frame);
-    } else {
-      running = false;
-    }
-  }
-
-  function burn() {
-    build();
-    if (reduceMotion) {
-      // still picture: the lower half already burnt clean
-      thorns.forEach(function (t) { t.spark = true; });
-      drawScene(H * 0.5, 0);
-      return;
-    }
-    startTime = performance.now() + 500;
-    drawScene(H * 2, 0);
-    if (!running) {
-      running = true;
-      requestAnimationFrame(frame);
-    }
-  }
-
-  var resizeTimer = null;
-  window.addEventListener("resize", function () {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () {
-      build();
-      if (reduceMotion) {
-        drawScene(H * 0.5, 0);
-      } else if (!running) {
-        thorns.forEach(function (t) { t.spark = true; });
-        drawScene(-1, 0);
-      }
-    }, 150);
-  });
-
-  if ("IntersectionObserver" in window) {
-    new IntersectionObserver(function (entries) {
-      var was = visible;
-      visible = entries[0].isIntersecting;
-      if (visible && !was && !reduceMotion && !running && performance.now() - startTime < BURN_MS) {
-        running = true;
-        requestAnimationFrame(frame);
-      }
-    }).observe(canvas);
-  }
-
-  document.getElementById("reburn").addEventListener("click", burn);
-  burn();
-
-  //////////////
-  // The terminal: a scanall run, typed once when it scrolls into view
-  //////////////
-  var LINES = [
-    { cmd: "wp facheiro scanall --log=/var/log/apache2" },
-    { sev: "HIGH", rest: ",UPLOADS_PHP,/var/www/html/wp-content/uploads/2024/03/cache.php,executable PHP inside wp-content/uploads - usually a webshell dropped through an upload form" },
-    { sev: "HIGH", rest: ",INTEGRITY_EXTRA,/var/www/html/wp-includes/class-wp-locale-switch.php,core 6.6.2: file is not part of the official package" },
-    { sev: "HIGH", rest: ",INTEGRITY_MODIFIED,/var/www/html/wp-content/plugins/akismet/akismet.php,plugin akismet 5.3.3: checksum does not match the official package" },
-    { sev: "HIGH", rest: ",MALWARE_FOUND,/var/www/html/wp-includes/js/jquery/jquery-migrate.min.js,javascript_ndsw (dry run: file not modified)" },
-    { sev: "HIGH", rest: ",CRONTAB_IOC,crontab,crontab.tmp.006: * * * * * echo ... | base64 --decode > /tmp/x" },
-    { sev: "HIGH", rest: ",LOG_IOC,/var/log/apache2/access.log,access.uploads.php: 37 hit(s) - PHP file requested inside wp-content/uploads." },
-    { ctx: "    e.g. 203.0.113.66 - - [12/Mar/2024:03:14:07 +0000] \"POST /wp-content/uploads/2024/03/cache.php HTTP/1.1\" 200" },
-    { sev: "HIGH", rest: ",DB_OPTION_IOC,db:wp_options:widget_text,db.option.hidden-iframe: Hidden iframe inside an option value - a classic drive-by injection" },
-    { sev: "MEDIUM", rest: ",DB_NEW_ADMIN,db:wp_users:ID=7,administrator \"wp-sync\" <wp-sync@example.com> registered 2024-03-12 03:16:40 - created within the last 30 days, the classic takeover artifact; verify who created it" },
-    { sev: "MEDIUM", rest: ",LOG_IOC,/var/log/apache2/access.log.2.gz,access.xmlrpc.flood: 4182 hit(s) - High volume of xmlrpc.php POSTs, typically credential brute forcing via system.multicall or pingback abuse." },
-    { sev: "MEDIUM", rest: ",TIMESTAMP_OUTLIER,/var/www/html/wp-content/themes/astra/functions.php,theme astra: modified 2024-03-12 03:15 but 412 of 418 files cluster around 2024-01-08 10:02" },
-    { sev: "LOW", rest: ",INTEGRITY_MISSING,/var/www/html/wp-admin/css/about.min.css,core 6.6.2: file from the official package is missing" },
-    { sev: "INFO", rest: ",MU_PLUGIN,/var/www/html/wp-content/mu-plugins/loader.php,must-use plugin: loads on every request with no activation step - confirm it is intentional" },
-    { cmd: "echo $?" },
-    { out: "3" }
-  ];
-
-  var term = document.getElementById("term");
-  var termTimers = [];
-
-  function clearTerm() {
-    termTimers.forEach(clearTimeout);
-    termTimers = [];
-    while (term.firstChild) term.removeChild(term.firstChild);
-  }
-
-  function span(cls, text) {
-    var s = document.createElement("span");
-    if (cls) s.className = cls;
-    s.textContent = text;
-    return s;
-  }
-
-  function appendLine(line, typed) {
-    var row = document.createDocumentFragment();
-    if (line.cmd !== undefined) {
-      row.appendChild(span("ctx", "$ "));
-      row.appendChild(span("c", typed === undefined ? line.cmd : typed));
-    } else if (line.sev) {
-      row.appendChild(span(line.sev, line.sev));
-      row.appendChild(span("", line.rest));
-    } else if (line.ctx) {
-      row.appendChild(span("ctx", line.ctx));
-    } else {
-      row.appendChild(span("c", line.out));
-    }
-    term.appendChild(row);
-    term.appendChild(document.createTextNode("\n"));
-  }
-
-  function showAll() {
-    clearTerm();
-    LINES.forEach(function (l) { appendLine(l); });
-    term.appendChild(span("ctx", "$ "));
-  }
-
-  var replay = document.getElementById("replay");
-  var playing = false;
-
-  function settle() {
-    playing = false;
-    replay.textContent = L.replay;
-  }
-
-  function play() {
-    // lay the whole run out once, keep its height, then type it
-    showAll();
-    term.style.minHeight = term.offsetHeight + "px";
-    clearTerm();
-    playing = true;
-    replay.textContent = L.skip;
-    var at = 200;
-    var cursor = span("cursor", "");
-    LINES.forEach(function (line) {
-      if (line.cmd !== undefined) {
-        var target = null;
-        termTimers.push(setTimeout(function () {
-          term.appendChild(span("ctx", "$ "));
-          target = span("c", "");
-          term.appendChild(target);
-          term.appendChild(cursor);
-        }, at));
-        for (var i = 1; i <= line.cmd.length; i++) {
-          (function (n) {
-            termTimers.push(setTimeout(function () { target.textContent = line.cmd.slice(0, n); }, at + n * 24));
-          })(i);
-        }
-        at += line.cmd.length * 24 + 380;
-        termTimers.push(setTimeout(function () {
-          if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
-          term.appendChild(document.createTextNode("\n"));
-        }, at));
-        at += line.cmd === "echo $?" ? 120 : 900;
-      } else {
-        termTimers.push(setTimeout(function () { appendLine(line); }, at));
-        at += 150 + Math.random() * 120;
-      }
-    });
-    termTimers.push(setTimeout(function () {
-      term.appendChild(span("ctx", "$ "));
-      term.appendChild(cursor);
-      settle();
-    }, at + 200));
-  }
-
-  replay.addEventListener("click", function () {
-    if (reduceMotion || playing) {
-      showAll();
-      settle();
-    } else {
-      play();
-    }
-  });
-
-  if (reduceMotion || !("IntersectionObserver" in window)) {
-    showAll();
-  } else {
-    var played = false;
-    new IntersectionObserver(function (entries, obs) {
-      if (entries[0].isIntersecting && !played) {
-        played = true;
-        obs.disconnect();
-        play();
-      }
-    }, { threshold: 0.35 }).observe(term);
-  }
-})();
-</script>
 </body>
 </html>

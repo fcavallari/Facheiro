@@ -18,7 +18,7 @@ REPO = os.path.dirname(os.path.dirname(SP))
 OUT = os.path.join(SP, "out")
 FONT = os.path.join(SP, "fonts", "alfaslabone.ttf")   # Alfa Slab One Regular
 
-# palette from site/index.html
+# palette from site/site.css
 BRANCO = "#eceee6"                    # the bleached ground of the caatinga
 TINTA = "#14302d"                     # ink
 GLAUCO, GLAUCO_CLARO, GLAUCO_TEXTO = "#4f8f88", "#b9d3cd", "#2b6a64"   # the cactus stem
