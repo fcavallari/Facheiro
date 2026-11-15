@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="text-scale" content="scale">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Referência do Facheiro</title>
 <meta name="description" content="Referência do Facheiro: o formato da saída, os eventos JSON, os códigos de saída e o que cada scanner examina.">
 <meta name="color-scheme" content="light">
@@ -12,10 +14,19 @@
 <link rel="alternate" hreflang="en" href="https://facheiro.space.fast/en/reference/">
 <link rel="alternate" hreflang="x-default" href="https://facheiro.space.fast/referencia/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%2314302d'/%3E%3Cg fill='none' stroke='%23b9d3cd' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 26V6.5' stroke-width='5'/%3E%3Cpath d='M8.5 12.5v5.5q0 3 3 3H16' stroke-width='4'/%3E%3Cpath d='M23.5 9v5.5q0 3-3 3H16' stroke-width='4'/%3E%3C/g%3E%3Cpath d='M4.5 28h23' stroke='%23e2551d' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="preload" href="/fonts/alfa-slab-one-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/ibm-plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Fonts served from this site (see /fonts/README.txt), so no request
+   goes to a third party. */
+@font-face { font-family: "Alfa Slab One"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/alfa-slab-one-400.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-sans-400.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-style: italic; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-sans-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/ibm-plex-sans-600.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/ibm-plex-sans-700.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-mono-400.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/ibm-plex-mono-600.woff2") format("woff2"); }
+
 :root {
   /* caatinga: "mata branca", the white forest of the dry season */
   --branco: #eceee6;
@@ -42,7 +53,7 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html { background: var(--branco); }
-body { margin: 0; background: var(--branco); color: var(--tinta); font-family: var(--sans); font-size: 1.0625rem; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--branco); color: var(--tinta); font-family: var(--sans); font-size-adjust: .516; font-size: 1.0625rem; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 a { color: var(--glauco-texto); text-underline-offset: .2em; text-decoration-thickness: 1px; }
 a:hover { color: var(--brasa); }
 :focus-visible { outline: 3px solid var(--brasa); outline-offset: 3px; }
@@ -52,14 +63,14 @@ code { font-family: var(--mono); font-size: .92em; color: var(--glauco-texto); o
 /* ---------- top bar ---------- */
 
 .top { display: flex; justify-content: space-between; align-items: baseline; gap: 1em; padding-top: 20px; font-size: .95rem; }
-.top .home { font-family: var(--display); font-size: 1.35rem; color: var(--tinta); text-decoration: none; }
+.top .home { font-family: var(--display); font-size-adjust: .556; font-size: 1.35rem; color: var(--tinta); text-decoration: none; }
 .top .home:hover { color: var(--brasa); }
 
 /* ---------- header ---------- */
 
 header { padding: clamp(32px, 6vh, 72px) 0 clamp(28px, 4vh, 48px); border-bottom: 3px solid var(--tinta); }
-h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2.8rem, 7vw, 5.4rem); line-height: .95; margin: 0 0 .35em; }
-.lede { font-size: clamp(1.1rem, 1.5vw, 1.25rem); line-height: 1.5; max-width: 52ch; margin: 0; }
+h1 { font-family: var(--display); font-size-adjust: .556; font-weight: 400; font-size: clamp(2.8rem, 1.8rem + 4.5vw, 5.4rem); line-height: .95; margin: 0 0 .35em; }
+.lede { font-size: clamp(1.1rem, 1rem + .3vw, 1.25rem); line-height: 1.5; max-width: 52ch; margin: 0; }
 
 /* ---------- layout ---------- */
 
@@ -68,11 +79,16 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2.8rem, 7vw
 .toc p { margin: 0 0 .6em; font-weight: 700; }
 .toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--regua); }
 .toc li { margin: 0; }
-.toc a { display: block; padding: .3em 0 .3em 1em; text-decoration: none; }
+.toc { scroll-target-group: auto; }
+.toc a { display: block; padding: .3em 0 .3em 1em; margin-left: -2px; border-left: 2px solid transparent; text-decoration: none; }
+/* the section in view: weight and a bar, not colour alone */
+.toc a:is(:target-current, .target-current) { border-left-color: var(--brasa); color: var(--tinta); font-weight: 700; }
 
 article { min-width: 0; max-width: 78ch; }
 section + section { margin-top: clamp(48px, 7vw, 88px); }
-h2 { font-family: var(--display); font-weight: 400; font-size: clamp(1.7rem, 3.4vw, 2.5rem); line-height: 1.1; margin: 0 0 .6em; scroll-margin-top: 24px; }
+h2 { font-family: var(--display); font-size-adjust: .556; font-weight: 400; font-size: clamp(1.7rem, 1.3rem + 1.6vw, 2.5rem); line-height: 1.1; margin: 0 0 .6em; }
+article > section { scroll-margin-top: 24px; }
+article > section:focus { outline: none; }
 article p, article li { max-width: var(--measure); }
 article ul { padding-left: 1.2em; }
 article li { margin-bottom: .7em; }
@@ -80,12 +96,15 @@ article li::marker { color: var(--glauco); }
 article li ul { margin-top: .7em; }
 
 .code { background: var(--carvao); margin: 1.2em 0; }
-.code pre { margin: 0; padding: .85em 1em; overflow-x: auto; font-family: var(--mono); font-size: .88rem; line-height: 1.6; color: #ecebe4; scrollbar-width: thin; scrollbar-color: var(--carvao-regua) transparent; }
+.code pre { margin: 0; padding: .85em 1em; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: .88rem; line-height: 1.6; color: #ecebe4; scrollbar-width: thin; scrollbar-color: var(--carvao-regua) transparent; }
 
 .table { overflow-x: auto; margin: 1.2em 0; scrollbar-width: thin; }
+.table:focus-visible { outline-offset: 0; }
 table { border-collapse: collapse; width: 100%; font-size: .95rem; background: var(--papel); }
 th, td { text-align: left; vertical-align: top; padding: .55em .8em; border-bottom: 1px solid var(--regua); }
-th { border-bottom: 2px solid var(--tinta); font-weight: 700; }
+thead th { border-bottom: 2px solid var(--tinta); font-weight: 700; }
+tbody th { font-weight: 400; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- footer ---------- */
 
@@ -94,23 +113,26 @@ footer a { color: var(--glauco-claro); }
 footer a:hover { color: #fff; }
 .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1em 2em; }
 
-@media (max-width: 900px) {
+@media (max-width: 56.25em) {
   .doc { grid-template-columns: minmax(0, 1fr); }
   .toc { position: static; }
 }
-@media (max-width: 640px) {
+@media (max-width: 40em) {
   body { font-size: 1rem; }
 }
 </style>
 </head>
 <body>
 
-<main>
-  <div class="wrap">
-    <nav class="top" aria-label="Idioma">
+<div class="wrap">
+    <nav class="top" aria-label="Site">
       <a class="home" href="../">Facheiro</a>
       <a href="../en/reference/" hreflang="en" lang="en">Read in English</a>
     </nav>
+</div>
+
+<main>
+  <div class="wrap">
     <header>
       <h1>Referência</h1>
       <p class="lede">O formato da saída, os eventos JSON, os códigos de saída e o que cada scanner examina. Os guias de uso estão na <a href="https://github.com/fcavallari/Facheiro/wiki">wiki</a>; a instalação, no <a href="https://github.com/fcavallari/Facheiro#readme">README</a>.</p>
@@ -126,12 +148,12 @@ footer a:hover { color: #fff; }
         </ol>
       </nav>
       <article>
-<section aria-labelledby="output">
-<h2 id="output">Saída</h2>
+<section id="output" tabindex="-1">
+<h2>Saída</h2>
 <p>Todos os scanners relatam os achados num único formato, fácil de filtrar com grep, ordenar e colar num chamado. O formato e os detalhes dos achados são em inglês em qualquer idioma:</p>
 <div class="code"><pre>SEVERITY,TYPE,path,detail</pre></div>
 <p>Os três primeiros campos nunca contêm vírgulas; tudo depois da terceira vírgula é detalhe em formato livre. Como os caminhos e o conteúdo dos logs vêm de um servidor comprometido, <code>%</code>, caracteres de controle e (no campo do caminho) vírgulas são codificados com <code>%</code>, de modo que um nome de arquivo forjado não consegue deslocar campos nem injetar linhas falsas de achado. As gravidades são <code>HIGH</code>, <code>MEDIUM</code>, <code>LOW</code>, <code>INFO</code> e <code>ERROR</code>. Linhas recuadas abaixo de um achado são contexto de apoio (linhas de log de exemplo, principais IPs de origem). Por exemplo:</p>
-<div class="code"><pre>HIGH,MALWARE_CLEANED,/path/to/file.js,javascript_ndsw
+<div class="code"><pre lang="en">HIGH,MALWARE_CLEANED,/path/to/file.js,javascript_ndsw
 HIGH,MALWARE_FOUND,/path/to/file.js,javascript_ndsw (dry run: file not modified)
 HIGH,MALWARE_FOUND,/path/to/link.js,javascript_ndsw (symbolic link to /shared/file.js: never modified, clean the file it points to)
 HIGH,CRONTAB_IOC,crontab,crontab.tmp.006: * * * * * echo ... | base64 --decode &gt; /tmp/x
@@ -139,10 +161,10 @@ MEDIUM,LOG_IOC,/var/log/apache2/access.log,access.xmlrpc.flood: 4182 hit(s) - Hi
 <p>IoCs de log saem como <code>MEDIUM</code> (tentativas de ataque, inclusive as que falharam), exceto o tráfego para um shell que já está no disco, que é <code>HIGH</code>. Assinaturas ruidosas por natureza (por exemplo, POSTs em <code>wp-login.php</code>) só disparam acima de um limite de volume, para que o tráfego normal não gere alarmes.</p>
 </section>
 
-<section aria-labelledby="json">
-<h2 id="json">Saída em JSON e códigos de saída</h2>
+<section id="json" tabindex="-1">
+<h2>Saída em JSON e códigos de saída</h2>
 <p><code>format=json</code> (CLI) ou <code>--format=json</code> (WP-CLI) troca o stdout para NDJSON: um objeto de evento por linha, com os valores crus (escapados em JSON):</p>
-<div class="code"><pre>{"event":"finding","severity":"HIGH","type":"LOG_IOC","path":"...","detail":"...","context":["e.g. ..."]}
+<div class="code"><pre lang="en">{"event":"finding","severity":"HIGH","type":"LOG_IOC","path":"...","detail":"...","context":["e.g. ..."]}
 {"event":"summary","scan":"integrity","MODIFIED":1,"MISSING":0,...}</pre></div>
 <p>Bytes que não são UTF-8 válido (um nome de arquivo, uma linha de log, um valor do banco cortado no meio de um caractere) não cabem em JSON: eles viram U+FFFD na saída JSON, na tabela do painel e no modo de recuperação, de modo que o achado continua sendo relatado. A saída em texto imprime os bytes crus.</p>
 <p>O progresso e os textos informativos vão para o stderr, então o stdout traz apenas eventos legíveis por máquina, prontos para pipelines. Um erro de uso ou fatal (argumentos inválidos, alvo ilegível, banco inacessível em <code>scandb=1</code>) é emitido como <code>{"event":"error","detail":"..."}</code> antes de sair com 1, de modo que o fluxo nunca carrega texto solto. A exportação JSON do painel usa os mesmos eventos de achado.</p>
@@ -163,8 +185,8 @@ MEDIUM,LOG_IOC,/var/log/apache2/access.log,access.xmlrpc.flood: 4182 hit(s) - Hi
 <p>O código de saída reflete o pior achado, para que tarefas de cron e CI possam alertar com base nele: <strong>0</strong> limpo (ou só INFO), <strong>1</strong> erro de uso ou fatal, <strong>2</strong> achados LOW/MEDIUM/ERROR, <strong>3</strong> achados HIGH. Repare que uma limpeza bem-sucedida também sai com 3: havia malware.</p>
 </section>
 
-<section aria-labelledby="checks">
-<h2 id="checks">O que ele examina</h2>
+<section id="checks" tabindex="-1">
+<h2>O que ele examina</h2>
 <ul>
 <li><strong>Arquivos</strong>: detecção e limpeza, por assinaturas, de injeções de malware conhecidas (por exemplo, as campanhas JavaScript <code>ndsw</code>/<code>ndsx</code> e <code>wqpq</code>), nas extensões web comuns (<code>php</code>, <code>js</code>, <code>html</code>, ...). Os arquivos limpos são gravados de forma atômica (arquivo temporário + rename), então uma gravação que falha nunca trunca o original. A pasta do próprio plugin nunca é escaneada. Um <strong>conjunto de detecção</strong> embutido, com cerca de 35 formatos genéricos de webshell e backdoor, relata <code>MALWARE_FOUND</code> e nunca limpa, nem numa execução real: código ou comandos de shell vindos da requisição (<code>eval($_POST[...])</code>, <code>system($_GET[...])</code>, entrada da requisição usada como callback ou caminho de include), gravações de arquivo com nome vindo da requisição e uploaders que mantêm o nome de arquivo do cliente (as formas mais frouxas, por um caminho ou uma variável, só em arquivos sem nenhuma verificação de capability, nonce ou upload do WordPress), shells protegidos por senha, famílias de shell conhecidas (WSO/FilesMan, b374k, c99, r57, IndoXploit, Alfa), WP-VCD, NDSW com variáveis renomeadas, PHP atrás de um cabeçalho de imagem, includes de ícones/imagens ou de caminhos em códigos de escape, e ofuscação (<code>eval</code> da saída de <code>base64_decode</code>/<code>gzinflate</code>, regexes com <code>/e</code>, nomes de função invertidos ou em rot13, nomes em escape hexadecimal, cadeias de <code>chr()</code>, ofuscadores com o array <code>$GLOBALS</code>, chamadas dinâmicas de uma linha). HIGH significa um destino perigoso alimentado direto pela requisição, uma proteção por senha ou uma família conhecida; MEDIUM é ofuscação de que código legítimo quase nunca precisa. Um arquivo em que nada bateu ganha uma segunda olhada com os comentários removidos, fragmentos <code>'ev'.'al'</code> e acréscimos com <code>.=</code> unidos, <code>${"_POST"}</code> lido como <code>$_POST</code> e escapes de letras decodificados. Os formatos foram modelados no que php-malware-finder, AMWScan, signature-base, o scanner do scr34m e o Linux Malware Detect têm em comum, e são testados contra falsos positivos no core do WordPress e em cerca de 2.200 plugins e 550 temas populares do wordpress.org: o que ainda bate lá são plugins que executam, por projeto, PHP enviado a eles (Ad Inserter, VaultPress), as strings do scanner de um plugin antispam e um comentário de documentação.</li>
 <li><strong>Crontab</strong>: roda <code>crontab -l</code> para o usuário que executa o PHP e procura padrões conhecidos de persistência (decodificadores base64 encadeados por pipe, downloads do pastebin, droppers em diretórios tmp). Os crontabs de outros usuários e <code>/etc/cron.*</code> não são cobertos; se o comando não puder rodar, <code>CRONTAB_UNAVAILABLE</code> avisa.</li>
@@ -183,17 +205,18 @@ MEDIUM,LOG_IOC,/var/log/apache2/access.log,access.xmlrpc.flood: 4182 hit(s) - Hi
 </ul>
 </section>
 
-<section aria-labelledby="php-extensions">
-<h2 id="php-extensions">Extensões do PHP</h2>
+<section id="php-extensions" tabindex="-1">
+<h2>Extensões do PHP</h2>
 <p>A varredura por assinaturas, as verificações rápidas e as de datas não precisam de mais nada. Os outros scanners usam extensões PHP que servidores mais fechados às vezes não têm; a falta de uma delas aparece como um achado <code>ERROR</code>, em vez de a verificação ser pulada:</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-labelledby="ext-caption"><table>
+<caption id="ext-caption" class="sr-only">Recursos do PHP que algumas verificações exigem</caption>
 <thead><tr><th scope="col">Necessário para</th><th scope="col">Requisito</th></tr></thead>
 <tbody>
-<tr><td>Logs rotacionados em <code>.gz</code></td><td>extensão zlib</td></tr>
-<tr><td>Verificação de integridade online (CLI independente)</td><td>extensão curl, ou <code>allow_url_fopen=On</code> (o plugin usa a API HTTP do WordPress)</td></tr>
-<tr><td>Verificação de temas e qualquer restauração</td><td>extensão zip</td></tr>
-<tr><td>Varredura do banco de dados (CLI independente)</td><td>extensão mysqli (o plugin usa a conexão do WordPress)</td></tr>
-<tr><td>Varredura do crontab</td><td><code>shell_exec</code> fora de <code>disable_functions</code></td></tr>
+<tr><th scope="row">Logs rotacionados em <code>.gz</code></th><td>extensão zlib</td></tr>
+<tr><th scope="row">Verificação de integridade online (CLI independente)</th><td>extensão curl, ou <code>allow_url_fopen=On</code> (o plugin usa a API HTTP do WordPress)</td></tr>
+<tr><th scope="row">Verificação de temas e qualquer restauração</th><td>extensão zip</td></tr>
+<tr><th scope="row">Varredura do banco de dados (CLI independente)</th><td>extensão mysqli (o plugin usa a conexão do WordPress)</td></tr>
+<tr><th scope="row">Varredura do crontab</th><td><code>shell_exec</code> fora de <code>disable_functions</code></td></tr>
 </tbody></table></div>
 </section>
       </article>
@@ -208,5 +231,34 @@ MEDIUM,LOG_IOC,/var/log/apache2/access.log,access.xmlrpc.flood: 4182 hit(s) - Hi
   </div>
 </footer>
 
+<script type="module">
+// Mark the section in view in the table of contents. CSS does it where
+// scroll-target-group is supported; aria-current mirrors it for assistive
+// technology, and an IntersectionObserver stands in elsewhere.
+const links = [...document.querySelectorAll('.toc a')];
+
+if (CSS.supports('scroll-target-group: auto')) {
+  const apply = () => {
+    const current = document.querySelector('.toc a:target-current');
+    links.forEach((link) => link.setAttribute('aria-current', link === current ? 'true' : 'false'));
+  };
+  // :target-current is updated with the next rendering, after scrollend fires
+  const sync = () => requestAnimationFrame(() => requestAnimationFrame(apply));
+  sync();
+  document.addEventListener('scrollend', sync);
+} else if ('IntersectionObserver' in window) {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      links.forEach((link) => {
+        const active = link.getAttribute('href') === '#' + entry.target.id;
+        link.classList.toggle('target-current', active);
+        link.setAttribute('aria-current', active ? 'true' : 'false');
+      });
+    });
+  }, { rootMargin: '-50% 0px -50% 0px', threshold: 0 });
+  document.querySelectorAll('article > section[id]').forEach((section) => observer.observe(section));
+}
+</script>
 </body>
 </html>
