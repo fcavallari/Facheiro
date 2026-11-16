@@ -23,7 +23,13 @@ PASS=0
 FAIL=0
 SKIP=0
 
-git -C "$REPO" show "$OLD_REF:elderward.php" > "$OLD" || { echo "cannot extract $OLD_REF:elderward.php"; exit 1; }
+# The single-file script is the only PHP file at the root of the old ref
+# (it carried the project's former name), so find it instead of naming it.
+OLD_FILE="$(git -C "$REPO" ls-tree --name-only "$OLD_REF" | grep '\.php$')"
+if [ "$(printf '%s\n' "$OLD_FILE" | grep -c .)" -ne 1 ]; then
+    echo "expected exactly one PHP file at the root of $OLD_REF, found: ${OLD_FILE:-none}"; exit 1
+fi
+git -C "$REPO" show "$OLD_REF:$OLD_FILE" > "$OLD" || { echo "cannot extract $OLD_REF:$OLD_FILE"; exit 1; }
 # The old script names $http_response_header, which PHP 8.5 deprecates at
 # compile time; its notices are not part of the output contract being
 # compared (E_ALL & ~E_DEPRECATED, old script only).

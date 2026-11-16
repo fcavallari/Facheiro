@@ -188,7 +188,7 @@
         "tests/mcp-stdio.js": "0b55d80a3c203825dce25f157eded9f3f026626c5f44f1b59f23e43414d354c3",
         "tests/mu-plugin-test-hooks.php": "eaf7184f6be51474d000e7b8265598bd18108da567ac38cf365cb835837720af",
         "tests/recovery.js": "a6c72bf5e023fac3cfb9dd0b2304b9d07a8fb2b2d5252e09a1a4dc2591fc76b9",
-        "tests/regress.sh": "71eb1cb385512b5a8cd639f2e0f9cefb8738f6a923c9d95bd0b0af344be8ef20",
+        "tests/regress.sh": "b46afe1f122ac7fd23ceb91f713f35769b1bb1ab181e9d41012816de62221093",
         "tests/signatures-ui.js": "83f38e0ad9d2d47a02ae269ca5972c304ca145c0cc528c8fca2994618b22e633",
         "tests/tamper-ui.js": "20927f237d79a44d994909ae32997252153836437f37d0fce9c9971109245a4a",
         "tests/tamper.sh": "cd93db2a4631df9fe59aa64c879256e36a940255597022c8fd816f4f51d9a457"
